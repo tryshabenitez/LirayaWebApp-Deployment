@@ -20,13 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-acx7jn$rx#2#d8ssd@p3o#vu5-ns0-e4uu%%5(&!&v^wjqb=v^'
+SECRET_KEY = os.environ.get("SECRET_KEY", "insecure-key")  
+DEBUG = os.environ.get("DEBUG", "true").lower() == "true"
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -49,6 +46,7 @@ AUTHENTICATION_BACKENDS = (
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -83,15 +81,16 @@ WSGI_APPLICATION = 'LirayaWeb.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',       
-        'NAME': 'liraya_webapp_database',           
-        'USER': 'root',
-        'PASSWORD': 'admin',
-        'HOST': '127.0.0.1',
-        'PORT': '3307',                            
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("PGDATABASE"),
+        "USER": os.environ.get("PGUSER"),
+        "PASSWORD": os.environ.get("PGPASSWORD"),
+        "HOST": os.environ.get("PGHOST"),
+        "PORT": os.environ.get("PGPORT"),
     }
 }
+
 
 
 # Password validation
@@ -128,7 +127,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -140,8 +141,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'lirayaautomated@gmail.com'
-EMAIL_HOST_PASSWORD = 'fccp jtkt bzlc dgrz'
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
 
 
 ###########BOOK SIZE##################
@@ -157,8 +159,8 @@ MEDIA_URL = '/media/'  # URL for serving files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'LirayaApp', 'media') 
 
 ############# function log in using email ###########
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '981063168529-n8228mkki78b5lohijrv787fbagqiq33.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get("GOOGLE_CLIENT_ID")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 LOGIN_REDIRECT_URL = '/google/login/redirect/'
 LOGOUT_REDIRECT_URL = '/'
 
