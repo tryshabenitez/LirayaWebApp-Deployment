@@ -7,3 +7,9 @@ reportlab
 matplotlib
 social-auth-app-django
 social-auth-core
+
+opencv-python-headless
+torch
+torchvision
+easyocr
+
