@@ -1,7 +1,25 @@
-Django
+Django>=5.2,<6.0
 gunicorn
 whitenoise
-psycopg[binary,pool]
+psycopg2-binary
+
+# Image and file handling
+Pillow
+opencv-python-headless
+
+# PDF and reporting
+reportlab
+matplotlib
+
+# OCR
+easyocr
+numpy
+pandas
+
+# NLP and spell checking
+spacy
+pyspellchecker
+
+# Social auth (Google login)
 social-auth-app-django
-
-
+social-auth-core
