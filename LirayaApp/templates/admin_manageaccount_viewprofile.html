@@ -1,0 +1,183 @@
+{% extends 'admin_inheritance.html' %}
+{% load static %}
+{% block title %}Admin Profile{% endblock %}
+
+{% block content %}
+    <div class="admin-main-content">
+
+        <!-- HEADER -->
+        <div class="admin-header">
+            <div class="admin-title">
+                <h1>Admin: View Profile</h1>
+                <p>Welcome, {{ user_info.full_name }}!</p>
+            </div>
+            <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
+                <div class="profile-image-container">
+                    <div class="profile-image-preview-homepage">
+                        <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                    </div>
+                </div>
+            </button>
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+
+        <!-- Profile Form -->
+        <div class="create-account">
+            <div class="profile-header">
+                <div class="profile-left">
+                    <div class="profile-image-container">
+                        <div class="profile-image-preview">
+                            <img id="profile-preview" src="{% if account.profile_picture %}{{ account.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-right">
+                    <h1>Profile of {{ account.first_name }} {% if account.middle_name %}{{ account.middle_name }}{% else %}{{ '' }}{% endif %} {{ account.last_name }}!</h1>
+                    <p>{{ role }}</p>
+                    <p>Status: 
+                        <strong class="{% if account_status == 'ACTIVE' %}green-status{% elif account_status == 'NEW' %}blue-status{% elif account_status == 'DEACTIVATED' %}red-status{% else %}default-status{% endif %}">
+                            {{ account_status }}
+                        </strong>
+                    </p>   
+                    <div>
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="file" name="profile_picture" id="profile-picture-upload" class="admin-input-field" style="display: none;">                 
+                        </form>
+
+                        <!-- Modal for image cropping -->
+                        <div id="cropper-modal" style="display:none;">
+                            <div id="cropper-container">
+                                <img id="cropper-image" src="" alt="Image to crop">
+                                <input type="hidden" id="cropped-image-data" name="cropped_image">
+                                <button id="crop-save">Save Crop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+  
+            <form method="POST">
+                {% csrf_token %}
+
+                
+                <!-- First Name, Middle Name, Last Name -->
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="first-name">First Name</label>
+                        <input type="text" class="admin-input-field" id="first-name" name='first_name' placeholder="First Name" value="{{ account.first_name }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="middle-name">Middle Name (N/A if none)</label>
+                        <input type="text" class="admin-input-field" id="middle-name" name="middle_name" placeholder="Middle Name" 
+           value="{%    if account.middle_name %}{{ account.middle_name }}{% else %}{{ '' }}{% endif %}" readonly required>
+                    </div>
+                    <div class="name-col">
+                        <label for="last-name">Last Name</label>
+                        <input type="text" class="admin-input-field" id="last-name" name='last_name'placeholder="Last Name" value="{{ account.last_name }}" readonly Required>
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="house-no">House No.</label>
+                        <input type="text" class="admin-input-field" id="house-no" name='house_no' placeholder="House No." value="{{ account.house_no }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="street-village">Street Village</label>
+                        <input type="text" class="admin-input-field" id="street-village" name='street_village'placeholder="Street Village" value="{{ account.street_village }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="barangay">Barangay</label>
+                        <input type="text" class="admin-input-field" id="barangay" name='barangay'placeholder="Barangay" value="{{ account.barangay }}" readonly Required>
+                    </div>
+                </div>
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="city">City</label>
+                        <input type="text" class="admin-input-field" id="city" name='city' placeholder="city" value="{{ account.city_municipality }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="province">Province</label>
+                        <input type="text" class="admin-input-field" id="province" name='province' placeholder="Province" value="{{ account.province }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="state">State</label>
+                        <input type="text" class="admin-input-field" id="state" name='state' placeholder="State" value="{{ account.state }}" readonly Required>
+                    </div>
+                </div>
+
+                <!-- Birthdate and Gender -->
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="city">Zipcode</label>
+                        <input type="text" class="admin-input-field" id="zipcode" name="zipcode" placeholder="Zipcode" value="{{ account.zipcode }}" readonly required>
+                    </div>
+                    <div class="name-col">
+                        <label for="birthdate">Birthdate (dd-mm-yy)</label>
+                        <input type="date" class="admin-input-field" id="birthdate" name="birthdate" placeholder="Birthdate" value="{{ formatted_birthdate }}" readonly required>
+                    </div>
+                    <div class="name-col">
+                        <label for="gender">Gender</label>
+                        <select class="admin-input-field" id="gender" name="gender" disabled required>
+                            <option value="" {% if not account.gender %}selected{% endif %}>Select Gender</option>
+                            <option value="Male" {% if account.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if account.gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="Other" {% if account.gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                        <input type="hidden" name="gender" id="gender-hidden" value="">
+                    </div>
+                </div>
+
+                <!-- Email and Username -->
+                <div class="form-row-inline">
+                    <div class="form-col">
+                        <label for="email">Email</label>
+                        <input type="email" class="admin-input-field" id="email" name="email" placeholder="Email" value="{{ account.email }}" readonly required>
+                    </div>
+                    <div class="form-col">
+                        <label for="email">Contact Number</label>
+                        <input type="tel" class="admin-input-field" id="contact-number" name="contact_num" placeholder="Contact Number" value="{{ account.contact_num }}" readonly required pattern="^09\d{9}$" maxlength="11" title="Contact number must start with '09' and have exactly 11 digits" inputmode="numeric">
+                    </div>
+                    <div class="form-col">
+                        <label for="username">Username</label>
+                        <input type="text" class="admin-input-field" id="username" name="username" placeholder="Username" value="{{ account.username }}" readonly Required>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Buttons -->
+            <div class="form-row-inline">
+                <button type="button" id="back-btn" class="admin_button" onclick="goBack()">Back</button>
+                <input type="hidden" name="form_type" value="password_change">
+            </div>
+
+        </div>
+
+
+        <!-- Footer -->
+        <div class="admin-footer">
+            Liraya © 2025. All rights reserved. <br>
+            TUPC. Technological University of the Philippines - Cavite Library
+        </div>
+    </div>
+    
+<script>
+    // JavaScript function to handle the "Back" button click
+    function goBack() {
+        window.history.back();  // This will take the user to the previous page
+    }
+</script>
+{% endblock %}
+

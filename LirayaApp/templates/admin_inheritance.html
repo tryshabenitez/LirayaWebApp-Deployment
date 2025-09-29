@@ -1,0 +1,133 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Admin Dashboard{% endblock %}</title>
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Your Custom CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/styles_librarian.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/style_admin.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/shared_alert.css' %}">
+  
+  <!-- js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  <script src="{% static 'script/message_alert.js' %}?v=2"></script>
+  <script src="{% static 'script/messages.js' %}?v=1"></script>
+</head>
+<body>
+  <!-- Loader HTML (global, overlays everything) -->
+  <div class="loader-container" id="loader" style="display: none;">
+      <div class="loader"></div>
+      <div class="loader-text">Loading...</div>
+  </div>
+
+  
+  <div class="background">
+    <!-- Sidebar & Main Content Area -->
+    <div class="content-area d-flex">
+      <!-- Slim Sidebar with labels -->
+      <div class="slim-sidebar">
+        <a href="javascript:void(0);" class="nav-item menu-toggle" onclick="toggleFlyout()">
+          <img src="{% static 'images/menu.png' %}" class="sidebar-icon" alt="Menu" />
+          <img src="{% static 'images/sb_icon.png' %}" class="menu-expanded-img" alt="Expanded Menu" />
+          <span class="nav-label" style="display: none;"></span>
+      </a>
+
+        <div class="nav-group">
+          <a href="{% url 'admin_homepage' %}" class="nav-item" title="Home">
+            <img src="{% static 'images/home_icon.png' %}" class="sidebar-icon" alt="Home"  />
+            <span class="nav-label">Home</span>
+          </a>
+          <a href="{% url 'admin_manageaccount' %}" class="nav-item" title="Manage Account">
+            <img src="{% static 'images/accounts.png' %}" class="sidebar-icon" alt="Manage Account" />
+            <span class="nav-label">Accounts</span>
+          </a>
+          <a href="{% url 'admin_records' %}" class="nav-item" title="Records">
+            <img src="{% static 'images/records.png' %}" class="sidebar-icon" alt="Records" />
+            <span class="nav-label">Records</span>
+          </a>
+          <a href="{% url 'admin_profile' %}" class="nav-item" title="Profile">
+            <img src="{% static 'images/profile.png' %}" class="sidebar-icon" alt="Profile" />
+            <span class="nav-label">Profile</span>
+          </a>
+        </div>
+
+        <a href="javascript:void(0);" class="nav-item logout-link" onclick="showLogoutPopup()" title="Logout">
+          <img src="{% static 'images/logout.png' %}" class="sidebar-icon logout-icon" alt="Logout" />
+          <span class="nav-label">Logout</span>
+        </a>
+
+        <!-- Popup Modal for Confirmation -->
+        <div id="logoutPopup" class="logout-popup-modal">
+          <div class="logout-popup-content">
+            <h3>Are you sure you want to sign out?</h3>
+            <div class="popup-buttons">
+              <button id="confirmLogout" class="popup-button signout-button">Sign out</button>
+              <button onclick="hideLogoutPopup()" class="popup-button cancel-button">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content flex-grow-1" id="mainContent">
+        {% block content %}
+        <!-- Content will be defined in inheriting templates -->
+
+        {% endblock %}
+        
+      </div>
+    </div>
+  </div>
+</body>
+  
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="{% static 'script/admin.js' %}"></script>
+
+<script>
+  function toggleFlyout() {
+    const sidebar = document.querySelector(".slim-sidebar");
+    const mainContent = document.getElementById("mainContent");
+
+    sidebar.classList.toggle("expanded");
+    mainContent.classList.toggle("shift-right");
+  }
+
+  // Show the logout popup
+  function showLogoutPopup() {
+    document.getElementById("logoutPopup").style.display = "flex";
+    document.body.classList.add("modal-open"); // Disable scrolling
+  }
+
+  // Hide the logout popup
+  function hideLogoutPopup() {
+    document.getElementById("logoutPopup").style.display = "none";
+    document.body.classList.remove("modal-open"); // Enable scrolling again
+  }
+
+  // If "Sign out" is clicked, navigate to logout
+  document.getElementById("confirmLogout").addEventListener("click", function() {
+    window.location.href = "{% url 'logout' %}"; // Redirect to logout URL
+  });
+</script>
+
+{% block script %}{% endblock %}
+
+</body>
+</html>
+
+
+
+

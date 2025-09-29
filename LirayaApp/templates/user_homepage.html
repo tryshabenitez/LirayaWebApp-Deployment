@@ -1,0 +1,68 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIRAYA - Library Information Resource and Access</title>
+  <link rel="stylesheet" href="{% static 'css/user_style.css' %}">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="liraya-header">
+    <div class="logo-container">
+      <img
+        src="{% static 'images/usericon.png' %}"
+        alt="Logo"
+        onclick="location.href='{% url 'login' %}'"
+        style="cursor:pointer"
+      >
+      <div class="page-name">LIRAYA</div>
+    </div>
+    <a href="{% url 'user_aboutus' %}" class="about-us">About Us</a>
+  </header>
+
+  <!-- Main Content -->
+  <div class="liraya-main-content" style="background-image: url('{% static 'images/user_background_homepage.png' %}'); background-size: cover; background-position: center; background-attachment: fixed;">
+    <div class="welcome-text">Welcome, TUPcian!</div>
+    <div class="search-container">
+  <form action="{% url 'user_search' %}" method="get" class="search-form" data-suggest-url="/suggest/" autocomplete="off">
+  <input type="text"
+         class="search-box"
+         name="q"
+         placeholder="Search Here...."
+         value="{{ request.GET.q|default:'' }}"
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"
+         inputmode="search">
+
+  <select class="dropdown" name="field">
+    <option value="allFields" {% if request.GET.field|default:'allFields' == 'allFields' %}selected{% endif %}>All Fields</option>
+    <option value="title"     {% if request.GET.field == 'title' %}selected{% endif %}>Title</option>
+    <option value="author"    {% if request.GET.field == 'author' %}selected{% endif %}>Author</option>
+    <option value="keywords"  {% if request.GET.field == 'keywords' %}selected{% endif %}>Keywords</option>
+  </select>
+
+  <input type="hidden" name="sort" value="{{ request.GET.sort|default:'Relevance' }}">
+
+  <button class="search-button" type="submit">
+    <img src="{% static 'images/user_search_homepage.png' %}" alt="Search Icon">
+  </button>
+</form>
+</div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p class="footer-text">LIRAYA: Library Information Resource and Access</p>
+    <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
+  </footer>
+
+</body>
+</html>
+<script src="{% static 'script/user_script.js' %}"></script>

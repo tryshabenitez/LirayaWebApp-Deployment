@@ -1,0 +1,2070 @@
+/* Base Reset */
+body {
+  margin: 0;
+  font-family: arial;
+}
+
+/* Adjusted Header when Sidebar is toggled */
+header {
+  background-color: #3e151a; /* Same color as slim sidebar */
+  color: #fff7f7; /* Light text color */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  height: 80px;
+  transition: margin-left 0.3s ease; /* Smooth transition for header shift */
+}
+
+header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #fff7f7;
+}
+
+/* Ensures full-height layout with footer pushed to bottom */
+.background {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Full viewport height */
+}
+
+/* Footer Styling */
+.librarian-footer {
+  padding: 10px 0; /* Vertical padding for spacing */
+  background-color: #fff;
+  text-align: center;
+  font-size: 14px;
+  color: #000;
+  width: 100%;
+  margin-top: auto; /* Ensures it sticks to the bottom when content is not enough */
+  height: 80px; /* Footer height */
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+}
+
+
+
+/***********************************************************************SIDEBAR**************************************************/
+/* SLIM SIDEBAR */
+.slim-sidebar {
+  width: 70px;
+  background-color: #3e151a;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  transition: width 0.3s ease;
+}
+
+.slim-sidebar.expanded {
+  width: 200px;
+}
+
+.menu-toggle {
+  margin-bottom: 40px;
+}
+
+.menu-expanded-img {
+  display: none;
+  width: 100px;
+  height: 100px;
+  margin-left: 10px;
+}
+
+.slim-sidebar.expanded .menu-expanded-img {
+  display: inline-block;
+}
+
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 0; /* match logout's padding-left */
+  box-sizing: border-box;
+}
+
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 15px 20px;
+  width: 100%;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+
+/* Sidebar icons */
+.sidebar-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+/* Labels beside icons */
+.nav-label {
+  margin-left: 15px;
+  font-size: 16px;
+  color: white;
+  display: none;
+}
+
+.slim-sidebar.expanded .nav-label {
+  display: inline;
+}
+
+/* Hover effect like flyout */
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Logout alignment */
+.logout-link {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 20px;
+  width: 100%;
+  margin-bottom: 30px;
+  color: white;
+  text-decoration: none;
+}
+
+.logout-link .nav-label {
+  margin-left: 15px;
+  color: white;
+  font-size: 16px;
+  display: none;
+}
+
+.slim-sidebar.expanded .logout-link .nav-label {
+  display: inline;
+}
+
+
+
+.dropdown {
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 25px;
+  border: 3px solid #3e151a;
+  margin-left: 10px;
+  width: 100%; /* Ensure it takes full width of its container */
+  max-width: 210px; /* Ensure it doesn't stretch beyond 210px */
+  height: auto; /* Let height adjust based on content */
+  box-sizing: border-box;
+}
+
+
+
+.alert-success {
+  transition: opacity 1s ease-out;
+}
+
+.alert-success[style*="opacity: 0"] {
+  opacity: 0;
+}
+
+
+/***********************************************************************SIDEBAR**************************************************/
+
+
+.content-area {
+  width: 100%; /* Full width of the container */
+}
+
+.main-content {
+  margin-left: 70px; /* Sidebar width */
+  padding: 30px;
+  transition: margin-left 0.3s ease;
+  z-index: 900;
+  flex-grow: 1; /* Ensures the content expands */
+}
+
+.main-content.shift-right {
+  margin-left: 200px; /* match expanded sidebar width */
+}
+
+/************************************************************** LIBRARIAN HOMEPAGE *******************************************/
+
+
+/* Adjust the text size of headings */
+.book-section h2 {
+    font-size: 20px; /* Smaller heading size */
+    font-weight: bold;
+    margin-bottom: 10px; /* Reduces the space between heading and book list */
+    margin-top: 10px;
+}
+
+
+
+.sorting-section {
+    display: flex; /* Align items horizontally */
+    justify-content: space-between; 
+    align-items: center;
+    margin-bottom: 20px; /* Adds space below */
+}
+
+/* Custom Dropdown */
+.custom-dropdown {
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 25px;
+  border: 3px solid #3e151a;
+  margin-left: 10px;
+  width: 100%; /* Takes full width of its container */
+  max-width: 210px; /* Max width set */
+  height: auto;
+  box-sizing: border-box;
+  background-color: #f0f0f0; /* Same background as your container */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Add shadow */
+  transition: box-shadow 0.3s ease, background-color 0.3s ease; /* Smooth transition */
+}
+
+
+/* Total Books Uploaded Section (Grid Layout) */
+.total-uploaded {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+}
+
+/* Book Grid for Total Books Uploaded (Grid Layout) */
+.total-uploaded .book-grid-horizontal {
+    display: grid; /* Switch to grid layout */
+    grid-template-columns: repeat(5, 1fr); /* 5 books per row */
+    gap: 25px; /* Space between the books */
+    padding: 10px;
+    width: 100%;
+    max-height: none; /* No internal height limitation */
+    overflow-y: hidden; /* Remove vertical scrolling */
+    box-sizing: border-box; /* Ensure padding and border are included in width calculation */
+}
+
+/* Book Item (Inside Total Books Uploaded) */
+.book-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    height: auto; /* Adjusts height automatically */
+    text-align: center;
+    box-sizing: border-box; /* Ensures the width includes padding and border */
+}
+
+/* Book Container with Background and Shadow */
+.book-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Ensures content is spaced out */
+    align-items: center;
+    padding: 10px;
+    background-color: #f0f0f0; /* Light gray background */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow to give a floating effect */
+    border: 2px solid #555; /* Darker border color */
+    transition: box-shadow 0.3s ease, background-color 0.3s ease; /* Smooth transition on hover */
+    max-width: 230px; /* Ensure uniform sizing */
+    width: 100%; /* Make sure the container takes full available width */
+    box-sizing: border-box; /* Ensure padding is considered in the width */
+    text-align: center; /* Centers the content inside */
+    height: 380px; /* Set a fixed height for consistent sizing */
+    overflow: hidden; /* Prevent text from overflowing the box */
+}
+
+/* Book Title (Bold and expandable) */
+.book-container h3 {
+    font-weight: bold; /* Makes the book title bold */
+    font-size: 16px; /* Adjust font size */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limits the text to 2 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden; /* Prevents text overflow */
+    text-overflow: ellipsis; /* Adds '...' when the text is too long */
+    width: 100%; /* Ensures title fits inside the container */
+    text-align: center; /* Centers the title */
+    margin-top: 10px; /* Adds some space above the title */
+    margin-bottom: 10px; /* Adds space below the title */
+    line-height: 1.4; /* Adjust the line height for readability */
+    padding: 0 5px; /* Ensures text is spaced from the container edges */
+}
+
+/* Book Placeholder (Image) */
+.book-placeholder {
+    width: 180px;  /* Fixed width for images */
+    height: 200px; /* Adjusted height for images */
+    object-fit: cover; /* Ensures the image maintains aspect ratio and is cropped if necessary */
+    margin: 10px auto;  /* Center the image inside its container */
+    -webkit-user-drag: none;  /* Prevent dragging in WebKit browsers */
+    -moz-user-drag: none;  /* Firefox-specific */
+    user-drag: none;  /* Standard rule to prevent dragging */
+    -webkit-user-select: none;  /* Prevent text selection in WebKit browsers */
+    -moz-user-select: none;  /* Firefox-specific */
+    user-select: none;  /* Standard rule to prevent text selection */
+    pointer-events: none;  /* Disable mouse interaction entirely */
+}
+
+/* Book Info container (adjusting text and title layout) */
+.book-info-hp {
+    display: flex;
+    flex: 1; 
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+    overflow: hidden; /* Prevents text from overflowing */
+    width: 100%;
+    padding: 10px; /* Adds some space around the text */
+    box-sizing: border-box; /* Ensures padding is considered */
+}
+
+/* push the button row to the bottom of the card */
+.book-info-hp form {
+  margin-top: auto;             /* key: anchors the button to the bottom */
+  display: flex;                /* keep the button centered */
+  justify-content: center;
+  width: 100%;
+}
+
+.book-container:hover {
+    background-color: #e0e0e0; /* Darken the background on hover */
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2); /* Increase shadow on hover for floating effect */
+}
+
+/* View Details Button */
+.view-details {
+    background-color: transparent;
+    border: 2px solid #3e151a; /* Brown border */
+    color: #3e151a; /* Brown text */
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    display: inline-block;
+    margin: 0 0 10px 0;
+}
+
+.view-details:hover {
+    background-color: #3e151a; /* Brown background on hover */
+    color: white; /* White text on hover */
+}
+
+
+
+/* Search bar container */
+.search-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  width: 100%;  /* Ensures the container takes up full width */
+  justify-content: center;  /* Makes sure items are centered */
+}
+
+/* Search input field */
+.search-bar input {
+  width: 600px;  /* Set a fixed width (in px) for the search input */
+  height: 38px;
+  padding: 8px 10px;
+  border: 2px solid #3e151a;
+  border-radius: 20px 0 0 20px;
+  font-size: 14px;
+  box-sizing: border-box;  /* Ensures padding doesn't affect width */
+}
+
+/* Search button */
+.search-bar button {
+  height: 38px;
+  padding: 8px 15px;
+  background-color: #3e151a;
+  color: white;
+  border: 2px solid #3e151a;
+  border-left: none;
+  border-radius: 0 20px 20px 0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.search-bar button:hover {
+  background-color: #5a2a2f;
+  color: white;
+}
+
+/************************************************************** HOMEPAGE *******************************************/
+
+/****************************** LIBRARIAN VIEW DETAILS TAB  *****************************************/
+
+/* Main container to align image and form side by side */
+.book-details-container {
+    display: flex;
+    gap: 30px;  /* Adds space between the image and the form */
+    align-items: flex-start;  /* Aligns the items to the top */
+    flex-wrap: wrap;
+}
+
+
+/* Styling for the form section (book details) */
+.book-info {
+    flex: 2;
+    max-width: 1000px; /* Adjust to fit the form fields */
+}
+
+/* For the form group containers */
+.book-info .form-group {
+    margin-bottom: 15px;  /* Adds space between form groups */
+    max-width: 600px;
+}
+
+/* Adjust form label and inputs */
+.book-info label {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.book-info input,
+.book-info textarea {
+    width: 100%;
+    max-width: 600px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    margin-top: 5px;
+}
+
+/* Action Buttons */
+.view-action-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 20px;
+    justify-content: flex-start;
+}
+
+
+/* Styling for buttons */
+.view-action-buttons button {
+    padding: 12px 30px; /* Adjust padding for a uniform look */
+    font-size: 16px; /* Adjust font size */
+    border-radius: 5px; /* Rounded corners */
+    background-color: #3e151a; /* Brown background */
+    color: white;
+    border: none;
+    flex: 1; /* Ensures buttons grow equally */
+    min-width: 120px; /* Minimum width to ensure button size */
+    cursor: pointer;
+    height: 50px; /* Fixed height for consistency */
+}
+
+/* Button hover effect */
+.view-action-buttons button:hover {
+    background-color: #551f2f; /* Darker brown when hovering */
+}
+
+/* Book Cover Section Layout */
+.book-cover-section {
+    display: flex;
+    align-items: flex-start; /* Align the image and buttons at the top */
+    justify-content: flex-start; /* Align elements to have space between */
+    gap: 20px; /* Space between image and buttons */
+    width: 100%;
+    padding: 15px 0; /* Reduced padding for more compactness */
+    height: auto; /* Set the height to give enough space for both preview and buttons */
+}
+
+
+/* Book Cover Left Section (Image Preview + Buttons Below) */
+.book-cover-left {
+    display: flex;
+    flex-direction: column; /* Stack the image and buttons vertically */
+    justify-content: center;
+    align-items: center;
+    width: 240px;  /* Adjust width of the book cover container */
+    height: auto; /* Adjust height to fit content */
+    background-color: white; /* Changed to white for the buttons section below */
+    overflow: hidden; /* Ensure the image fits the container */
+}
+
+/* Book Cover Box (Container for Image) */
+.book-cover-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;  /* Ensure the width is 100% of the parent */
+    height: 300px; /* Adjust height for the image container */
+    background-color: #f0f0f0; /* Light gray background for image box */
+    border-radius: 10px; /* Rounded corners for the image container */
+    border: 2px solid #555; /* Border for the image container */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Light shadow */
+    overflow: hidden; /* Ensure the image fits the container */
+    box-sizing: border-box; /* Ensure the border is included in the width */
+}
+
+
+/* Book Cover Image Styling */
+.book-cover-left img {
+    max-width: 100%; /* Ensure the image fits within the container width */
+    height: auto;    /* Maintain aspect ratio */
+}
+
+/* Book Cover Buttons Section (below the preview) */
+.book-cover-buttons {
+    display: flex;
+    flex-direction: column; /* Stack the buttons vertically */
+    align-items: center;    /* Center the items horizontally */
+    gap: 10px; /* space between items */
+    margin-top: 20px;
+}
+
+/* OR separator styled like a button placeholder */
+.or-separator {
+    font-size: 14px;
+    font-weight: bold;
+    color: #3e151a;
+    text-align: center;
+    width: 40px;   /* narrow like a placeholder */
+    user-select: none;
+}
+
+/* Upload and Take Picture Buttons */
+.upload-button,
+.takepicture-button {
+    padding: 10px 20px; /* uniform padding */
+    font-size: 14px;
+    border-radius: 50px; /* fully rounded */
+    width: 180px;        /* fixed width so both match */
+    height: 45px;        /* fixed height so both match */
+    border: 2px solid #3e151a;
+    background-color: #3e151a;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    display: flex;        /* flex so text is centered nicely */
+    align-items: center;  
+    justify-content: center;
+    text-align: center;
+}
+
+/* Hover effect for the upload button and takepicture-button */
+.upload-button:hover,
+.takepicture-button:hover {
+    background-color: #5a2a2f; /* Darker shade on hover */
+    color: white; /* White text on hover */
+}
+
+/* Book Cover Right Section (where buttons are located) */
+.book-cover-right {
+    display: flex;
+    flex-direction: column; /* Stack items vertically */
+    justify-content: flex-start;  /* Align items to the start */
+    align-items: flex-start; /* Align elements to the left */
+    text-align: left; /* Ensure content is aligned to the left */
+    gap: 10px; /* Space between the text and buttons */
+    margin-left: 50px; /* Add margin to the left to create space */
+    flex-grow: 1;  /* Make the right section take up remaining space */
+    min-width: 240px; /* Ensure the right section has a minimum width */
+    flex: 1 1 auto; /* Allow the right section to adjust flexibly */
+}
+
+/* Ensuring the right section is responsive */
+.book-cover-right .form-group {
+    margin-bottom: 10px;
+    width: 100%;  /* Ensure the input fields take up the full width */
+}
+
+/* For the "Add Category" section that could move down */
+.book-cover-right .input-group {
+    display: flex;
+    justify-content: space-between; /* Space between select and add button */
+    gap: 10px;
+    width: 100%;  /* Ensure the input group takes full width */
+}
+
+
+
+
+/* Book Cover Text (descriptive text like profile) */
+.book-cover-right p {
+    font-size: 14px;
+    color: #3e151a; /* Dark brown color */
+    margin-bottom: 10px; /* Space below the text */
+}
+
+/* New Section Below Book Cover */
+.scanning-section-container {
+    margin-top: 30px; /* Adds space above the new section */
+}
+
+/* Scanning Section (Book Cover + Camera Preview + Scanned Content) */
+.scanning-section {
+    display: flex;
+    flex-direction: column; /* Stack all scanning-related elements vertically */
+    gap: 30px;
+    width: 100%;
+    align-items: flex-start; /* Center all items */
+    margin-bottom: 20px;
+}
+
+
+/* Adjust form groups in the new section */
+.scanning-section .form-group {
+    margin-bottom: 20px;
+}
+
+/* Adjust buttons in the scanning section */
+.scan-actions-section {
+    display: flex;
+    flex-wrap: wrap; /* Ensure buttons wrap to the next line if necessary */
+    gap: 15px;
+    justify-content: flex-start;
+}
+
+
+
+/* Ensure textarea takes full width */
+.form-control {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px; /* Space between fields */
+    border: 2px solid #555; /* Thicker default border */
+    transition: all 0.3s ease; /* Smooth transition for hover effect */
+}
+
+/* Hover effect for form-control */
+.form-control:hover {
+    border-color: #3e151a; /* Change border color on hover */
+    background-color: #f9f9f9; /* Light background on hover */
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1); /* Light shadow for focus */
+}
+
+
+/* Camera Modal Styles */
+#coverCamModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modal Body to match the preview size */
+#coverCamModal .modal-body {
+    width: 100%; /* Full width of the container */
+    max-width: px; /* Ensuring the modal body does not exceed this width */
+    height: auto; /* Let it adjust the height automatically */
+    background: #fff;
+    padding: 0; /* Remove unnecessary padding */
+    display: flex; 
+    justify-content: center; /* Center the image inside */
+    align-items: center; /* Vertically center the image */
+}
+
+
+/* Camera Preview */
+#coverCamPreview {
+    width: 100%;
+    height: auto;
+    background: #000;
+    object-fit: contain; 
+    aspect-ratio: 3 / 4;
+    max-width: 90%; 
+    max-height: 90%; 
+    display: block;       /* ensures margin works */
+    margin: 0 auto;       /* centers horizontally */
+}
+
+
+
+
+
+/* Book Info Styling */
+.book-info {
+    flex: 2;
+}
+
+.book-info label {
+    font-weight: bold;
+}
+
+.book-info input,
+.book-info textarea {
+    width: 100%;
+    margin: 8px 0;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.book-info h3 {
+    font-size: 14px;  /* Adjust the font size as needed */
+    text-align: center;  /* Center align the title text */
+    margin: 0;  /* Remove default margin */
+    padding: 5px 0;  /* Add some vertical padding if necessary */
+    overflow: hidden; /* Hide any overflow text */
+    white-space: nowrap; /* Prevent text from wrapping */
+    text-overflow: ellipsis; /* Add '...' if text overflows */
+    display: block; /* Ensure it's block-level for proper truncation */
+    width: 100%; /* Ensure it takes up the full width of its container */
+}
+
+
+
+/****************************** LIBRARIAN ADD BOOKS *****************************************/
+
+.instructions-title {
+    margin: 0;
+    font-size: 40px;
+    font-weight: bold;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.instructions-step {
+    font-size: 30px;
+    margin: 10px 0;
+    color: #333;
+    line-height: 1.4;
+    text-align: left;
+}
+
+
+
+/* Modal container */
+#authorCoAuthorModal {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Modal content */
+#authorCoAuthorModal div {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center; /* Center content */
+}
+
+/* Heading in the modal */
+#authorCoAuthorModal h3 {
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Flex container for buttons - Author and Co-Author */
+#authorCoAuthorModal .button-container {
+    display: flex;
+    justify-content: space-between; /* Distribute buttons with space between */
+    gap: 15px; /* Adds space between the buttons */
+}
+
+/* Modal buttons - Author and Co-Author */
+.modal-button {
+    padding: 10px 20px; /* uniform padding */
+    font-size: 14px;
+    border-radius: 5px; /* slightly rounded corners */
+    height: 45px;        /* fixed height */
+    width: 180px;        /* fixed width */
+    border: 2px solid #3e151a;
+    background-color: #3e151a;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    display: flex;        /* flex so text is centered nicely */
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Hover effect for Author and Co-Author buttons */
+.modal-button:hover {
+    background-color: #5a2a2f; /* Darker shade on hover */
+    color: white; /* White text on hover */
+}
+
+
+/* Add Book Container */
+.add-book-container {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+
+
+/* Container for Content Type Dropdown */
+.content-selection {
+    width: 50%; /* Adjust width for alignment */
+    max-width: 1000px; 
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 30px; /* Add some space below the dropdown */
+    align-items: flex-start; /* Align the dropdown to the left */
+}
+
+
+/* Styling for the Select Content Type Dropdown */
+#scannedContentType {
+    width: 100%;
+    max-width: 800px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    color: #333;
+    box-sizing: border-box;
+    height: 40px; /* Adjust the height to ensure text fits properly */
+    line-height: 20px; /* Ensures proper line height for the dropdown text */
+}
+
+
+/* Label for Content Type Selection */
+.content-selection label {
+    font-size: 16px;
+    font-weight: bold;
+    color: #3e151a;
+    margin-bottom: 5px;
+}
+
+
+/* Camera Preview and Captured Image Container (aligned side by side) */
+.book-image-and-scanned-content {
+    display: flex;
+    gap: 20px; /* Space between the camera preview and captured image */
+    width: 100%;
+    justify-content: center; /* Center the containers */
+    margin-bottom: 0;
+
+}
+
+
+/* Maximize Button Styling */
+.maximize-button {
+    position: absolute;
+    top: 10px;  /* Position it at the top right corner of the container */
+    right: 10px;
+    background-color: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+
+/* For panning the image */
+.draggable {
+    cursor: grab;
+}
+.draggable:active {
+    cursor: grabbing;
+}
+
+/* Captured Image Container */
+.captured-image-container {
+    position: relative;
+    width: 100%; /* Full width of the container */
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Prevent any overflow */
+    aspect-ratio: 4 / 3; /* Set the aspect ratio to match the resolution (3264x2448) */
+}
+
+/* Camera Preview Container */
+.camera-preview-container {
+    width: 100%; /* Full width of the container */
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    aspect-ratio: 4 / 3; /* Match the aspect ratio (4:3) */
+    overflow: hidden; /* Prevent overflow */
+}
+
+
+/* Captured Image Style */
+#capturedImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Ensure the image fits without distortion */
+    max-width: 100%;
+    max-height: 100%;
+    transition: transform 0.2s ease; /* Smooth transition for zooming */
+}
+
+/* Camera Preview Scaling (Zoom effect) */
+#cameraPreview {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Ensures the image fits without distortion or cropping */
+    transition: transform 0.2s ease; /* Smooth transition for zooming */
+}
+
+
+/* Maximized Camera Preview */
+.camera-preview-container.maximized {
+    width: 80vw;  /* 80% of the viewport width */
+    height: 100vh; /* 80% of the viewport height */
+    position: fixed;  /* Fix it in place */
+    top: 50%;  /* Position it at 50% from the top */
+    left: 50%;  /* Position it at 50% from the left */
+    transform: translate(-50%, -50%);  /* Offset by half the width/height to center */
+    z-index: 1000; /* Ensure it stays above other content */
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Maximized Captured Image */
+.captured-image-container.maximized {
+    width: 80vw;  /* 80% of the viewport width */
+    height: 100vh; /* 80% of the viewport height */
+    position: fixed;  /* Fix it in place */
+    top: 50%;  /* Position it at 50% from the top */
+    left: 50%;  /* Position it at 50% from the left */
+    transform: translate(-50%, -50%);  /* Offset by half the width/height to center */
+    z-index: 1000; /* Ensure it stays above other content */
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* Overlay Text for Camera Preview */
+.camera-preview-container span {
+    position: absolute;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 2;
+}
+
+/* Ensure the button stays inside the container */
+.captured-image-container .maximize-button,
+.camera-preview-container .maximize-button {
+    position: absolute;
+    top: 10px;  /* Position it at the top right corner of the container */
+    right: 10px;
+    background-color: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+/***************************************** FOR LINE BY LINE EXTRACTIONS OF SCANNED CONTENT *************************/ 
+
+/* Add styles for the line-by-line extracted text */
+.extracted-line {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.5s ease-out forwards;
+    white-space: pre;  /* Preserve spaces and formatting */
+    padding: 5px;      /* Adds spacing between each line */
+    margin-bottom: 5px;
+}
+
+/* Animation to fade the lines in one by one */
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Capture area to hold the extracted lines with exact positioning */
+.captured-line-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Add animation duration or delay if needed */
+.extracted-line-animating {
+    animation: fadeInLine 1s ease-out forwards;
+}
+
+@keyframes fadeInLine {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+
+/*******************************************END NG LINE BY LINE EXTRACTIONS **********************************/
+/* Scan Action Buttons Section */
+.scan-actions-section {
+    display: flex;
+    justify-content: flex-start; /* Align buttons to the left */
+    gap: 20px; /* Adds consistent space between buttons */
+    width: 100%;
+}
+
+/* Styling for individual button containers */
+.scan-actions {
+    display: flex;
+    justify-content: flex-start; /* Aligns the buttons to the left */
+    width: auto; /* Ensures the buttons do not stretch */
+}
+
+/* Button Styling */
+.scan-button {
+    padding: 10px 20px;
+    background-color: #7d3c3c;
+    color: white;
+    border: none;
+    cursor: pointer;
+    max-width: 150px; /* Limit button width */
+    text-align: center;
+}
+
+
+.scan-button .btn-img {
+    width: 40px;   /* adjust size */
+    height: 40px;
+}
+
+.scan-button:hover {
+    background-color: #cc88889e;
+}
+
+.scan-button:disabled {
+    background-color: #d3d3d3;  /* Light gray background */
+    color: #a1a1a1;  /* Gray text */
+    cursor: not-allowed;  /* Change cursor to indicate   it's disabled */
+    border: 1px solid #a1a1a1;  /* Gray border */
+}
+
+.scan-button:disabled:hover {
+    background-color: #d3d3d3;  /* Keep the same gray background when hovered */
+    color: #a1a1a1;  /* Keep the same gray text when hovered */
+    border: 1px solid #a1a1a1;  /* Keep the same gray border when hovered */
+    /* You can also reset other hover styles here, if needed */
+}
+
+/* Tooltip container - specific only for capture, crop, scan */
+#captureButton, 
+#cropButton, 
+#scanButton {
+    position: relative; /* Needed for tooltip positioning */
+}
+
+/* Tooltip text */
+#captureButton::after,
+#cropButton::after,
+#scanButton::after {
+    content: attr(data-tooltip); /* Pulls from custom attribute */
+    position: absolute;
+    bottom: 120%; /* above the button */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+/* Show tooltip on hover */
+#captureButton:hover::after,
+#cropButton:hover::after,
+#scanButton:hover::after {
+    opacity: 1;
+}
+
+
+/* Scanned Content Text Area Section */
+.scanned-content-section {
+    width: 100%;
+    margin-top: 20px;
+}
+
+#scannedContent {
+    width: 100%;
+    height: 300px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #333;
+    resize: vertical; /* Allow vertical resizing */
+    box-sizing: border-box;
+}
+
+
+
+/* Book Cover Section */
+.book-cover {
+    flex: 1;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Book Cover Preview Container */
+.large-container {
+    height: 400px; /* Match the size of the camera preview */
+    width: 300px;
+    background-color: #FFF;
+    border: 1px solid #5C472E;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    margin-top: 10px;
+}
+
+#coverPreview {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Form Input Fields */
+.form-control {
+    width: 100%;
+    height: 40px;              /* makes input box tall */
+    padding: 0 12px;           /* keep horizontal padding */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-top: 8px;
+    box-sizing: border-box;
+    font-size: 15px;
+    line-height: 1.4;          /* ensures text is centered vertically */
+}
+
+
+
+
+/* AB_label Styling */
+.AB_label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    display: block; /* Ensure labels are block-level for proper alignment */
+    width: 100%; /* Ensure the label spans the full width */
+}
+
+
+
+.scan-button,
+.add-book-button {
+    background-color: transparent;
+    border: 2px solid #3e151a; /* Brown border */
+    color: #3e151a; /* Brown text */
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    display: inline-block;
+    margin-top: 10px;
+    width: auto;  /* Prevent buttons from being too wide */
+    max-width: 250px; /* Limit the width of the buttons */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Hover effect for all buttons */
+.scan-button:hover,
+.add-book-button:hover {
+    background-color: #3e151a; /* Brown background on hover */
+    color: white; /* White text on hover */
+}
+
+/* Floating "Add Book" Button */
+.add-book-button {
+    position: fixed;
+    bottom: 20px; /* Distance from the bottom of the screen */
+    right: 20px; /* Distance from the right edge of the screen */
+    padding: 15px 30px; /* Add padding to make the button larger */
+    background-color: #3e151a; /* Button background color */
+    color: white; /* Button text color */
+    border: none;
+    border-radius: 50px; /* Round corners for a circular button */
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for better visibility */
+    z-index: 999; /* Ensure the button is always on top */
+}
+
+.add-book-button:hover {
+    background-color: #9b3d3d; /* Darken button on hover */
+}
+
+
+
+/* Layout Styling */
+h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.add-book-container form {
+    flex: 2;
+}
+
+/* Hide the default file input */
+#bookCover {
+    display: none;
+}
+
+/* Custom File Upload Button for Book Cover */
+.custom-file-upload {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #3e151a;  
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    text-align: center;
+}
+
+.custom-file-upload:hover {
+    background-color: #5a2a2f;
+}
+
+/******************************LIBRARIAN PROFILE *****************************************/
+
+/* Profile Picture Upload and Preview */
+.librarian-profile-image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.librarian-profile-label {
+    font-weight: bold;
+    color: #3e151a;
+    margin-bottom: 10px;
+}
+
+#librarian-profile-image {
+    display: none;
+}
+
+.librarian-profile-image-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 2px solid #3e151a;
+    overflow: hidden;
+    margin-bottom: 15px;
+    -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+    -moz-user-drag: none; /* Firefox-specific */
+    -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
+    -moz-user-select: none; /* Firefox-specific */
+    -ms-user-select: none; /* Internet Explorer-specific */
+    user-select: none; /* Prevent text selection in other browsers */
+    pointer-events: none; /* Prevent interaction with the image (including dragging) */
+}
+
+.librarian-profile-image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Ensure profile preview stays circular */
+.librarian-profile-image-container input[type="file"]:focus {
+    outline: none;
+}
+
+.librarian-create-account label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+    color: #000000;
+}
+
+.librarian-input-field {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #3e151a;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+/* Add some space between the label and the input fields */
+.librarian-create-account .form-row-inline .form-col {
+    width: 100%;
+}
+
+.librarian-create-account .name-inputs .name-col {
+    width: 100%;
+}
+
+/* Ensure buttons are aligned properly */
+.librarian-form-row-inline button {
+    margin-top: 20px;
+}
+
+.librarian-password-container {
+    position: relative;
+    width: 100%;
+}
+
+.librarian-eye-icon {
+    position: absolute;
+    right: 10px;
+    top: 40%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+}
+
+/* Add hover effect on the eye icon */
+.librarian-eye-icon:hover {
+    opacity: 0.7;
+}
+
+.librarian-profile-header {
+    display: flex;
+    align-items: flex-start; /* Align items to the left */
+    justify-content: flex-start; /* Ensure all content starts from the left */
+    margin-bottom: 20px;
+    width: 100%; /* Ensure it takes up full width */
+}
+
+.librarian-profile-left {
+    margin-right: 20px; /* Space between image and text */
+}
+
+.librarian-profile-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.librarian-profile-right h1 {
+    margin: 0;
+    font-size: 40px; /* Increase the font size */
+    font-weight: bold;
+    color: #000000; /* Optional: set a color */
+    text-transform: uppercase; /* Optional: make it uppercase */
+    letter-spacing: 2px; /* Optional: add letter spacing for more style */
+}
+
+.librarian-profile-right p {
+    margin-top: 10px;
+    font-size: 30px;
+    font-weight: bold;
+    color: #000000;
+}
+
+.form-columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 2 columns */
+    gap: 20px; /* space between columns */
+}
+
+.form-columns .form-group {
+    width: 100%; /* make each group fill column */
+}
+
+/* Form Group */
+.form-group {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.input-group {
+    display: flex;
+    gap: 5px;
+}
+
+.input-group input {
+    flex: 1;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+/* Hover effect for the form-group */
+.form-group:hover {
+    background-color: #f4f4f4; /* Light background on hover */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    transition: all 0.3s ease;
+}
+
+/* Hover effect for the input fields */
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Change border and shadow on hover */
+.form-group input:hover {
+    border-color: #007bff; /* Blue border on hover */
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Blue shadow on hover */
+}
+
+/* Action Buttons */
+.btn {
+    padding: 10px 20px;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: #3e151a;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background-color: #5a2a2f;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 2px solid #3e151a;
+    color: #3e151a;
+    border-radius: 5px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background-color: #3e151a;
+    color: white;
+}
+
+
+/****************************************************KEYWORD MANAGEMENT TABLE*******************************************************/
+
+/* Table Container */
+.table-container {
+    margin: 20px auto;
+    width: 95%;
+    overflow-x: auto;
+}
+
+
+/* Table Styling */
+.keyword-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 2px solid #3e151a;
+    border-radius: 12px;           /* more curve */
+    overflow: hidden;
+    font-size: 15px;
+    background-color: white;
+    text-align: center;
+}
+
+/* Table Headers */
+.keyword-table thead th {
+    background-color: #3e151a;
+    color: white;
+    padding: 12px;
+    font-weight: bold;
+    border: none;                  
+    background-clip: padding-box;
+}
+
+/* Table Body Cells */
+.keyword-table tbody td {
+    padding: 10px;
+    border: none;                  
+    background-color: #ffffff;
+    background-clip: padding-box;
+    height: 60px; 
+}
+
+/* Inner vertical dividers */
+.keyword-table thead th + th,
+.keyword-table tbody td + td {
+    border-left: 2px solid #3e151a;
+}
+
+/* Inner horizontal dividers */
+.keyword-table tbody tr + tr td {
+    border-top: 2px solid #3e151a;
+}
+
+/* Table Hover Effects */
+.keyword-table tbody tr:hover {
+    background-color: #f2f2f2;
+    transition: 0.3s ease;
+}
+
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 15px 30px;
+}
+
+.edit-btn, .add-btn {
+    background-color: #3e151a;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.edit-btn:hover, .add-btn:hover {
+    background-color: #5a2a2f;
+}
+
+
+
+@media (max-width: 1024px) {
+  header {
+    height: 70px; /* Height for 1024px width screens */
+  }
+
+  .slim-sidebar {
+    width: 60px;
+  }
+
+  .slim-sidebar.expanded {
+    width: 180px;
+  }
+
+  .sidebar-icon {
+    width: 25px;
+    height: 25px;
+  }
+
+  .main-content.shift-right {
+    margin-left: 180px;
+  }
+
+  .search-bar input {
+    width: 350px;  /* Adjusted width for medium screens */
+  }
+
+  .search-bar button {
+    width: auto;
+  }
+
+  /* Adjust book grid layout for tablets and small laptops */
+  .total-uploaded .book-grid-horizontal {
+      grid-template-columns: repeat(4, 1fr); /* 4 books per row */
+  }
+
+  /* Adjust book container and image size */
+  .book-container {
+      padding: 12px; /* Slightly increase padding for better spacing */
+  }
+
+  .book-item {
+    width: 100%;  /* Full width for each book item inside grid */
+    height: auto; /* Adjusts height automatically */
+  }
+
+  /* Adjust book image and container size */
+  .book-placeholder {
+    width: 100%;  /* Full width for image */
+    height: auto; /* Auto adjust height */
+    max-width: 150px;  /* Max width for images */
+  }
+
+  .book-container h3 {
+      font-size: 16px; /* Slightly smaller title for medium screens */
+  }
+
+
+  
+  .view-details {
+      font-size: 13px; /* Smaller button text */
+      padding: 4px 12px; /* Adjust padding for better fit */
+  }
+
+  .book-section h2 {
+    font-size: 18px;
+  }
+
+
+  .sorting-section {
+    flex-direction: column; 
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .custom-dropdown {
+    width: 90%; /* Takes 90% of its container on tablets */
+    max-width: 180px; /* Further limit max-width */
+  }
+
+  /*********ADD BOOK*********/
+  .add-book-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .scanning-section {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .upload-button, .scan-button, .add-book-button {
+    font-size: 13px;
+    padding: 4px 12px;
+  }
+
+  .form-control, AB_label {
+    font-size: 16px; 
+  }
+
+  .book-cover {
+    max-width: 100%; /* Allow the book cover section to take full width on smaller screens */
+  }
+
+  .large-container {
+    max-width: 100%; /* Adjust the large container to fit smaller screens */
+  }
+  
+  /******LIBRARIAN PROFILE********/
+  .profile-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .profile-image {
+    max-width: 120px;
+  }
+
+  .profile-details {
+    width: 90%;
+  }
+
+  .form-group {
+    width: 100%;
+  }
+
+  .form-group input {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    height: 60px; /* Height for 768px width screens */
+  }
+  .slim-sidebar {
+    width: 50px;
+  }
+
+  .slim-sidebar.expanded {
+    width: 150px;
+  }
+
+  .sidebar-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-label,
+  .logout-link .nav-label {
+    font-size: 14px;
+  }
+
+  .main-content.shift-right {
+    margin-left: 150px;
+  }
+
+  .search-bar input {
+    width: 300px;  /* Adjusted width for smaller tablets */
+  }
+
+  .search-bar button {
+    width: auto;
+  }
+
+  /* Adjust book grid layout for smaller devices */
+  .total-uploaded .book-grid-horizontal {
+    grid-template-columns: repeat(3, 1fr); /* 3 books per row */
+  }
+
+  .book-section h2 {
+    font-size: 16px; /* Smaller heading size */
+  }
+
+  .book-item {
+    width: 100%;  /* Full width for each book item inside grid */
+    height: auto; /* Adjusts height automatically */
+  }
+
+  .book-placeholder {
+    width: 100%;  /* Full width for image */
+    height: auto; /* Auto adjust height */
+    max-width: 130px;  /* Max width for images */
+  }
+
+  .book-container {
+    padding: 8px; /* Reduce padding for smaller screens */
+  }
+
+  .book-container h3 {
+    font-size: 14px; /* Smaller font for book title */
+  }
+
+  .view-details {
+    font-size: 12px; /* Even smaller button text */
+    padding: 4px 10px; /* Reduce padding for mobile */
+  }
+
+  
+
+  .book-section h2 {
+    font-size: 16px;
+  }
+
+
+
+  .sorting-section {
+    flex-direction: column; 
+    align-items: flex-start;
+  }
+
+
+  .custom-dropdown {
+    width: 85%; /* Takes 85% of its container on smaller tablets */
+    max-width: 160px; /* Further limit max-width */
+  }
+
+   /*********ADD BOOK*********/
+
+  .add-book-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .scanning-section {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .upload-button, .scan-button, .add-book-button {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  .form-control, AB_label {
+    font-size: 15px; 
+  }
+
+  .book-cover {
+    max-width: 100%; /* Allow the book cover section to take full width on small screens */
+  }
+
+  .large-container {
+    max-width: 100%; /* Adjust the large container to fit smaller screens */
+  }
+
+  /******LIBRARIAN PROFILE********/
+
+
+  .profile-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .profile-image {
+    max-width: 100px;
+  }
+
+  .profile-details {
+    width: 90%;
+  }
+
+  .form-group {
+    width: 100%;
+  }
+
+  .form-group input {
+    font-size: 14px;
+  }
+
+  .btn {
+    width: 100%;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  header {
+    height: 50px; /* Height for 480px width screens */
+  }
+  .slim-sidebar {
+    width: 40px;
+  }
+
+  .slim-sidebar.expanded {
+    width: 130px;
+  }
+
+  .sidebar-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nav-label,
+  .logout-link .nav-label {
+    font-size: 13px;
+  }
+
+  .main-content.shift-right {
+    margin-left: 130px;
+  }
+
+  .search-bar input {
+    width: 250px;  /* Adjusted width for mobile devices */
+  }
+
+  .search-bar button {
+    width: 100px;  /* Adjust button width for mobile */
+  }
+
+  /* Adjust book grid layout for mobile devices */
+  .total-uploaded .book-grid-horizontal {
+    grid-template-columns: repeat(2, 1fr); /* 2 books per row */
+  }
+
+  .book-section h2 {
+    font-size: 14px; /* Reduce heading size further for mobile screens */
+  }
+
+  /* Adjust book item, container, and image size */
+  .book-item {
+    width: 100%;  /* Full width book item */
+    height: auto; /* Auto adjust height */
+  }
+
+  .book-placeholder {
+    width: 100%;  /* Full width for image */
+    height: auto; /* Auto adjust height */
+    max-width: 100%;  /* Max width for images */
+  }
+
+  .book-container {
+    padding: 5px; /* Even smaller padding for mobile */
+  }
+
+  .book-container h3 {
+    font-size: 12px; /* Even smaller title font for mobile */
+  }
+
+  /* Adjust the "View Details" button for mobile */
+  .view-details {
+    width: 100%; /* Make the 'View Details' button full-width */
+    font-size: 14px; /* Adjust font size for mobile */
+    padding: 6px 20px; /* Adjust padding for mobile */
+  }
+
+  .book-section h2 {
+    font-size: 14px;
+  }
+
+
+  .sorting-section {
+    flex-direction: column; 
+    align-items: flex-start;
+  }
+
+  .dropdown {
+    width: 80%; 
+    max-width: 100px; /* Further limit max-width for mobile devices */
+  }
+
+   /*********ADD BOOK*********/
+
+  .add-book-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .scanning-section {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .upload-button, .scan-button, .add-book-button {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  /* Ensure form labels and inputs adjust to smaller screens */
+  .form-control, AB_label {
+    font-size: 14px; 
+  }
+
+  .book-cover {
+    max-width: 100%; /* Allow the book cover section to take full width on small screens */
+  }
+
+  .large-container {
+    max-width: 100%; /* Adjust the large container to fit smaller screens */
+  }
+
+  /******LIBRARIAN PROFILE********/
+
+  .profile-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .profile-image {
+    max-width: 80px;
+  }
+
+  .profile-details {
+    width: 90%;
+  }
+
+  .form-group {
+    width: 100%;
+  }
+
+  .form-group input {
+    font-size: 14px;
+  }
+
+  .btn {
+    width: 100%;
+    font-size: 14px;
+  }
+}
+
+/* Loader Container For All Cutie */
+.loader-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Ensure the loader appears above other content */
+    flex-direction: column; /* Align spinner and text vertically */
+}
+
+/* Spinner Animation */
+.loader {
+    border: 16px solid #f3f3f3; /* Light gray background color */
+    border-top: 16px solid #3e151a; /* Darker color for the spinning part */
+    border-radius: 50%;
+    width: 120px; /* Size of the spinner */
+    height: 120px; /* Size of the spinner */
+    animation: spin 2s linear infinite; /* Animation settings */
+}
+
+/* Spinner Animation Keyframes */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Loader Text Below Spinner */
+.loader-text {
+    color: #fff; /* White text */
+    font-size: 18px; /* Adjust text size */
+    margin-top: 20px; /* Space between spinner and text */
+    font-weight: bold;
+    
+    /* Prevent text from being selected or dragged */
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* For Safari */
+    -moz-user-select: none; /* For Firefox */
+    -ms-user-select: none; /* For Internet Explorer/Edge */
+}

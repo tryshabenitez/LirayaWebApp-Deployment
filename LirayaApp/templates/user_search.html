@@ -1,0 +1,275 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIRAYA - Library Information Resource and Access</title>
+  <link rel="stylesheet" href="{% static 'css/user_style.css' %}"> <!-- Link to the CSS file -->
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="refine-search">Refine Search Results</div>
+
+  <form method="get" action="{% url 'user_search' %}">
+    <select name="sort" onchange="this.form.submit()">
+      <option value="Relevance" {% if request.GET.sort == 'Relevance' %}selected{% endif %}>Relevance</option>
+      <option value="Title" {% if request.GET.sort == 'Title' %}selected{% endif %}>Alphabetical</option>
+      <option value="Author" {% if request.GET.sort == 'Author' %}selected{% endif %}>Author</option>
+      <option value="Newest to Oldest" {% if request.GET.sort == 'Newest to Oldest' %}selected{% endif %}>Newest to Oldest</option>
+      <option value="Oldest to Newest" {% if request.GET.sort == 'Oldest to Newest' %}selected{% endif %}>Oldest to Newest</option>
+    </select>
+
+    <!-- Preserve current search and filters -->
+    <input type="hidden" name="q" value="{{ request.GET.q }}">
+    <input type="hidden" name="field" value="{{ request.GET.field|default:'allFields' }}">
+    <input type="hidden" name="active_categories" value="{{ request.GET.active_categories }}">
+    <input type="hidden" name="active_resource_types" value="{{ request.GET.active_resource_types }}">
+    <input type="hidden" name="min_year" value="{{ request.GET.min_year }}">
+    <input type="hidden" name="max_year" value="{{ request.GET.max_year }}">
+  </form>
+
+  <div id="results-summary" class="results-summary">
+    {% if books.paginator.count %}
+      <strong>Showing <em>{{ books.start_index }}</em>–<em>{{ books.end_index }}</em> out of <em>{{ books.paginator.count }}</em> results</strong>
+    {% else %}
+      <strong>Showing <em>0</em> out of <em>0</em> results</strong>
+    {% endif %}
+  </div>
+
+  <!-- Shelf Category Section -->
+  <div class="section-title">Shelf Category</div>
+  <div class="menu-items">
+    {% for category in shelf_categories %}
+      <a href="#"
+         class="menu-item {% if category.shelf_category in active_categories %}active{% endif %}"
+         data-category="{{ category.shelf_category }}"
+         onclick="toggleActive(this)">
+        {{ category.shelf_category }} ({{ category.count }})
+      </a>
+    {% endfor %}
+  </div>
+  <button class="see-more-btn" onclick="toggleMenu(this)">See More</button>
+
+  <!-- Year of Publication Section -->
+  <div class="section-title">Year of Publication</div>
+  <div class="year-input">
+    <label for="min-year">Min Year</label>
+    <input type="number" id="min-year" name="min_year" min="1900" max="2025"
+           value="{{ request.GET.min_year|default:1900 }}">
+  </div>
+  <div class="year-input">
+    <label for="max-year">Max Year</label>
+    <input type="number" id="max-year" name="max_year" min="1900" max="2025"
+           value="{{ request.GET.max_year|default:2025 }}">
+  </div>
+  <button type="button" class="year-button" onclick="applyYearFilter()">Apply Year Filter</button>
+
+<!-- Subjects / Keywords Section -->
+<div class="section-title">Subjects / Keywords</div>
+<div class="menu-items">
+  {% for s in subjects %}
+    <a href="#"
+       class="menu-item {% if s.term in active_subjects %}active{% endif %}"
+       data-subject="{{ s.term }}"
+       onclick="toggleSubject(this)">
+      {{ s.display }} ({{ s.count }})
+    </a>
+  {% endfor %}
+</div>
+<button class="see-more-btn" onclick="toggleMenu(this)">See More</button>
+
+
+  <!-- Resource Type Section -->
+  <div class="section-title">Resource Type</div>
+  <div class="menu-items">
+    {% for resource in resource_types %}
+      <a href="#"
+         class="menu-item {% if resource.book_type in active_resource_types %}active{% endif %}"
+         data-resource-type="{{ resource.book_type }}"
+         onclick="toggleActive(this)">
+        {{ resource.book_type }} ({{ resource.count }})
+      </a>
+    {% endfor %}
+  </div>
+
+  <!-- About Us Button -->
+  <a href="{% url 'user_aboutus' %}" class="about-us">About Us</a>
+</div>
+
+
+<!-- Header -->
+<header>
+  <div class="logo-container">
+    <a href="{% url 'user_homepage' %}">
+      <img src="{% static 'images/usericon2.png' %}" alt="New Logo">
+    </a>
+    <div class="sidebar-button" onclick="toggleSidebar()">
+      <img src="{% static 'images/menu.png' %}" alt="Menu Button">
+    </div>
+  </div>
+
+  <!-- Search Container -->
+  <div class="search-container">
+    <form action="{% url 'user_search' %}" method="get" class="search-form" data-suggest-url="/suggest/" autocomplete="off">
+    <div class="search-box-wrap">
+      <input type="text" class="search-box" name="q" placeholder="Search Here...." value="{{ request.GET.q|default:'' }}">
+      <div class="typeahead" aria-live="polite"></div>
+    </div>
+
+    <select class="dropdown" name="field">
+      <option value="allFields" {% if request.GET.field|default:'allFields' == 'allFields' %}selected{% endif %}>All Fields</option>
+      <option value="title"     {% if request.GET.field == 'title' %}selected{% endif %}>Title</option>
+      <option value="author"    {% if request.GET.field == 'author' %}selected{% endif %}>Author</option>
+      <option value="keywords"  {% if request.GET.field == 'keywords' %}selected{% endif %}>Keywords</option>
+    </select>
+
+
+      <!-- Preserve current sort and filters -->
+      <input type="hidden" name="sort" value="{{ request.GET.sort|default:sort_option }}">
+      <input type="hidden" name="active_categories" value="{{ request.GET.active_categories }}">
+      <input type="hidden" name="active_resource_types" value="{{ request.GET.active_resource_types }}">
+      <input type="hidden" name="min_year" value="{{ request.GET.min_year }}">
+      <input type="hidden" name="max_year" value="{{ request.GET.max_year }}">
+
+      <button class="search-button" type="submit">
+      <img src="{% static 'images/user_search_homepage2.png' %}" alt="Search Icon">
+    </button>
+  </form>
+</div>
+</header>
+
+<!-- Pagination Above -->
+<div class="pagination" id="pagination-top">
+  {% if books.has_previous %}
+    <a href="?page={{ books.previous_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+      <strong>&lt;</strong>
+    </a>
+  {% else %}
+    <span class="nav-button disabled"><strong>&lt;</strong></span>
+  {% endif %}
+
+  {% for i in books.paginator.page_range %}
+    <a href="?page={{ i }}&sort={{ sort_option }}&q={{ request.GET.q }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="page-item {% if i == books.number %}active{% endif %}">
+      {{ i }}
+    </a>
+  {% endfor %}
+
+  {% if books.has_next %}
+    <a href="?page={{ books.next_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+      <strong>&gt;</strong>
+    </a>
+  {% else %}
+    <span class="nav-button disabled"><strong>&gt;</strong></span>
+  {% endif %}
+</div>
+
+
+<!-- Main Content -->
+<div class="main-content">
+  {% for book in books %}
+    <div class="book-info" data-shelf-category="{{ book.shelf_category }}" data-resource-type="{{ book.book_type }}">
+      <div class="book-details">
+        <h2 class="book-title">{{ book.title }}</h2>
+        <p><strong>Author:</strong> {{ book.author }}</p>
+        <p><strong>Published Year:</strong> {{ book.year_of_publication }}</p>
+        <p><strong>Keywords:</strong> {{ book.primary_keyword }}</p>
+        <a href="{% url 'user_viewinfo' %}?book_id={{ book.book_id }}">
+          <button class="view-info-btn">View Information</button>
+        </a>
+      </div>
+      <div class="book-cover">
+        {% if book.book_cover %}
+          <img src="{{ book.book_cover.url }}" alt="Book Cover" class="cover-image">
+        {% else %}
+          <img src="{% static 'images/book_placeholder.png' %}" alt="No Cover Available" class="cover-image">
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+
+
+<!-- ✅ Add this hidden div to pass data to JavaScript -->
+<div id="pagination-data"
+     data-current="{{ current_page }}"
+     data-total="{{ total_pages }}"
+     data-count="{{ books.paginator.count }}"
+     data-per-page="{{ books.paginator.per_page }}"
+     style="display: none;">
+</div>
+
+
+<!-- Footer -->
+<footer>
+  <p class="footer-text">LIRAYA: Library Information Resource and Access</p>
+  <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
+</footer>
+<script src="{% static 'script/user_script.js' %}"></script>
+<script>
+// Ensure active categories are applied on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Safely handle the active categories in the URL
+  const activeCategories = "{{ request.GET.active_categories|default:'' }}".split(',').filter(Boolean);
+
+  // Loop through the menu items and add the active class to the selected categories
+  const menuItems = document.querySelectorAll('.menu-item');
+  menuItems.forEach(function(item) {
+    const category = item.textContent.trim().split(' ')[0];
+    if (activeCategories.includes(category)) {
+      item.classList.add('active');
+    }
+  });
+});
+</script>
+<script>
+function toggleShelfCategory(event, category) {
+  event.preventDefault();
+
+  // Get current active categories from URL
+  const params = new URLSearchParams(window.location.search);
+  let active = params.get('active_categories');
+  let activeList = active ? active.split(',').filter(Boolean) : [];
+
+  // Toggle the clicked category
+  if (activeList.includes(category)) {
+    activeList = activeList.filter(cat => cat !== category);
+  } else {
+    activeList.push(category);
+  }
+
+  // Update the URL parameter
+  params.set('active_categories', activeList.join(','));
+
+  // Always reset to page 1 when changing filters
+  params.set('page', 1);
+
+  // Reload with new params
+  window.location.search = params.toString();
+}
+</script>
+
+{% if books.paginator.count == 0 %}
+<!-- No Results Overlay -->
+<div id="no-results-overlay"
+     style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:9999; background:rgba(0,0,0,0.45);">
+  <div style="background:#fff; width:min(92vw, 680px); border-radius:12px; padding:24px; text-align:center; box-shadow:0 12px 36px rgba(0,0,0,0.35);">
+    <div style="font-size:28px; font-weight:800; color:#3e151a; margin-bottom:12px;">
+      NO SEARCH RESULTS
+    </div>
+    <div style="font-size:16px; color:#5a3a3f; margin-bottom:18px;">
+      Try a different keyword or filter.
+    </div>
+    <a href="{% url 'user_homepage' %}" class="action-btn" style="display:inline-block; width:auto; padding:10px 18px;">
+      Return to homepage
+    </a>
+  </div>
+</div>
+{% endif %}
+
+</body>
+</html>

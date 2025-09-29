@@ -1,0 +1,141 @@
+{% extends 'admin_inheritance.html' %}
+{% load static %}
+{% block title %}Admin Profile{% endblock %}
+
+{% block content %}
+    <div class="admin-main-content">
+        <!-- HEADER -->
+        <div class="admin-header">
+            <div class="admin-title">
+                <h1>Admin Book Records</h1>
+                <p>Welcome, {{ user_info.full_name }}!</p>
+            </div>
+            <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
+                <div class="profile-image-container">
+                    <div class="profile-image-preview-homepage">
+                        <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                    </div>
+                </div>
+            </button>
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="error-alert alert 
+                        {% if message.tags == 'success' %}alert-success
+                        {% elif message.tags == 'error' %}alert-danger
+                        {% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        
+
+        <form method="get">
+            <div class="admin-search-section">
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search........" />
+                <button type="submit">Search</button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; text-align: left;">
+            <div style="display: flex; gap: 20px; align-items: center; justify-content: flex-end; flex: 2;">
+                <label style="font-weight: bold;">Sort By:</label>
+                <div class="admin-dropdown-section"> 
+                        <select name="sort" onchange="this.form.submit()">
+                            <option value="all" {% if sort_by == 'all' %}selected{% endif %}>All</option>
+                            <option value="oldest_to_newest" {% if sort_by == 'oldest_to_newest' %}selected{% endif %}>Oldest to Newest</option>
+                            <option value="newest_to_oldest" {% if sort_by == 'newest_to_oldest' %}selected{% endif %}>Newest to Oldest</option>
+                            <option value="az" {% if sort_by == 'az' %}selected{% endif %}>Title A-Z</option>
+                            <option value="za" {% if sort_by == 'za' %}selected{% endif %}>Title Z-A</option>
+                        </select>
+                </div>
+            </div>
+        </div>
+        </form>
+
+        <div class="admin-header">
+            <div class="admin-title">
+                <p><span class="word-emphasis">Uploaded by:</span></p> 
+                <h1>{{ full_name }}</h1>
+                <p><span class="word-emphasis">Role: {{ role }}</span></p>  <!-- Librarian role -->
+                <p><span class="word-emphasis">Total Books Uploaded</span>: <span class="number_emphasis">{{ total_books_uploaded }}</span></p>
+            </div>
+        </div>
+
+        {% for book in books %}
+        <div class="admin-card-v2">
+            <div class="card-details">
+                <div class="admin-book-title">{{ book.title }}</div>
+                <p><span class="word-emphasis">Author:</span> {{ book.author }}</p>
+                <p><span class="word-emphasis">Published:</span> {{ book.year_of_publication }}</p>
+                <p><span class="word-emphasis">Keywords:</span> 
+                <span class="truncate-text" id="keywords-{{ book.book_id }}">{{ book.primary_keyword }}</span>
+                </p>
+                <form method="get" action="{% url 'admin_bookdetails' %}">
+                    <input type="hidden" name="book_id" value="{{ book.book_id }}">
+                    <button type="submit" class="admin-view-details">View Book</button>
+                </form>
+            </div>
+            {% if book.book_cover %}
+                <img src="{{ book.book_cover }}" alt="{{ book.title }} Book Cover">
+            {% else %}
+                <img src="{% static 'images/defaultbookcover.png' %}" alt="Default Book Cover">
+            {% endif %}
+        </div>
+        {% empty %}
+            {% if search_query %}
+                <div class="no-books-found-message">
+                    <p>No Books Found.</p>
+                </div>
+            {% else %}
+                <div class="no-books-found-message">
+                    <p>No Books Uploaded Yet.</p>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Pagination -->
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1&search={{ search_query }}&sort={{ sort_by }}">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Previous</a>
+            {% endif %}
+
+            {% for i in page_obj.paginator.page_range %}
+                <a href="?page={{ i }}&search={{ search_query }}&sort={{ sort_by }}" class="{% if page_obj.number == i %}active{% endif %}">{{ i }}</a>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&sort={{ sort_by }}">Last</a>
+            {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <div class="admin-footer">
+            Liraya © 2025. All rights reserved. <br>
+            TUPC. Technological University of the Philippines - Cavite Library
+        </div>
+    </div>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Select all elements with the 'truncate-text' class
+    const keywordsElement = document.querySelectorAll('.truncate-text');
+    
+    // Loop through each element and truncate text if necessary
+    keywordsElement.forEach(function(el) {
+      let text = el.textContent;
+      const maxLength = 310; // Limit to 50 characters, you can adjust this value as needed
+
+      // Check if the text exceeds the maxLength and apply truncation
+      if (text.length > maxLength) {
+        el.textContent = text.slice(0, maxLength) + '...';
+      }
+    });
+  });
+</script>
+{% endblock %}

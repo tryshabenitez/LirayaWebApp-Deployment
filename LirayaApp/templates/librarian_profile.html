@@ -1,0 +1,622 @@
+{% extends 'Librarian_Inheritance.html' %}
+
+{% load static %}
+{% block title %}Librarian Profile{% endblock %}
+
+{% block content %}
+    <div class="admin-main-content">
+        <!-- HEADER (as per your request) -->
+        <div class="admin-header">
+            <div class="admin-title">
+                <h1>Librarian Profile</h1>
+                <p>Welcome, Librarian!</p>
+            </div>
+            <img src="{% static 'images/liraya_icon.png' %}" alt="Book Cover" class="admin-icon">
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert 
+                        {% if message.tags == 'success' %}alert-success
+                        {% elif message.tags == 'error' %}alert-danger
+                        {% elif message.tags == 'warning' %}alert-warning
+                        {% elif message.tags == 'info' %}alert-info
+                        {% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <!-- Profile Form -->
+        <div class="create-account">
+            <div class="profile-header">
+                <div class="profile-left">
+                    <div class="profile-image-container">
+                        <div class="profile-image-preview">
+                            <img id="profile-preview" src="{% if account.profile_picture %}{{ account.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-right">
+                    <h1>Hello, {{ account.first_name }} {% if account.middle_name %}{{ account.middle_name }}{% else %}{{ '' }}{% endif %} {{ account.last_name }}!</h1>
+                    <p>{{ role }}</p>
+                    <div>
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <!-- Add accept here 👇 -->
+                            <input 
+                            type="file" 
+                            name="profile_picture" 
+                            id="profile-picture-upload" 
+                            class="admin-input-field" 
+                            style="display: none;" 
+                            accept="image/png, image/jpeg, image/jpg"
+                            >
+                            
+                            <input type="file" name="profile_picture" id="profile-picture-upload" class="admin-input-field" style="display: none;">
+                            <div class="button-container">
+                                <!-- Display the 'Upload' button -->
+                                <button type="button" class="admin_button" id="upload-button">Upload</button>
+                                <button type="button" class="admin_button deactivate" id="deactivate-button">Deactivate</button>
+                                <input type="hidden" id="cropped-image-data" name="cropped_image">
+                                <input type="hidden" name="form_type" value="image_upload">
+                            </div>
+                            
+                            <!-- Modal for image cropping (now inside the form) -->
+                            <div id="cropper-modal" style="display:none;">
+                                <div id="cropper-container">
+                                    <div id="cropper-title">Crop Profile Picture</div>
+                                    <div id="cropper-image-container">
+                                        <img id="cropper-image" src="" alt="Image to crop">
+                                    </div>
+                                    <!-- Hidden input for cropped image is already above -->
+                                    <button type="submit" class="admin_button" id="crop-save">Save Crop</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Deactivation Modal -->
+                        <div id="deactivateModal" class="modal-deactivate-profile" style="display:none;">
+                            <div class="modal-deactivate-profile-content">
+                                <h3 style="margin-bottom:0;">Are you sure you want to deactivate your account?</h3>
+                                <div class="deactivate-note">Note: This action cannot be undone.</div>
+                                <div style="display:flex; align-items:center; justify-content:center; margin-bottom:10px; margin-top:16px;">
+                                    <span id="countdown-spinner" style="display:inline-block; width:64px; height:64px; position:relative;">
+                                        <span class="spinner-circle"></span>
+                                        <span id="countdown" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:2.2em; color:#3e151a; font-weight:bold;">10</span>
+                                    </span>
+                                </div>
+                                <button id="deactivate-confirm" class="admin_button" style="display:none;" disabled>DEACTIVATE</button>
+                                <button id="cancel-deactivate" class="admin_button">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+  
+
+            <form method="POST">
+                {% csrf_token %}
+                <!-- First Name, Middle Name, Last Name -->
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="first-name">First Name</label>
+                        <input type="text" class="admin-input-field" id="first-name" name='first_name' placeholder="First Name" value="{{ account.first_name }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="middle-name">Middle Name (N/A if none)</label>
+                        <input type="text" class="admin-input-field" id="middle-name" name="middle_name" placeholder="Middle Name" 
+           value="{%    if account.middle_name %}{{ account.middle_name }}{% else %}{{ '' }}{% endif %}" readonly required>
+                    </div>
+                    <div class="name-col">
+                        <label for="last-name">Last Name</label>
+                        <input type="text" class="admin-input-field" id="last-name" name='last_name'placeholder="Last Name" value="{{ account.last_name }}" readonly Required>
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="house-no">House No.</label>
+                        <input type="text" class="admin-input-field" id="house-no" name='house_no' placeholder="House No." value="{{ account.house_no }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="street-village">Street Village</label>
+                        <input type="text" class="admin-input-field" id="street-village" name='street_village'placeholder="Street Village" value="{{ account.street_village }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="barangay">Barangay</label>
+                        <input type="text" class="admin-input-field" id="barangay" name='barangay'placeholder="Barangay" value="{{ account.barangay }}" readonly Required>
+                    </div>
+                </div>
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="city">City</label>
+                        <input type="text" class="admin-input-field" id="city" name='city' placeholder="city" value="{{ account.city_municipality }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="province">Province</label>
+                        <input type="text" class="admin-input-field" id="province" name='province' placeholder="Province" value="{{ account.province }}" readonly Required>
+                    </div>
+                    <div class="name-col">
+                        <label for="state">State</label>
+                        <input type="text" class="admin-input-field" id="state" name='state' placeholder="State" value="{{ account.state }}" readonly Required>
+                    </div>
+                </div>
+
+                <!-- Birthdate and Gender -->
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="city">Zipcode</label>
+                        <input type="text" class="admin-input-field" id="zipcode" name="zipcode" placeholder="Zipcode" value="{{ account.zipcode }}" required>
+                    </div>
+                    <div class="name-col">
+                        <label for="birthdate">Birthdate (dd-mm-yy)</label>
+                        <input type="date" class="admin-input-field" id="birthdate" name="birthdate" placeholder="Birthdate" value="{{ formatted_birthdate }}" readonly required>
+                    </div>
+                    <div class="name-col">
+                        <label for="gender">Gender</label>
+                        <select class="admin-input-field" id="gender" name="gender" disabled required>
+                            <option value="" {% if not account.gender %}selected{% endif %}>Select Gender</option>
+                            <option value="Male" {% if account.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if account.gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="Other" {% if account.gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                        <input type="hidden" name="gender" id="gender-hidden" value="">
+                    </div>
+                </div>
+
+                <!-- Email and Username -->
+                <div class="name-inputs">
+                    <div class="name-col">
+                        <label for="email">Email</label>
+                        <input type="email" class="admin-input-field" id="email" name="email" placeholder="Email" value="{{ account.email }}" readonly required>
+                    </div>
+                    <div class="name-col">
+                        <label for="email">Contact Number</label>
+                        <input type="tel" class="admin-input-field" id="contact-number" name="contact_num" placeholder="Contact Number" value="{{ account.contact_num }}" required pattern="^09\d{9}$" maxlength="11" title="Contact number must start with '09' and have exactly 11 digits" inputmode="numeric">
+                    </div>
+                    <div class="name-col">
+                        <label for="username">Username</label>
+                        <input type="text" class="admin-input-field" id="username" name="username" placeholder="Username" value="{{ account.username }}" required style="background-color:#fff; cursor:text;">
+                        <div id="username_error" class="field-error"></div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="form-row-inline">
+                    <button type="button" id="edit-btn" class="admin_button">Edit</button>
+                    <button type="submit" class="admin_button" style="display: none;" id="save-btn">Save</button>
+                    <input type="hidden" name="form_type" value="profile_update">
+                </div>
+            </form>
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                <!-- Password Fields (Initially Hidden) -->
+                <div class="form-row-inline" id="password-fields" style="display: none;">
+                    <div class="admin_change_password_inline_fields">
+                        <div class="form-col">
+                            <label for="current-password">Current Password</label>
+                            <div class="password-container">
+                                <input type="password" class="admin-password-input-field" id="current-password" name="current_password" placeholder="Current Password" required>
+                                <img src="{% static 'images/hide_password.png' %}" class="eye-icon" id="eye-icon-current-password" onclick="togglePassword('current-password')">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <label for="new-password">New Password</label>
+                            <div class="password-container">
+                                <input type="password" class="admin-password-input-field" id="new-password" name="new_password" placeholder="New Password" required>
+                                <img src="{% static 'images/hide_password.png' %}" class="eye-icon" id="eye-icon-new-password" onclick="togglePassword('new-password')">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <label for="confirm-password">Confirm Password</label>
+                            <div class="password-container">
+                                <input type="password" class="admin-password-input-field" id="confirm-password" name="confirm_password" placeholder="Confirm Password" required>
+                                <img src="{% static 'images/hide_password.png' %}" class="eye-icon" id="eye-icon-confirm-password" onclick="togglePassword('confirm-password')">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="form-row-inline">
+                    <button type="button" id="change-password-btn" class="admin_button">Change Password</button>
+                    <button type="submit" name="action" value="save" class="admin_button" style="display: none;" id="save-btn-pass">Save</button>
+                    <input type="hidden" name="form_type" value="password_change">
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="admin-footer">
+            Liraya © 2025. All rights reserved. <br>
+            TUPC. Technological University of the Philippines - Cavite Library
+        </div>
+    </div>
+
+{% endblock %}
+{% block script %}
+<style>
+.deactivate-note {
+  font-size: 0.95em;
+  color: #b22222;
+  margin-bottom: 2px;
+  margin-top: 0;
+  font-weight: 500;
+}
+.modal-deactivate-profile-content h3 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+/* Deactivation Modal */
+/* Center modal using flex */
+.modal-deactivate-profile {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    pointer-events: auto;
+    padding: 0 0;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Prevent interaction with anything behind */
+    touch-action: none;
+    user-select: none;
+}
+
+.modal-deactivate-profile-content {
+  background-color: white;
+  padding: 30px 40px; 
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  text-align: center;
+  height: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Header styling for h3 */
+.modal-deactivate-profile-content h3 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 0;
+  text-align: center; 
+}
+
+/* Button Container */
+.modal-deactivate-profile-content button {
+  width: 180px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#deactivate-confirm {
+  background-color: white;
+  color: #b22222;
+  margin-right: 10px;
+  border: 2px solid #b22222;
+}
+
+#deactivate-confirm:hover {
+  background-color: #b22222;
+  color: white;
+
+}
+
+#cancel-deactivate {
+  background-color: #3e151a;
+  color: white;
+  border: 2px solid #3e151a;
+}
+
+#cancel-deactivate:hover {
+  background-color: #5a2a2f;
+}
+
+/* Center the buttons in a single line */
+.modal-deactivate-profile-content .popup-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+/* When modal is open, disable background scrolling */
+body.modal-open {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Spinner for countdown */
+.spinner-circle {
+  display: inline-block;
+  width: 64px;
+  height: 64px;
+  border: 6px solid #bbb;
+  border-top: 6px solid #3e151a;
+  border-radius: 50%;
+  animation: spin 1.8s linear infinite;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0; left: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.field-error {
+    color: #d32f2f;
+    font-size: 0.92em;
+    margin-top: 2px;
+    min-height: 18px;
+    font-weight: 500;
+}
+</style>
+
+<script src="{% static 'script/admin.js' %}"></script>
+<script>    
+// PASSWORD TOGGLE VISIBILITY
+function togglePassword(passwordFieldId) {
+    var passwordField = document.getElementById(passwordFieldId);
+    var eyeIcon = document.getElementById('eye-icon-' + passwordFieldId);
+    if (passwordField.type === "password") {
+        passwordField.type = "text";
+        eyeIcon.src = "{% static 'images/show_password.png' %}";
+    } else {
+        passwordField.type = "password";
+        eyeIcon.src = "{% static 'images/hide_password.png' %}";
+    }
+}
+
+document.getElementById("deactivate-button").addEventListener("click", function() {
+    document.getElementById("deactivateModal").style.display = "flex";
+
+    let countdown = 5;
+    const countdownElement = document.getElementById("countdown");
+    const spinner = document.getElementById("countdown-spinner");
+    const deactivateButton = document.getElementById("deactivate-confirm");
+    deactivateButton.style.display = "none";
+    deactivateButton.disabled = true;
+
+    countdownElement.textContent = countdown;
+    countdownElement.style.display = "block";
+    spinner.style.display = "inline-block";
+
+    let timer = setInterval(function() {
+        countdown--;
+        countdownElement.textContent = countdown > 0 ? countdown : 0;
+        if (countdown <= 0) {
+            clearInterval(timer);
+            deactivateButton.disabled = false;
+            deactivateButton.style.display = "inline-block";
+            countdownElement.style.display = "none";
+            spinner.style.display = "none";
+        }
+    }, 1000);
+
+    document.getElementById("cancel-deactivate").onclick = function() {
+        document.getElementById("deactivateModal").style.display = "none";
+        clearInterval(timer);
+    };
+
+    deactivateButton.onclick = function() {
+        window.location.href = "{% url 'deactivate_account' %}";
+    };
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Helper to show error
+    function showError(inputId, message) {
+        let errorDiv = document.getElementById(inputId + '_error');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error';
+            errorDiv.id = inputId + '_error';
+            document.getElementById(inputId).insertAdjacentElement('afterend', errorDiv);
+        }
+        errorDiv.textContent = message;
+    }
+    // Helper to clear error
+    function clearError(inputId) {
+        let errorDiv = document.getElementById(inputId + '_error');
+        if (errorDiv) errorDiv.textContent = '';
+    }
+    // Validation rules
+    function validateNotEmpty(inputId, label) {
+        const value = document.getElementById(inputId).value.trim();
+        if (!value) {
+            showError(inputId, label + ' cannot be blank');
+            return false;
+        } else {
+            clearError(inputId);
+            return true;
+        }
+    }
+    // Additional validation rules for special fields
+    function validateZipcode() {
+        const input = document.getElementById('zipcode');
+        const value = input.value.trim();
+        if (!/^\d{4}$/.test(value) || parseInt(value) < 100 || parseInt(value) > 9811) {
+            showError('zipcode', 'Invalid Zipcode. It should be a 4-digit number between 0100 and 9811.');
+            return false;
+        } else {
+            clearError('zipcode');
+            return true;
+        }
+    }
+    function validateContactNumber() {
+        const input = document.getElementById('contact-number');
+        const value = input.value.trim();
+        if (!value) {
+            showError('contact-number', 'Contact number is required.');
+            return false;
+        }
+        if (!/^09\d{9}$/.test(value)) {
+            showError('contact-number', "Invalid contact number. It must be 11 digits and start with '09'.");
+            return false;
+        }
+        clearError('contact-number');
+        return true;
+    }
+    function validateEmail() {
+        const input = document.getElementById('email');
+        const value = input.value.trim();
+        // Simple email regex
+        if (!/^\S+@\S+\.\S+$/.test(value)) {
+            showError('email', 'Invalid email address.');
+            return false;
+        }
+        clearError('email');
+        return true;
+    }
+    function validateState() {
+        const input = document.getElementById('state');
+        const value = input.value.trim();
+        if (!value) {
+            showError('state', 'State cannot be blank.');
+            return false;
+        }
+        if (/\d/.test(value)) {
+            showError('state', 'State must be a valid string and cannot contain numbers.');
+            return false;
+        }
+        clearError('state');
+        return true;
+    }
+    function validateBirthdate() {
+        const input = document.getElementById('birthdate');
+        const value = input.value;
+        if (!value) {
+            showError('birthdate', 'Birthdate is required.');
+            return false;
+        }
+        const birthDate = new Date(value);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        if (isNaN(age)) {
+            showError('birthdate', 'Invalid birthdate format. Please use YYYY-MM-DD.');
+            return false;
+        }
+        if (age < 18) {
+            showError('birthdate', 'You must be at least 18 years old to register.');
+            return false;
+        }
+        if (age > 80) {
+            showError('birthdate', 'You must be 80 years old or younger to register.');
+            return false;
+        }
+        clearError('birthdate');
+        return true;
+    }
+    function validateGender() {
+        const input = document.getElementById('gender');
+        const value = input.value;
+        if (!value || !['Male', 'Female', 'Other'].includes(value)) {
+            showError('gender', 'Please select a valid gender.');
+            return false;
+        }
+        clearError('gender');
+        return true;
+    }
+    // Username validation (matches backend logic)
+    function validateUsername() {
+        const input = document.getElementById('username');
+        const value = input.value.trim();
+        if (value.includes(' ')) {
+            showError('username', 'Username should not contain spaces. Please choose another.');
+            return false;
+        }
+        if (value.length < 4) {
+            showError('username', 'Username must be at least 4 characters long. Please choose another.');
+            return false;
+        }
+        // Uniqueness check must be server-side, so only clear error here
+        clearError('username');
+        return true;
+    }
+    document.getElementById('username').addEventListener('input', validateUsername);
+    validateUsername();
+    // List of fields to validate
+    const fields = [
+        {id: 'first-name', label: 'First name'},
+        // Middle name is optional, skip validation
+        {id: 'last-name', label: 'Last name'},
+        {id: 'house-no', label: 'House number'},
+        {id: 'street-village', label: 'Street or village'},
+        {id: 'barangay', label: 'Barangay'},
+        {id: 'city', label: 'City'},
+        {id: 'province', label: 'Province'},
+        {id: 'state', label: 'State'},
+        {id: 'zipcode', label: 'Zipcode'},
+        {id: 'contact-number', label: 'Contact number'},
+        {id: 'email', label: 'Email'},
+        {id: 'birthdate', label: 'Birthdate'},
+        {id: 'gender', label: 'Gender'}
+        // Username is readonly/disabled, skip validation
+    ];
+    fields.forEach(field => {
+        const input = document.getElementById(field.id);
+        if (input) {
+            input.addEventListener('input', function() {
+                validateNotEmpty(field.id, field.label);
+            });
+            // Initial check
+            validateNotEmpty(field.id, field.label);
+        }
+    });
+    // Attach special validation
+    document.getElementById('zipcode').addEventListener('input', validateZipcode);
+    document.getElementById('contact-number').addEventListener('input', validateContactNumber);
+    document.getElementById('email').addEventListener('input', validateEmail);
+    document.getElementById('state').addEventListener('input', validateState);
+    document.getElementById('birthdate').addEventListener('input', validateBirthdate);
+    document.getElementById('gender').addEventListener('change', validateGender);
+    // Initial check for special fields
+    validateZipcode();
+    validateContactNumber();
+    validateEmail();
+    validateState();
+    validateBirthdate();
+    validateGender();
+});
+</script>
+
+
+{% endblock %}
+
+
+
+

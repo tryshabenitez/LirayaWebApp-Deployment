@@ -1,0 +1,1525 @@
+/* ============================ Admin Specific Styles ============================ */
+
+/* Apply Arial font globally */
+* {
+  font-family: Arial, sans-serif; /* Apply Arial font to all elements */
+}
+
+
+.admin-header {
+  display: flex;
+  justify-content: space-between; /* Space out title and icon */
+  align-items: center; /* Align items vertically */
+  margin-bottom: 20px; /* Add spacing below */
+}
+
+.admin-icon {
+  width: 100px; /* Increased size of the icon */
+  height: auto; /* Maintain aspect ratio */
+  margin-left: 15px; /* Space between the title and the icon */
+  pointer-events: none; /* Disable all mouse interactions (e.g., dragging, clicking, right-clicking) */
+  -webkit-user-select: none; /* Safari-specific to prevent selection */
+  -moz-user-select: none; /* Firefox-specific to prevent selection */
+  user-select: none; /* Standard rule to prevent selection */
+  -webkit-user-drag: none; /* Prevent dragging in WebKit browsers like Chrome, Safari */
+}
+
+/* Additional HTML attribute to prevent dragging of the image */
+img.admin-icon {
+  -webkit-user-drag: none; /* Prevent image from being dragged */
+}
+
+.admin-title h1, .admin-title p {
+  margin: 0; /* Remove default margin */
+}
+
+.css_admin {
+  font-size: 16px; /* Font size 12 */
+  font-weight: normal; /* Normal weight for text */
+  color: black; /* Text color set to black */
+}
+
+/* Bold Text Style */
+.admin_normal_bold {
+  font-size: 16px; /* Font size 12 */
+  font-weight: bold; /* Bold weight for text */
+  color: black; /* Text color set to black */
+  margin-top: 10px;
+}
+
+.number_emphasis {
+    color: #28a745; /* Green color */
+    font-weight: bold; 
+}
+
+.word-emphasis {
+    font-weight: bold; /* Make the text bold */
+}
+
+.admin-footer {
+  position: relative;          /* Make footer position relative to content */
+  padding: 10px 0;             /* Vertical padding for spacing */
+  background-color: #fff;      /* Background color */
+  text-align: center;          /* Center the text */
+  font-size: 14px;             /* Font size */
+  color: #000;                 /* Text color */
+  margin-top: 40px;            /* Space above the footer */
+  width: 100%;                 /* Footer spans the full width */
+  clear: both;                 /* Ensure no content overlaps the footer */
+}
+
+/* Make sure the footer stays at the bottom of the page */
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+}
+
+footer {
+  margin-top: auto;
+}
+/* ============================ Search Bar Styles ============================ */
+
+/*Search Section Layout */
+.admin-search-section {
+  display: flex !important; 
+  flex-direction:row !important;
+  flex-wrap:nowrap !important;
+  gap:0;
+  justify-content: center; /* Center the search bar */
+  align-items: center;
+  margin: 20px auto;
+  width: 100%;
+  max-width: 900px; /* Max width for the search section */
+}
+
+/* Search Bar Input Field */
+.admin-search-section input[type="text"] {
+  flex: 1;
+  padding: 10px 15px; /* Padding inside the search bar */
+  font-size: 16px; /* Font size for the input text */
+  border: 2px solid #3e151a; /* Dark red border color */
+  border-radius: 20px 0 0 20px; /* Rounded left corners */
+  outline: none;
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  user-select: none; /* Prevent text selection */
+  -webkit-user-select: none; /* Safari-specific */
+  -moz-user-select: none; /* Firefox-specific */
+  -ms-user-select: none; /* Internet Explorer-specific */
+}
+
+/* Search Button Styling  */
+.admin-search-section button {
+  padding: 10px 20px; /* Padding inside the button */
+  font-size: 16px; /* Font size for the button text */
+  border: 2px solid #3e151a; /* Dark red border */
+  background-color: #3e151a; /* Dark red background */
+  color: white; /* White text color */
+  border-left: none; /* Remove left border for smooth transition */
+  border-radius: 0 20px 20px 0; /* Rounded right corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+  -moz-user-drag: none; /* Firefox-specific */
+  -webkit-user-select: none; /* Prevent text selection */
+  -moz-user-select: none; /* Firefox-specific */
+  -ms-user-select: none; /* Internet Explorer-specific */
+  user-select: none;
+}
+
+
+/* Hover Effect for Search Button */
+.admin-search-section button:hover {
+  background-color: #5a2a2f; /* Darker shade on hover */
+}
+
+
+/* Search Box Wrapper */
+.search-box-wrap {
+  position: relative; /* Positioning context for typeahead */
+  flex: 1 1 100%; /* Ensure it takes up full available width */
+  width: 100%; /* Take full width */
+}
+
+/* Search Bar Input Field */
+.admin-search-section input[type="text"] {
+  width: 100%; /* Make sure the input takes full width */
+  padding: 10px 15px; /* Padding inside the search bar */
+  font-size: 16px; /* Font size for the input text */
+  border: 2px solid #3e151a; /* Dark red border color */
+  border-radius: 20px 0 0 20px; /* Rounded left corners */
+  outline: none;
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  user-select: none; /* Prevent text selection */
+  -webkit-user-select: none; /* Safari-specific */
+  -moz-user-select: none; /* Firefox-specific */
+  -ms-user-select: none; /* Internet Explorer-specific */
+}
+
+/* ---- Typeahead (suggestions) — minimal, safe, scoped ---- */
+#search-input + .typeahead {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 2px solid #3e151a; /* Same dark red border as search input */
+  border-radius: 0 0 20px 20px; /* Same rounded corners as the input */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  max-height: 300px; /* Increased height to show at least 5 suggestions */
+  overflow-y: auto;  /* Enables scrolling */
+  z-index: 2000;
+  display: none;
+  width: 100%; /* Ensure it takes up the full width of the search input */
+}
+
+/* Display suggestions when visible */
+#search-input + .typeahead.visible {
+  display: block;
+}
+
+/* Items */
+.typeahead-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #000;
+  border-bottom: 1px solid #ddd; /* Adds a border between items */
+}
+
+.typeahead-item .suggestion-text {
+  flex: 1; /* Takes up the available space */
+}
+
+.typeahead-item .suggestion-type {
+  background-color: #6d2932; /* Dark red background */
+  color: white; /* White text color */
+  padding: 2px 8px;
+  border-radius: 20px; /* Rounded pill-like shape */
+  font-size: 12px;
+  white-space: nowrap; /* Prevents text from wrapping */
+  margin-left: 12px; /* Space between text and label */
+  border: 1px solid #6d2932; /* Border to match the background color */
+}
+
+.typeahead-item:hover,
+.typeahead-item.active {
+  background: #feecec; /* Light pink background on hover */
+}
+
+.typeahead-item .suggestion-type:hover {
+  background-color: #be0b23; /* Darker red when hovered */
+  border-color: #be0b23;
+}
+
+.typeahead-item .suggestion-type:active {
+  background-color: #9e0a1c; /* Even darker red when clicked */
+}
+
+
+/* ============================ Section Container ============================ */
+.admin-section-container {
+  display: flex; /* Use flexbox to align items horizontally */
+  justify-content: space-between; /* Space between the title and dropdown */
+  align-items: center; /* Vertically align items */
+  margin-bottom: 20px; /* Space below this section */
+}
+
+.admin-sort-container {
+  display: flex; /* Align text and dropdown horizontally */
+  justify-content: center; /* Center the text and dropdown horizontally */
+  align-items: center; /* Vertically align the text and dropdown */
+  margin-left: 10px;
+}
+
+
+.sort-heading {
+  font-size: 16px; /* Font size for the "Sort" label */
+  font-weight: bold; /* Make the "Sort" label bold */
+  color: #000000; /* Black color for the text */
+  margin-right: 10px; /* Space between "Sort" and the dropdown */
+}
+
+
+/* ============================ Card Section ============================ */
+
+/* Card Title Section */
+.admin-section-title {
+  font-size: 25px; /* Matching the font size from styles.css */
+  font-weight: bold; /* Bold for emphasis */
+  color: #000000; /* Dark red color for the section title */
+  margin: 30px 0 10px; /* Spacing above and below the title */
+}
+
+
+/*  Card Holder Styles */
+.admin-card {
+  width: 100%; /* Use full width of its container */
+  max-width: 220px; /* Limit the maximum width to 220px */
+  height: 320px; /* Fixed height for the card */
+  border: 2px solid #ccc;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  box-sizing: border-box; /* Ensure padding doesn't affect width/height */
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  overflow: hidden;
+  margin-bottom: 15px; /* Reduced margin between cards */
+  -webkit-user-select: none; /* Prevent text selection in WebKit browsers (Chrome, Safari) */
+  -moz-user-select: none; /* Prevent text selection in Firefox */
+  -ms-user-select: none; /* Prevent text selection in Internet Explorer */
+  user-select: none; /* Prevent text selection in modern browsers */
+}
+
+/* Card Hover Effect */
+.admin-card:hover {
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1); /* Add subtle shadow on hover */
+}
+
+/* Book Image Styling */
+.admin-card img {
+  width: 100%; /* Full width of the card */
+  height: 180px; /* Fixed height for the image */
+  object-fit: contain; /* Ensure the image fits without cropping */
+  border-radius: 10px; /* Rounded corners */
+  margin-bottom: 10px; /* Spacing between image and text */
+  -webkit-user-drag: none; /* Safari-specific */
+  pointer-events: none; 
+}
+
+/* Book Title Text Styling */
+.admin-book-title {
+  font-size: 14px; /* Title font size */
+  font-weight: bold;
+  color: black;
+  text-align: center; /* Center the text */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limit the text to two lines */
+  -webkit-box-orient: vertical;
+  line-height: 1.2em;
+  max-height: 2.4em; /* Max height for two lines */
+  text-overflow: ellipsis; /* Add ellipsis (...) if text overflows */
+  word-wrap: break-word; /* Ensure long words break instead of overflowing */
+  user-select: text; /* Allow text selection */
+}
+
+/*  View Details Button Styling  */
+.admin-view-details {
+  padding: 5px 10px; /* Padding inside the button */
+  font-size: 14px; /* Font size for button text */
+  background-color: transparent;
+  border: 2px solid #3e151a; /* Dark red border */
+  color: #3e151a; /* Dark red text color */
+  border-radius: 20px; /* Rounded button corners */
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+  display: inline-block;
+  margin-top: 10px; /* Space above the button */
+}
+
+/* Hover Effect for View Details Button */
+.admin-view-details:hover {
+  background-color: #3e151a; /* Dark red background on hover */
+  color: white; /* White text on hover */
+}
+
+/*Grid Layout for Cards on Larger Screens */
+@media (min-width: 1024px) {
+  .admin-card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Ensure cards resize based on screen */
+  gap: 20px; /* Reduced gap between cards */
+  padding: 10px;
+  width: 100%;
+  } 
+}
+
+/*  Responsive Styles for Tablets  */
+@media (max-width: 768px) {
+  .admin-card-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on tablets */
+    gap: 10px; /* Reduce gap on tablets */
+  }
+
+  .admin-card {
+    width: 100%; /* Ensure cards take full width on mobile */
+  }
+
+  .admin-book-title {
+    font-size: 14px; /* Adjust book title font size for smaller screens */
+  }
+}
+
+/*  Responsive Styles for Small Screens  */
+@media (max-width: 480px) {
+  .admin-card-container {
+    grid-template-columns: 1fr; /* Stack cards on smaller screens */
+  }
+
+  .admin-book-title {
+    font-size: 16px; /* Adjust book title font size for very small screens */
+  }
+}
+
+/* ============================ Dropdown Styling ============================ */
+.admin-dropdown-section select {
+  padding: 12px; /* Increased padding for better sizing */
+  font-size: 16px; /* Font size for the dropdown text */
+  border-radius: 30px; /* Rounded corners for a pill-like appearance */
+  border: 3px solid #3e151a; /* Dark red border */
+  background-color: #fff; /* White background */
+  color: #000000; /* Black text color */
+  margin-left: 7px; /* Space between the search bar and dropdown */
+  width: 210px; /* Slightly wider width for the dropdown */
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+  margin-bottom: 0; 
+}
+
+.admin-dropdown-section select:hover {
+  cursor: pointer; /* Pointer cursor on hover */
+  border: 3px solid #be0b23;
+}
+
+/* Ensuring consistent style when an option is selected (focused) */
+.admin-dropdown-section select:focus {
+  background-color: #fff; /* Keep white background */
+  color: #000000; /* Keep black text color */
+  border-color: #3e151a; /* Maintain dark red border */
+  outline: none; /* Remove default outline */
+}
+
+/* Prevent changing background when the dropdown item is selected */
+.admin-dropdown-section select option:checked {
+  background-color: #fff; /* White background when an item is selected */
+  color: #000; /* Keep black text */
+}
+
+
+/* ============================ Pagination Styles ============================ */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px; /* Add spacing above the pagination */
+}
+
+.pagination a {
+  padding: 8px 15px;
+  margin: 0 5px;
+  border: 2px solid #3e151a;
+  background-color: white;
+  color: #3e151a;
+  border-radius: 5px;
+  text-decoration: none; /* Remove underline from links */
+  font-size: 16px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.pagination a:hover {
+  background-color: #5a2a2f; /* Darker background on hover */
+  color: white; /* White text on hover */
+}
+
+.pagination .active {
+  background-color: #3e151a;
+  color: white;
+}
+
+.pagination .disabled {
+  color: #ccc;
+  pointer-events: none; /* Disable clicks on the disabled page */
+}
+
+
+/* ============================ Book Details Layout ============================ */
+
+.book-details {
+  display: flex;
+  gap: 30px;
+  margin-top: 30px;
+  background-color: white;
+  padding: 20px;
+}
+
+.admin-book-cover-section img {
+    width: 250px;  /* Set the width as needed */
+    height: 350px; /* Set the height as needed */
+    object-fit: cover; /* Ensures the image doesn't get stretched */
+    border-radius: 8px; /* Optional: rounds the corners of the image */
+    margin-top: 20px; /* Optional: adds space between image and button */
+}
+
+.admin-book-cover-box {
+    width: 230px;
+    height: 330px;
+    background-color: #f0f0f0;
+    border: 2px solid #555;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 10px;
+    -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+    -moz-user-drag: none; /* Firefox-specific */
+    user-drag: none; /* Standard rule to prevent dragging */
+    -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
+    -moz-user-select: none; /* Firefox-specific */
+    -ms-user-select: none; /* Internet Explorer-specific */
+    user-select: none; /* Prevent text selection in other browsers */
+    pointer-events: none; /* Prevent interaction with the image (including dragging) */
+}
+
+.book-image {
+  width: 350px; /* Increase the width to make the image bigger */
+  height: 350px; /* Increase the height to make the image bigger */
+  border: none; /* Remove any borders around the image */
+  outline: none; /* Remove any outlines around the image */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -20px; /* Move the image further to the left */
+  -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+  -moz-user-drag: none; /* Firefox-specific */
+  user-drag: none; /* Standard rule to prevent dragging */
+  -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
+  -moz-user-select: none; /* Firefox-specific */
+  -ms-user-select: none; /* Internet Explorer-specific */
+  user-select: none; /* Prevent text selection in other browsers */
+  pointer-events: none; /* Prevent interaction with the image (including dragging) */
+}
+
+.book-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.book-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.book-info p {
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+.book-footer-wrapper {
+  display: flex;
+  justify-content: flex-end; /* Align the entire content to the right */
+  margin-top: 20px;
+}
+
+.book-footer {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column; /* Stack elements vertically */
+  align-items: flex-start; /* Align everything to the left */
+  gap: 10px; /* Space between form elements */
+  margin-left: 20px; /* Align the container to the left side */
+}
+
+/* Adjust the field layout for consistent spacing */
+.book-info .form-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.book-info .form-row label {
+  width: 150px;
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+/* Editable input, textarea, select */
+.book-info .form-row input,
+.book-info .form-row textarea,
+.book-info .form-row select {
+  padding: 10px;
+  min-width: 300px;
+  max-width: 100%;
+  width: 100%;
+  font-size: 16px;
+  border: 2px solid #3e151a;
+  border-radius: 5px;
+  outline: none;
+  box-sizing: border-box;
+  background-color: #fff;
+  text-align: left;
+  resize: none;
+  overflow-y: auto;
+}
+
+/* Specific adjustment for the keyword textarea to match height of scanned content */
+.book-info #bookKeyword {
+  height: 300px; /* Adjust this to the height of the scanned content textarea */
+}
+
+/* Non-editable state (readonly or disabled) */
+.book-info .form-row input[readonly],
+.book-info .form-row input:disabled,
+.book-info .form-row textarea[readonly],
+.book-info .form-row textarea:disabled,
+.book-info .form-row select:disabled {
+  background-color: #e9ecef; /* light gray */
+  border: none;              /* remove border */
+  color: #555;               /* readable gray text */
+  cursor: not-allowed;       /* indicate it can't be edited */
+}
+
+/* Two-column layout for book info */
+.book-info .two-column {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px; /* space between columns */
+  justify-content: space-between;
+}
+
+/* Column styles */
+.book-info .two-column .form-column {
+  flex: 1 1 45%;  /* each column will take 45% of the space */
+  min-width: 300px; /* adjust to desired column size */
+}
+
+/* Reduced margin between rows inside columns */
+.book-info .two-column .form-column .form-row {
+  margin-bottom: 20px; /* Spacing between fields in the same column */
+}
+/* ============================ BUTTONS FOR ALL ============================ */
+.admin_button {
+  padding: 8px 25px;
+  font-size: 16px;
+  border: 2px solid #3e151a; /* Dark red border */
+  background-color: #3e151a; /* Dark red background */
+  color: white; /* White text color */
+  border-radius: 50px; /* Fully rounded corners (oblong shape) */
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+  -moz-user-drag: none; /* Firefox-specific */
+  -webkit-user-select: none; /* Prevent text selection */
+  -moz-user-select: none; /* Firefox-specific */
+  -ms-user-select: none; /* Internet Explorer-specific */
+  user-select: none;
+}
+
+/* Hover Effect for Admin Button */
+.admin_button:hover {
+  background-color: #5a2a2f; /* Darker shade on hover */
+}
+
+/* Deactivate button - Darker Red */
+.admin_button.deactivate {
+  background-color: white; /* Darker red */
+  border: 2px solid #3e151a; 
+  color: black;
+}
+
+.admin_button.deactivate:hover {
+  background-color: #3e151a; 
+  color: white;
+}
+
+/* Deactivate button - Darker Red */
+.admin_button:disabled {
+    background-color: #f5f5f5;  /* Lighter background to match original button */
+    color: #a1a1a1;  /* Gray text */
+    cursor: not-allowed;  /* Change cursor to indicate it's disabled */
+    border: 2px solid #d3d3d3;  /* Light gray border */
+}
+
+.admin_button:disabled:hover {
+    background-color: #f5f5f5;  /* Keep the same lighter background when hovered */
+    color: #a1a1a1;  /* Keep the same gray text when hovered */
+    border: 2px solid #d3d3d3;  /* Keep the same light gray border when hovered */
+}
+
+/* Smaller Action Button */
+.action_button {
+  padding: 10px 12px; /* Smaller padding */
+  font-size: 12px; /* Smaller font size */
+  background-color: #3e151a; /* Dark red background */
+  color: white; /* White text color */
+  border-radius: 50px; /* Fully rounded corners (oblong shape) */
+  cursor: pointer;
+  width: 120px; /* Fixed width */
+  transition: background-color 0.3s ease;
+  -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+  -moz-user-drag: none; /* Firefox-specific */
+  -webkit-user-select: none; /* Prevent text selection */
+  -moz-user-select: none; /* Firefox-specific */
+  -ms-user-select: none; /* Internet Explorer-specific */
+  user-select: none;
+  border: none; /* Removed the border */
+  margin-bottom: 5px; /* Space below the button */
+}
+
+
+
+/* Hover Effect for Action Button */
+.action_button:hover {
+  background-color: #5a2a2f; /* Darker shade on hover */
+  border: none;
+}
+
+/* Activate button - Green */
+.action_button.activate {
+  background-color: #1c7a34;/* Dark green */
+}
+
+.action_button.activate:hover {
+  background-color: #28a745; /* Lighter green on hover */
+}
+
+/* Deactivate button - Red */
+.action_button.deactivate {
+  background-color: #b02a37;/* Dark red */
+}
+
+.action_button.deactivate:hover {
+  background-color: #dc3545; /* Lighter red on hover */
+}
+
+
+@media (max-width: 600px) {
+  .action_button {
+    margin-bottom: 2px; /* Reduce space on smaller screens */
+  }
+}
+
+/* ============================ Buttons for Managing Accounts and Create Accounts ============================ */
+
+
+.admin-keyword-history {
+    display: flex;
+    justify-content: center; /* Centers the buttons horizontally */
+    gap: 100px; /* Adds space between the buttons */
+    margin-bottom: 20px;
+}
+
+.admin-tab {
+    background-color: transparent;
+    border: none;
+    color: #3e151a; /* Brown color for text */
+    font-size: 20px;
+    font-weight: bold;
+    padding: 8px 16px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.3s, border-bottom 0.3s;
+}
+
+.admin-tab:hover {
+    color: #5a2a2f; /* Darker brown on hover */
+}
+
+.admin-tab:focus {
+    outline: none;
+    border-bottom: 2px solid #3e151a; /* Brown underline on click */
+}
+
+/* Ensures that the selected button has a line */
+.admin-tab.selected {
+    border-bottom: 2px solid #3e151a; /* Brown underline when selected */
+}
+
+
+/* Managing Accounts Section */
+.managing_account_section {
+  display: flex;
+  justify-content: space-evenly; /* Space between the left and right sections, evenly distributed */
+  align-items: center; /* Vertically align items in the center */
+  margin-bottom: 20px; /* Add space between sections */
+  width: 100%; /* Ensure it takes up the full width of the container */
+  text-align: center; /* Center content horizontally */
+}
+
+/* Align the Sort and Filter sections */
+.managing_account_section .admin-sort-container {
+  display: flex;
+  gap: 20px; /* Space between the sort/filter dropdowns */
+  align-items: center; /* Align the dropdowns and labels vertically */
+  justify-content: center; /* Center the items inside the container */
+  flex: 2; /* Allow the sort and filter section to take more space */
+}
+
+.create-account {
+  display: flex;
+  flex-direction: column; /* Stack the fields vertically */
+  align-items: center; /* Center the content horizontally */
+  justify-content: center; /* Center the content vertically */
+  max-width: 1300px; /* Limit the width of the form */
+  margin: 0 auto; /* Center the form horizontally */
+  padding: 20px;
+}
+
+
+/* Styling for Role and Email on the same line */
+.form-row-inline {
+  display: flex;
+  justify-content: center; /* Center the fields horizontally */
+  align-items: center; /* Center the fields vertically */
+  gap: 20px; /* Space between the two fields */
+  width: 100%; /* Ensure it takes the full width of the container */
+}
+
+.role-email-container {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.role-select {
+  flex: 1; /* Allow role dropdown to take equal space */
+}
+
+.email-input {
+  max-width: 300px; /* Add a max-width to the email input */
+  min-width: 300px;
+}
+
+/* Styling for the Name Fields (First Name, Middle Name, Last Name) */
+.name-inputs {
+  display: flex;
+  gap: 20px; /* Adds space between the fields */
+  justify-content: space-between; /* Ensure that fields are spaced evenly */
+  width: 100%;
+  min-width: 300px;
+}
+
+.name-col {
+  flex: 1; /* Allow each name field to take equal space */
+}
+
+/* Form Field Styling */
+.admin-input-field {
+  width: 100%; /* Full width of the container */
+  padding: 12px; /* Padding for spacing inside the input */
+  font-size: 16px; /* Font size */
+  border: 2px solid #3e151a; /* Border color */
+  border-radius: 5px; /* Rounded corners */
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  margin-bottom: 15px; /* Space between fields */
+  min-width: 300px
+}
+
+.admin-input-field:focus {
+  outline: none; /* Remove default outline on focus */
+  border-color: #3e151a; /* Change border color on focus */
+}
+
+
+
+/* Profile Picture Upload and Preview */
+.profile-image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-label {
+    font-weight: bold;
+    color: #3e151a;
+    margin-bottom: 10px;
+}
+
+#profile-image {
+    display: none;
+}
+
+.profile-image-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 2px solid #3e151a;
+    overflow: hidden;
+    margin-bottom: 15px;
+    -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+    -moz-user-drag: none; /* Firefox-specific */
+    user-drag: none; /* Standard rule to prevent dragging */
+    -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
+    -moz-user-select: none; /* Firefox-specific */
+    -ms-user-select: none; /* Internet Explorer-specific */
+    user-select: none; /* Prevent text selection in other browsers */
+    pointer-events: none; /* Prevent interaction with the image (including dragging) */
+
+}
+
+.profile-image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+.profile-image-preview-homepage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    border: 2px solid #3e151a;
+    overflow: hidden;
+    -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+    -moz-user-drag: none; /* Firefox-specific */
+    user-drag: none; /* Standard rule to prevent dragging */
+    -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
+    -moz-user-select: none; /* Firefox-specific */
+    -ms-user-select: none; /* Internet Explorer-specific */
+    user-select: none; /* Prevent text selection in other browsers */
+    pointer-events: none; /* Prevent interaction with the image (including dragging) */
+
+}
+
+.profile-image-preview-homepage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-image-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    outline: none; /* Removes the outline on click */
+    box-shadow: none; /* Removes any box-shadow on focus or hover */
+}
+
+/* Prevent hover or active styles for button */
+.profile-image-button:focus,
+.profile-image-button:active,
+.profile-image-button:focus-visible {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+/* Ensure profile preview stays circular */
+.profile-image-container input[type="file"]:focus {
+    outline: none;
+}
+
+.create-account label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+    color: #000000;
+}
+
+.admin-input-field {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #3e151a;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+/* Add some space between the label and the input fields */
+.create-account .form-row-inline .form-col {
+    width: 100%;
+}
+
+.create-account .name-inputs .name-col {
+    width: 100%;
+}
+
+/* Ensure buttons are aligned properly */
+.form-row-inline button {
+    margin-top: 20px;
+}
+
+
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.eye-icon {
+    position: absolute;
+    right: 10px;
+    top: 40%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+}
+
+/* Add hover effect on the eye icon */
+.eye-icon:hover {
+    opacity: 0.7;
+}
+
+/* Form Field Styling */
+.admin-password-input-field {
+  width: 100%; /* Full width of the container */
+  padding: 12px; /* Padding for spacing inside the input */
+  font-size: 16px; /* Font size */
+  border: 2px solid #3e151a; /* Border color */
+  border-radius: 5px; /* Rounded corners */
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  margin-bottom: 15px; /* Space between fields */
+  min-width: 300px;
+  padding-right: 50px; /* Add padding to the right to create space for the icon */
+
+}
+
+.admin-password-input-field:focus {
+  outline: none; /* Remove default outline on focus */
+  border-color: #3e151a; /* Change border color on focus */
+}
+
+
+.profile-header {
+    display: flex;
+    align-items: flex-start; /* Align items to the left */
+    justify-content: flex-start; /* Ensure all content starts from the left */
+    margin-bottom: 20px;
+    width: 100%; /* Ensure it takes up full width */
+}
+
+
+.profile-left {
+    margin-right: 20px; /* Space between image and text */
+}
+
+.profile-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.profile-right h1 {
+    margin: 0;
+    font-size: 40px; /* Increase the font size */
+    font-weight: bold;
+    color: #000000; /* Optional: set a color */
+    text-transform: uppercase; /* Optional: make it uppercase */
+    letter-spacing: 2px; /* Optional: add letter spacing for more style */
+}
+
+.profile-right p {
+    margin-top: 10px;
+    font-size: 30px;
+    font-weight: bold;
+    color: #000000;
+}
+
+
+
+/* Modal CSS */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.4); /* Black background with opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    text-align: center;
+}
+
+.modal-image {
+    width: 100%;
+    max-width: 300px;
+    margin: 20px 0;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+/******************* CROPPER AREA MODAL *********************/
+#cropper-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#cropper-container {
+  position: absolute;
+  top: 50%;  /* Position at the middle of the screen vertically */
+  left: 50%; /* Position at the middle of the screen horizontally */
+  transform: translate(-50%, -50%); /* Offset by half of the container's width and height to center it */
+  background: #fff;
+  padding: 20px;
+  width: 80%;
+  max-width: 700px;
+  height: auto;
+  max-height: 80%;
+  overflow: hidden;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#cropper-title {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold; 
+}
+
+#cropper-image-container {
+  width: 100%;
+  height: 300px; /* This is the gray area for the cropping space */
+  background-color: #aaa; /* Gray background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+#cropper-image {
+  width: 100%;
+  height: auto; /* Image will adjust its size */
+  object-fit: contain; /* Ensures the image fits inside the container without being cropped */
+}
+
+#crop-save {
+  padding: 14px 30px;
+  background-color: #3e151a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+#crop-save:hover {
+  background-color: #5a2a2f;
+}
+
+#crop-save:active {
+  background-color: #3e151a;
+}
+
+
+/* General Form Styling */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between form fields */
+  width: 100%; /* Form takes up the full width */
+  margin: 0; /* Remove any margin around the form */
+  padding: 0; /* Optional: Remove padding if needed */
+}
+
+.admin-input-field {
+  width: 100%; /* Full width of the form */
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #3e151a;
+  border-radius: 5px;
+  box-sizing: border-box; /* Ensures padding doesn't affect width */
+  margin-bottom: 0px; /* Reduced space between fields */
+}
+
+/* Button Styling */
+button.admin_button {
+  padding: 12px 25px;
+  font-size: 14px;
+  border: 2px solid #3e151a;
+  background-color: #3e151a;
+  color: white;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%; /* Make the button stretch to fill the form width */
+  max-width: 150px; /* Set maximum width for the button */
+  margin-bottom: 20px;
+}
+
+button.admin_button:hover {
+  background-color: #5a2a2f;
+}
+
+
+/* Button Container */
+.button-container {
+  display: flex;
+  justify-content: flex-start; /* Align buttons horizontally */
+  gap: 10px; /* Adds space between the buttons */
+  width: 100%; /* Ensure the container takes the full width */
+}
+
+
+/* Styling for inline fields */
+.admin_change_password_inline_fields {
+  display: flex;
+  justify-content: space-between; /* Distribute fields evenly across the row */
+  gap: 15px; /* Add space between the fields */
+  width: 100%;
+  flex-wrap: wrap; /* Allow fields to wrap on smaller screens if needed */
+}
+
+/* Form Columns within the inline fields */
+.admin_change_password_inline_fields .form-col {
+  flex: 1 1 30%; /* Each field will take up 30% of the available space */
+  min-width: 200px; /* Prevent fields from being too small */
+}
+
+
+/* Messages */
+.messages {
+  margin-top: 20px;
+  padding: 10px;
+  text-align: center; /* Center text */
+  font-weight: bold;
+  font-size: 1.05rem;
+  display: flex; /* Use flexbox to center alert horizontally */
+  justify-content: center; /* Center content horizontally */
+  align-items: center; /* Center content vertically (if needed) */
+}
+
+/* Alert styles */
+.alert {
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  transition: opacity 0.5s ease-out, visibility 0s 0.5s;
+  display: inline-block; /* Ensure alert adapts to text size */
+  max-width: 100%; /* Ensure alert does not overflow */
+  text-align: center; /* Center text inside alert */
+}
+
+.alert.success {
+  background-color: #4CAF50; /* Green */
+  color: white;
+}
+
+.alert.error {
+  background-color: #f44336; /* Red */
+  color: white;
+}
+
+.alert.warning {
+  background-color: #ff9800; /* Orange */
+  color: white;
+}
+
+.alert.info {
+  background-color: #2196F3; /* Blue */
+  color: white;
+}
+
+/* Highlight invalid input fields (even if not selected) */
+
+
+/* CSS for account statuses */
+.green-status {
+    color: green;
+    font-weight: bold;
+}
+
+.blue-status {
+    color: blue;
+    font-weight: bold;
+}
+
+.red-status {
+    color: red;
+    font-weight: bold;
+}
+
+.default-status {
+    color: grey;  /* Default color for other statuses */
+}
+
+
+.admin-card-v2 {
+  width: 100%; /* Full width of its container */
+  max-width: 100%; /* Max width for the card */
+  min-width: 350px; /* Minimum width to prevent shrinking */
+  border: 2px solid #3e151a;
+  border-radius: 12px; /* Rounded corners */
+  background-color: #ffffff;  /* Light background */
+  display: flex;
+  flex-direction: row-reverse; /* Align content with the image on the right */
+  align-items: flex-start; /* Align items at the top */
+  padding: 15px;
+  box-sizing: border-box;
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  margin-bottom: 20px; /* Space between cards */
+  overflow: hidden; /* Prevent overflow */
+}
+
+.admin-card-v2:hover {
+  background-color: #f5f5f5;      /* light gray on hover */
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+
+.admin-card-v2 img {
+  width: 150px; /* Fixed width for the image */
+  height: 100%; /* Maximize the height of the image */
+  object-fit: cover; /* Ensure the image fills its container while maintaining its aspect ratio */
+  border-radius: 8px; /* Rounded corners for the image */
+  margin-left: 15px; /* Space between image and text */
+  margin-right: 15px; /* Add space between the image and text */
+  -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+  pointer-events: none; /* Disable all interactions with the image */
+}
+
+.admin-card-v2 .card-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-grow: 1; /* Allow text section to take the remaining space */
+  margin-right: 15px; /* Space between text and image */
+}
+
+.admin-card-v2 .admin-book-title {
+  font-size: 30px; /* Adjusted font size */
+  font-weight: bold;
+  color: #111111; /* Darker text */
+  margin-top: 10px; 
+  margin-bottom: 5px; /* Margin for spacing */
+  text-align: left; /* Left-align the title */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limit to two lines */
+  -webkit-box-orient: vertical;
+  line-height: 1.2em;
+  max-height: 2.4em;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+}
+
+.admin-card-v2 p {
+  font-size: 14px; /* Adjusted font size for author and keywords */
+  color: #111111; /* Lighter text */
+  margin: 3px 0;
+  text-align: left; /* Left-align text */
+}
+
+.admin-card-v2 .admin-view-details {
+  padding: 8px 16px; /* Space inside the button */
+  font-size: 14px;
+  background-color: #3e151a;
+  color: white;
+  border: 2px solid #3e151a;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  display: block;
+  margin: 15px auto; /* Center the button horizontally and add space at the bottom */
+  min-width: 120px; /* Minimum width for the button */
+  max-width: 200px; /* Maximum width for the button */
+  width: auto; /* Let the width adjust based on content */
+}
+
+.admin-card-v2 .admin-view-details:hover {
+  background-color: #5a2a2f;
+  color: white;
+}
+
+.no-books-found-message {
+    display: flex;
+    justify-content: center; /* Center the text horizontally */
+    align-items: center;     /* Center the text vertically */
+    text-align: center;      /* Ensure text is centered */
+    font-weight: bold;       /* Bold text */
+    font-size: 40px;         /* Match the font size of card text */
+    color: #111111;          /* Match text color */
+    background-color: #ffffff;  /* Light background similar to card */
+    border: 2px solid #3e151a; /* Dark border matching card styling */
+    border-radius: 12px;     /* Rounded corners like card */
+    padding: 15px;           /* Padding to make it look like a card */
+    width: 100%;             /* Full width for responsiveness */
+    max-width: 100%;         /* Ensure it spans full width within the container */
+    margin: 20px 0;          /* Space around the message */
+    box-sizing: border-box;  /* Prevent overflow from padding */
+    min-height: 320px;       /* Match the minimum height of the cards */
+    overflow: hidden;        /* Prevent overflow if content is too large */
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .admin-card-v2 {
+    flex-direction: column; /* Stack content vertically on smaller screens */
+    align-items: center; /* Align to the center */
+    min-height: auto; /* Allow height to adjust based on content */
+    width: 100%; /* Full width */
+  }
+
+  .admin-card-v2 img {
+    margin-left: 0; /* Remove margin */
+    margin-bottom: 10px; /* Add space below image */
+    width: 100%; /* Image takes full width */
+    height: 180px; /* Adjust height for mobile screens */
+    object-fit: contain; /* Ensure the image fits fully on mobile */
+    pointer-events: none; /* Disable all interactions with the image */
+  }
+
+  .admin-card-v2 .card-details {
+    margin-left: 0; /* Remove margin for mobile */
+  }
+
+  .admin-card-v2 .admin-view-details {
+    margin: 15px auto; /* Ensure the button is centered */
+  }
+}
+
+/* Center the "No results" message nicely in the page */
+
+/* The empty-state message */
+.no-results{
+  grid-column: 1 / -1;              /* span all columns */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;                 /* pushes to the middle nicely */
+  margin: 0;                        /* remove any default margins */
+  font-weight: 700;                 /* bold */
+  font-size: 16px;
+  text-align: center;
+}
+
+/* LOGOUT */
+.logout-popup-modal {
+  display: none; 
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.logout-popup-content {
+  background-color: white;
+  padding: 30px; 
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  width: 600px; 
+  max-width: 90%; 
+  position: relative; 
+  height: 135px; 
+  max-height: 100%; 
+}
+
+.logout-popup-content h3 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  text-align: left; 
+}
+
+
+.popup-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px; 
+  position: absolute; 
+  bottom: 20px; 
+  right: 20px; 
+}
+
+.popup-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: 2px solid #3e151a;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.signout-button {
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
+}
+
+.signout-button:hover {
+  background-color: #3e151a;
+  color: white;
+}
+
+.cancel-button {
+  background-color: #3e151a;
+  color: white;
+}
+
+.cancel-button:hover {
+  background-color: #5a2a2f;
+}
+
+body.modal-open {
+  overflow: auto; 
+  pointer-events: none; 
+}
+
+
+
+
+
+
+
+
+
+

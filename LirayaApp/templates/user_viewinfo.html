@@ -1,0 +1,259 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User View Info</title>
+  <link rel="stylesheet" href="{% static 'css/user_style.css' %}"> <!-- Link to the CSS file -->
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <!-- Action Buttons -->
+  <button id="cite-btn" class="action-btn">Cite This</button>
+  <button class="action-btn">Copy Page Link</button>
+  <button id="btn-qr" class="action-btn">Create QR Code</button>
+
+  <div id="book-meta"
+      data-title="{{ book.title|default_if_none:'' }}"
+      data-author="{{ book.author|default_if_none:'' }}"
+      data-coauthor="{{ book.co_author|default_if_none:'' }}"
+      data-year="{{ book.year_of_publication|default_if_none:'' }}"
+      data-publisher="{{ book.publisher|default_if_none:'' }}">
+  </div>
+
+  <!-- About Us Button (Redirects to About Us Page) -->
+  <a href="{% url 'user_aboutus' %}" class="about-us">About Us</a>
+</div>
+
+<!-- Header -->
+<header>
+  <!-- Logo and Sidebar Button Container -->
+  <div class="logo-container">
+    <a href="{% url 'user_homepage' %}">
+      <img src="{% static 'images/usericon2.png' %}" alt="New Logo"> <!-- LIRAYA Logo, links to homepage -->
+    </a>
+
+    <!-- Sidebar Button -->
+    <div class="sidebar-button" onclick="toggleSidebar()">
+      <img src="{% static 'images/menu.png' %}" alt="Menu Button">
+    </div>
+  </div>
+
+  <!-- Search Container (Aligned to the right) -->
+  <div class="search-container">
+    <form action="{% url 'user_search' %}" method="get" class="search-form" data-suggest-url="/suggest/" autocomplete="off">
+      <input type="text"
+       class="search-box"
+       name="q"
+       placeholder="Search Here...."
+       value="{{ request.GET.q|default:'' }}"
+       autocomplete="off"
+       autocorrect="off"
+       autocapitalize="off"
+       spellcheck="false"
+       inputmode="search">
+
+      <select class="dropdown" name="field" aria-label="Search field">
+        <option value="allFields" {% if request.GET.field == 'allFields' or not request.GET.field %}selected{% endif %}>All Fields</option>
+        <option value="title"     {% if request.GET.field == 'title' %}selected{% endif %}>Title</option>
+        <option value="author"    {% if request.GET.field == 'author' %}selected{% endif %}>Author</option>
+        <option value="keywords"  {% if request.GET.field == 'keywords' %}selected{% endif %}>Keywords</option>
+      </select>
+
+      <!-- Preserve current sort & filters if you arrived here from search -->
+      <input type="hidden" name="sort" value="{{ request.GET.sort|default:'' }}">
+      <input type="hidden" name="active_categories" value="{{ request.GET.active_categories }}">
+      <input type="hidden" name="active_resource_types" value="{{ request.GET.active_resource_types }}">
+      <input type="hidden" name="active_subjects" value="{{ request.GET.active_subjects }}">
+      <input type="hidden" name="min_year" value="{{ request.GET.min_year }}">
+      <input type="hidden" name="max_year" value="{{ request.GET.max_year }}">
+
+      <button class="search-button" type="submit">
+        <img src="{% static 'images/user_search_homepage2.png' %}" alt="Search Icon">
+      </button>
+    </form>
+  </div>
+
+</header>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- 2px Border Container -->
+  <div class="border-container" style="padding: 20px 5px;">
+    
+    <!-- Left Container (content-left) -->
+    <div class="content-left">
+      <!-- Book Photo Container -->
+      <div class="book-cover-details">
+        {% if book.book_cover %}
+          <img src="{{ book.book_cover.url }}" alt="Book Cover" class="cover-image">
+        {% else %}
+          <img src="{% static 'images/book_placeholder.png' %}" alt="No Cover Available" class="cover-image">
+        {% endif %}
+      </div>
+      <!-- Return Button positioned bottom-left relative to image -->
+      <div style="width: 100%; text-align: left;">
+        <a href="{% url 'user_search' %}">
+          <button class="return-btn" style="margin-top: 2px;">
+            <img 
+              src="{% static 'images/user_return.png' %}" 
+              alt="Return" 
+              class="return-img"
+              id="return-image"
+              data-default-src="{% static 'images/user_return.png' %}"
+              data-hover-src="{% static 'images/user_returnhover.png' %}" 
+              onmouseover="this.src=this.getAttribute('data-hover-src');" 
+              onmouseout="this.src=this.getAttribute('data-default-src');">
+          </button>
+        </a>
+      </div>
+    </div>
+
+    <!-- Right Container (content-right) -->
+    <div class="content-right">
+      <!-- Book Title Section -->
+      <div class="book-text-container">
+        <div class="book-title">
+          {{ book.title }}
+        </div>
+        <div class="synopsis-table-container">
+          <table class="synopsis-table">
+            <tr class="row-odd">
+              <td>Main Author</td>
+              <td>{{ book.author }}</td>
+            </tr>
+            <tr class="row-even">
+              <td>Co-Authors:</td>
+              <td>{{ book.co_author }}</td>
+            </tr>
+
+            <!-- NEW: Published By (from place_of_publication) -->
+            <tr class="row-odd">
+              <td>Published By:</td>
+              <td>{{ book.publisher }}</td>
+            </tr>
+
+            <!-- UPDATED classes below to preserve alternating rows -->
+            <tr class="row-even">
+              <td>Format:</td>
+              <td>{{ book.book_type }}</td>
+            </tr>
+            <tr class="row-odd">
+              <td>Shelf Category:</td>
+              <td>{{ book.shelf_category }}</td>
+            </tr>
+            <tr class="row-even">
+              <td>Subjects / Keywords:</td>
+              <td>{{ book.primary_keyword }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- ▼▼▼ ADDED: Show Pages button + hidden pages table ▼▼▼ -->
+        <div class="pages-toggle-container" style="margin-top:12px;">
+          <button id="show-pages-btn" class="action-btn">Show Pages</button>
+        </div>
+
+        <!-- Hidden holder for scanned_content (safely JS-escaped) -->
+        <div id="scanned-content-holder"
+             data-content="{{ book.scanned_content|default_if_none:''|escapejs }}"
+             style="display:none;"></div>
+
+        <!-- Anchor to restore the pages table to its original spot on close -->
+        <div id="pages-anchor"></div>
+
+        <!-- Pages table wrapper (initially hidden; used inside modal) -->
+        <div id="pages-table-wrapper"
+            style="display:none; margin-top:10px; max-height:280px; overflow-y:auto; margin-bottom:12px;">
+          <table class="synopsis-table" id="pages-table">
+            <!-- Header hidden per your request -->
+            <thead style="display:none;">
+              <tr class="row-odd">
+                <th>Keywords</th>
+                <th>Pages</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <!-- ▲▲▲ END ADDED BLOCK ▲▲▲ -->
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <p class="footer-text">LIRAYA: Library Information Resource and Access</p>
+  <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
+</footer>
+
+<!-- Modal Overlay (floating window + gray backdrop) -->
+<div id="pages-modal" aria-hidden="true"
+     style="position:fixed; inset:0; display:none; z-index:9999;
+            background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+  <div style="background:#fff; width:min(92vw, 900px); max-height:85vh; overflow:auto;
+              border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.35); padding:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <strong>Pages Index</strong>
+      <button id="close-pages-modal" class="action-btn" style="padding:6px 10px;">Close</button>
+    </div>
+    <div id="pages-modal-body"></div>
+  </div>
+</div>
+
+<!-- Citations Modal -->
+<div id="cite-modal" aria-hidden="true"
+     style="position:fixed; inset:0; display:none; z-index:9999;
+            background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+  <div style="background:#fff; width:min(92vw, 900px); max-height:85vh; overflow:auto;
+              border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.35); padding:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <button id="close-cite-modal" class="action-btn" style="padding:6px 10px;">Close</button>
+    </div>
+
+    <div id="cite-modal-body" style="line-height:1.6;">
+      <!-- Filled by JS -->
+    </div>
+
+    <div style="margin-top:12px; font-size:12px; color:#444;">
+      <em>Warning: These citations may not always be 100% accurate.</em>
+    </div>
+  </div>
+</div>
+
+<!-- QR Code Modal (overlay) -->
+<div id="qr-modal" aria-hidden="true"
+     style="position:fixed; inset:0; display:none; z-index:9999;
+            background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+  <div style="background:#fff; width:min(92vw, 420px); max-height:85vh; overflow:auto;
+              border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.35); padding:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <strong></strong>
+      <button id="close-qr-modal" class="action-btn" style="padding:6px 10px;">Close</button>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+      <div id="qr-image-wrap" style="padding:8px; border:1px dashed #ccc; border-radius:8px;">
+        <img id="qr-image" alt="QR code" style="display:block; width:240px; height:240px;"/>
+      </div>
+      <small style="color:#6d2932;"></small>
+      <div style="display:flex; gap:8px;">
+        <button id="qr-download" class="action-btn" style="padding:6px 10px;">Download PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script src="{% static 'script/user_script.js' %}"></script> <!-- Link to the JavaScript file -->
+
+<script src="{% static 'script/user_viewinfo.js' %}"></script> <!-- Link to the JavaScript file for viewinfo page -->
+
+</body>
+</html>

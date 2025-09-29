@@ -1,0 +1,231 @@
+{% extends 'Librarian_Inheritance.html' %}
+{% load static %}
+
+{% block title %}View Book Details{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+  <div class="admin-title">
+    <h1>View Book Details</h1>
+    <p>Manage Book Details</p>
+  </div>
+  <button class="profile-image-button" onclick="window.location.href='{% url 'librarian_profile' %}'">
+    <div class="profile-image-container">
+      <div class="profile-image-preview-homepage">
+        <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+      </div>
+    </div>
+  </button>
+</div>
+
+<div class="book-details">
+  <!-- Left: Cover -->
+  <div class="admin-book-cover-section">
+    <div class="admin-book-cover-box">
+      <img id="coverPreview"
+           src="{% if book.book_cover %}{{ book.book_cover.url }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}"
+           alt="Cover Preview"
+           style="max-width:220px; height:auto;">
+    </div>
+
+    <!-- Cover file input (only visible on Edit) -->
+    <div class="form-row" id="coverInputRow" style="display:none; margin-top:12px;">
+      <input type="file" id="bookCoverInput" accept="image/*" style="display:none;">
+      <label for="bookCoverInput" class="upload-button">Change Book Cover</label>
+    </div>
+  </div>
+
+  <!-- Right: Fields -->
+  <div class="book-info">
+    <form id="bookForm">
+        <div class="two-column">
+            <!-- Editable -->
+            <div class="form-row">
+                <label for="bookTitle">Title</label>
+                <input type="text" class="form-control" id="bookTitle" value="{{ book.title }}" readonly>
+            </div>
+
+            <div class="form-row">
+                <label for="bookAuthor">Author</label>
+                <input type="text" class="form-control" id="bookAuthor" value="{{ book.author }}" readonly>
+            </div>
+
+            <div class="form-row">
+                <label for="bookCoAuthor">Co-Author</label>
+                <input type="text" class="form-control" id="bookCoAuthor" value="{{ book.co_author }}" readonly>
+            </div>
+
+            <div class="form-row">
+                <label for="yearOfPublication">Year of Publication</label>
+                <input type="text" class="form-control" id="yearOfPublication" value="{{ book.year_of_publication }}" readonly>
+            </div>
+
+            <div class="form-row">
+                <label for="publisher">Publisher</label>
+                <input type="text" class="form-control" id="publisher" value="{{ book.publisher }}" readonly>
+            </div>
+
+            <div class="form-row">
+            <label for="bookShelfCategory">Shelf Category</label>
+            <select id="bookShelfCategory" class="form-control" {% if not is_editing %}disabled{% endif %}>
+                <option value="{{ book.shelf_category }}" selected>{{ book.shelf_category }}</option>
+                {% for category in categories %}
+                <option value="{{ category.shelf_category }}" {% if category.shelf_category == book.shelf_category %}selected{% endif %}>{{ category.shelf_category }}</option>
+                {% endfor %}
+            </select>
+            </div>
+
+            <!-- Non-editable -->
+            <div class="form-row">
+                <label for="bookType">Book Type</label>
+                <select id="bookType" class="form-control" disabled>
+                <option value="Academic" {% if book.book_type == "Academic" %}selected{% endif %}>Academic</option>
+                <option value="Thesis" {% if book.book_type == "Thesis" %}selected{% endif %}>Thesis</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label for="scannedType">Scanned Type</label>
+                <select id="scannedType" class="form-control" disabled>
+                <option value="TOC" {% if book.scanned_type == "TOC" %}selected{% endif %}>Table of Contents (TOC)</option>
+                <option value="Index" {% if book.scanned_type == "Index" %}selected{% endif %}>Index</option>
+                <option value="Abstract" {% if book.scanned_type == "Abstract" %}selected{% endif %}>Abstract</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label for="scannedContent">Scanned Content</label>
+                <textarea class="form-control" id="scannedContent" rows="5" readonly>{{ book.scanned_content }}</textarea>
+            </div>
+
+            <div class="form-row">
+                <label for="bookKeyword">Keyword</label>
+                <textarea class="form-control" id="bookKeyword" readonly>{{ book.primary_keyword }}</textarea>
+            </div>
+
+            <!-- Removed date uploaded -->
+
+            <!-- Actions -->
+            <div class="view-action-buttons">
+                <button id="editButton" class="scan-button">Edit</button>
+                <button id="archiveButton" class="scan-button" type="button" {% if book.is_archived %}disabled{% endif %}>Delete</button>
+                <button id="saveButton" class="scan-button" style="display:none;" type="button">Save</button>
+                <button id="cancelButton" class="scan-button" style="display:none;" type="button">Cancel</button>
+            </div>
+         </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+// Handle the archive button click event
+// Handle the archive button click event
+document.getElementById('archiveButton').addEventListener('click', function(event) {
+    event.preventDefault();  // Prevent default form submission behavior
+
+    const bookId = "{{ book.book_id }}";  // Get the current book ID
+    const csrftoken = getCookie('csrftoken');
+
+    // Send the archive request using fetch
+    fetch(`/librarian/viewbook/${bookId}/?archive=true`, {
+        method: 'GET', // Send the request as a GET request to handle the archiving in the view
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Book archived successfully!');
+            window.location.href = "/librarian/homepage/";  // Refresh the homepage after archiving
+        } else {
+            alert('Failed to archive book.');
+        }
+    })
+    .catch(err => console.error('Error:', err));
+});
+
+function getCookie(name){
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
+
+
+const editableInputs  = ['bookTitle','bookAuthor','bookCoAuthor','yearOfPublication','publisher'];
+const editableSelects = ['bookShelfCategory'];
+
+function setEditMode(isEditing){
+  editableInputs.forEach(id => document.getElementById(id).readOnly = !isEditing);
+  editableSelects.forEach(id => document.getElementById(id).disabled = !isEditing);
+
+  // always locked
+  document.getElementById('bookType').disabled = true;
+  document.getElementById('scannedType').disabled = true;
+  document.getElementById('scannedContent').readOnly = true;
+  document.getElementById('bookKeyword').readOnly = true;
+
+  // cover input toggle
+  document.getElementById('coverInputRow').style.display = isEditing ? 'block' : 'none';
+
+  // buttons
+  document.getElementById('saveButton').style.display   = isEditing ? 'inline-block' : 'none';
+  document.getElementById('cancelButton').style.display = isEditing ? 'inline-block' : 'none';
+  document.getElementById('editButton').style.display   = isEditing ? 'none' : 'inline-block';
+}
+
+// init
+setEditMode(false);
+
+// cover preview
+document.getElementById('bookCoverInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => document.getElementById('coverPreview').src = ev.target.result;
+  reader.readAsDataURL(file);
+});
+
+// Edit / Cancel
+document.getElementById('editButton').addEventListener('click', e => { e.preventDefault(); setEditMode(true); });
+document.getElementById('cancelButton').addEventListener('click', () => window.location.reload());
+
+// Save (multipart for file)
+document.getElementById('saveButton').addEventListener('click', async ()=>{
+  const formData = new FormData();
+  formData.append('title', document.getElementById('bookTitle').value);
+  formData.append('author', document.getElementById('bookAuthor').value);
+  formData.append('co_author', document.getElementById('bookCoAuthor').value);
+  formData.append('year_of_publication', document.getElementById('yearOfPublication').value);
+  formData.append('publisher', document.getElementById('publisher').value);
+  formData.append('shelf_category', document.getElementById('bookShelfCategory').value);
+
+  const coverFile = document.getElementById('bookCoverInput').files[0];
+  if (coverFile) formData.append('book_cover', coverFile);
+
+  const csrftoken = getCookie('csrftoken');
+  const bookId = "{{ book.book_id }}";
+
+  try{
+    const resp = await fetch(`/librarian/viewbook/${bookId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken }, // don't set Content-Type for FormData
+      body: formData
+    });
+    const data = await resp.json();
+    if(data && data.success){
+      alert('Book updated successfully!');
+      setEditMode(false);
+    }else{
+      alert(data?.message || 'Failed to update book.');
+    }
+  }catch(err){
+    console.error(err);
+    alert('An error occurred while updating.');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,353 @@
+{% extends 'admin_inheritance.html' %}
+{% load static %}
+{% block title %}Admin Homepage{% endblock %}
+
+{% block content %}
+  <div class="admin-main-content">
+
+    <!-- HEADER -->
+    <div class="admin-header">
+      <div class="admin-title">
+        <h1>Admin Book Records</h1>
+        <p>Welcome, {{ user_info.full_name }}!</p>
+      </div>
+      <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
+        <div class="profile-image-container">
+            <div class="profile-image-preview-homepage">
+                <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+            </div>
+        </div>
+      </button>
+    </div>
+
+    <!-- SECOND HEADER CONTENTS-->
+
+    
+    
+    <form method="GET" action="">
+      <div class="admin-search-section">
+          <input type="text" name="search" placeholder="Search" value="{{ search_query }}">
+          <button type="submit">Search</button>
+        </div>
+    
+    
+      <!-- SORT BY -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; text-align: left;">
+        <div style="display: flex; gap: 20px; align-items: center; justify-content: flex-end; flex: 2;">
+          <label for="sort_by" style="font-weight: bold;">Sort By:</label>
+          <div class="admin-dropdown-section">
+            <select id="sort_by" name="sort" onchange="this.form.submit()">
+              <option value="all" {% if sort_by == 'all' %}selected{% endif %}>All</option>
+              <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+              <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+              <option value="books_asc" {% if sort_by == 'books_asc' %}selected{% endif %}>Books (Low to High)</option>
+              <option value="books_desc" {% if sort_by == 'books_desc' %}selected{% endif %}>Books (High to Low)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    
+
+    <h2 class='admin_normal_bold'>
+        Librarians: 
+        <span class="number_emphasis">{{ total_librarians }}</span>
+    </h2>
+    
+    <!-- MAIN  CONTENTS-->
+    <div class="manage-account">
+      <table class="keyword-table">
+          <colgroup>
+            <col style="width: 5%">
+            <col style="width: 55%">
+            <col style="width: 20%">
+            <col style="width: 20%">
+          </colgroup>
+        <thead>
+          <tr>
+            <th style="text-align: center;">No.</th> 
+            <th style="text-align: center;">Name</th> 
+            <th style="text-align: center;">No. Books Uploaded</th>
+            <th style="text-align: center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td>{{ record.index }}.</td>
+              <td>{{ record.full_name }}</td>
+              <td>{{ record.books_uploaded }} Books</td>
+              <td style="text-align: center;">
+                <a href="{% url 'admin_records_view' account_id=record.account.account_id %}">
+                    <button class="action_button">View</button>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center; padding: 12px;">No Current Accounts</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    <!-- PAGINATION -->
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page=1&search={{ search_query }}&sort={{ sort_by }}">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Previous</a>
+      {% endif %}
+
+      {% for i in page_obj.paginator.page_range %}
+        <a href="?page={{ i }}&search={{ search_query }}&sort={{ sort_by }}" class="{% if page_obj.number == i %}active{% endif %}">{{ i }}</a>
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&sort={{ sort_by }}">Last</a>
+      {% endif %}
+    </div>
+
+  
+    <div class="book-footer-wrapper">
+      <div class="book-footer">
+        <span class="admin_normal_bold">Generate Report:</span>
+        <button type="button" id="openReportModal" class="admin_button">Generate</button>
+      </div>
+    </div>
+
+    <!-- Modal for Date Range Selection -->
+    <div id="reportOptionsModal" class="modal-overlay" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reportOptionsTitle">
+        <div class="modal-header">
+          <h3 id="reportOptionsTitle">Generate Book Records</h3>
+          <button type="button" class="modal-close" id="closeReportOptions" aria-label="Close">×</button>
+        </div>
+
+        <form id="reportOptionsForm" method="get" action="{% url 'generate_pdf' report_type='account_bookrecords' %}">
+          <div class="modal-body">
+            <label style="font-weight: bold;">Select Data Range:</label>
+            
+            <!-- Radio buttons for Date Range Options -->
+            <div class="admin-checkbox-section">
+              <label>
+                <input type="radio" id="today_radio" name="date_range" value="today" {% if date_range == 'today' or date_range == '' %}checked{% endif %}> Today
+              </label><br>
+              <label>
+                <input type="radio" name="date_range" value="last_1_week" {% if date_range == 'last_1_week' %}checked{% endif %}> Last 1 Week
+              </label><br>
+              <label>
+                <input type="radio" name="date_range" value="last_2_weeks" {% if date_range == 'last_2_weeks' %}checked{% endif %}> Last 2 Weeks
+              </label><br>
+              <label>
+                <input type="radio" name="date_range" value="last_1_month" {% if date_range == 'last_1_month' %}checked{% endif %}> Last 1 Month
+              </label><br>
+              <label>
+                <input type="radio" name="date_range" value="last_6_months" {% if date_range == 'last_6_months' %}checked{% endif %}> Last 6 Months
+              </label><br>
+              <label>
+                <input type="radio" name="date_range" value="last_1_year" {% if date_range == 'last_1_year' %}checked{% endif %}> Last 1 Year
+              </label><br>
+              <label>
+                <input type="radio" name="date_range" value="all_time" {% if date_range == 'all_time' %}checked{% endif %}> All Time
+              </label>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="admin_button">Generate</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    </div>
+
+
+    <div class="admin-footer">
+        Liraya © 2025. All rights reserved. <br>
+        TUPC. Technological University of the Philippines - Cavite Library
+    </div>
+<style>
+  :root {
+    --brand: #4b0e0e;      /* maroon */
+    --brand-ink: #ffffff;  /* text on maroon */
+    --ink: #1f2328;        /* body text */
+    --line: #e5e7eb;       /* borders */
+    --panel: #ffffff;      /* card bg */
+    --panel-alt: #faf7f7;  /* light maroon tint */
+  }
+
+  .modal-overlay[hidden] {
+    display: none;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-card {
+    width: min(720px, 92vw);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand);
+    color: var(--brand-ink);
+    padding: 14px 18px;
+    position: relative;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.3px;
+    text-align: center;
+  }
+
+  .modal-close {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    color: var(--brand-ink);
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .modal-body {
+    padding: 18px;
+  }
+
+  .modal-sub {
+    margin: 0 0 10px;
+    color: #555;
+  }
+
+  .option-group {
+    margin: 14px 0 8px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel-alt);
+  }
+
+  .group-title {
+    font-weight: 600;
+    margin: 0 0 8px;
+    font-weight: bold;
+  }
+
+  .radio,
+  .checkbox {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    margin-right: 14px;
+    cursor: pointer;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .date-inputs {
+    margin-top: 10px;
+  }
+
+  .conditional.hidden {
+    display: none;
+  }
+
+  .hint {
+    color: #6b7280;
+  }
+
+  #reportOptionsTitle {
+  font-weight: bold;  /* Added bold styling */
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--line);
+  }
+
+  .admin_button {
+    padding: 9px 16px;
+    border-radius: 8px;
+  }
+
+  .admin-checkbox-section {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap; /* To allow wrapping if needed */
+    gap: 20px; /* Space between each radio button */
+  }
+
+  .admin-checkbox-section label {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    
+  }
+
+
+  .admin-checkbox-section input[type="radio"] {
+    margin-right: 8px; /* Space between the radio button and the label */
+  }
+</style>
+
+<!-- JavaScript for Modal -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const openBtn = document.getElementById('openReportModal');
+    const modal = document.getElementById('reportOptionsModal');
+    const closeBtn = document.getElementById('closeReportOptions');
+    
+    // Open the modal
+    openBtn.addEventListener('click', function() {
+      modal.hidden = false;
+
+      // Ensure "Today" radio button is selected by default when the modal opens
+      const todayRadio = document.getElementById('today_radio');
+      if (todayRadio) {
+        todayRadio.checked = true;
+      }
+    });
+
+    // Close the modal
+    closeBtn.addEventListener('click', function() {
+      modal.hidden = true;
+    });
+
+    // Close the modal if clicked outside of it
+    window.addEventListener('click', function(event) {
+      if (event.target === modal) {
+        modal.hidden = true;
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,1924 @@
+{% extends 'Librarian_Inheritance.html' %}
+
+{% load static %}
+
+{% block title %}Add a New Book{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+  <div class="alert alert-success">
+    {% for message in messages %}
+      <p>{{ message }}</p>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+<!-- HEADER -->
+    <!-- HEADER -->
+<div class="admin-header">
+    <div class="admin-title">
+        <h1>Librarian Addbook</h1>
+        <p>Welcome, {{ user_info.full_name }}!</p>
+         <!-- Tutorial Link -->
+        <a href="javascript:void(0);" onclick="startTutorial()" class="text-info mr-3" style="text-decoration: underline; cursor: pointer;">
+            Show Tutorial
+        </a>
+    </div>
+
+    <button class="profile-image-button" onclick="window.location.href='{% url 'librarian_profile' %}'">
+        <div class="profile-image-container">
+            <div class="profile-image-preview-homepage">
+                <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+            </div>
+        </div>
+    </button>
+</div>
+
+
+<div class="add-book-container">
+<form id="bookForm" action="{% url 'librarian_addbook' %}" method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- Add Book Cover Section (Same Group as Book Form) -->
+    <div class="book-cover-section">
+
+        <!-- Book Cover Left Section -->
+        <div class="book-cover-left">
+            
+            <!-- Preview container -->
+            <div class="book-cover-box" id="coverPreviewContainer"
+                data-intro="Step 3: The uploaded or captured book cover will appear here as a preview." 
+                data-step="3">
+                <img id="coverPreview" src="#" alt="Cover Preview" style="display: none; width: 100%; height: auto;">
+            </div>
+
+            <!-- Book Cover Button Section (below the preview) -->
+            <div class="book-cover-buttons">
+                <!-- Upload from gallery/files -->
+                <input type="file" id="bookCoverUpload" name="bookCover" accept="image/*" style="display:none;">
+                <label for="bookCoverUpload" class="upload-button" 
+                    data-intro="Step 1: Upload the book cover from your computer." 
+                    data-step="1">
+                    Upload Book Cover
+                </label>
+
+                <!-- OR separator -->
+                <div class="or-separator">OR</div>
+
+                <!-- TAKE PICTURE button (always visible) -->
+                <button type="button" id="openCoverCamera" class="takepicture-button" 
+                        data-intro="Or Step 1 alternative: Take a picture of the book cover using your camera." 
+                        data-step="2">
+                    Take Picture
+                </button>
+            </div>
+        </div>
+
+        <!-- Simple camera modal (shown only when using getUserMedia) -->
+        <div id="coverCamModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:12px; border-radius:8px; width:100%; max-width:520px">
+                <div style="position:relative;">
+                    <video id="coverCamPreview" autoplay playsinline style="width:100%; height:auto; background:#000; object-fit:contain;"></video>
+                </div>
+                <!-- Modal Body (where the image will be inserted) -->
+                <div class="modal-body" >
+                    <!-- Captured image will be inserted here dynamically -->
+                </div>
+                <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
+                    <!-- Capture button initially -->
+                    <button type="button" id="coverCamSnap" class="scan-button">Capture</button>
+                    <button type="button" id="coverCamCancel" class="scan-button">Cancel</button>
+                    <button type="button" id="cropBookCoverButton" class="scan-button" style="display:none;">Extract Title</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Title Crop Modal -->
+        <div id="titleCropModal" class = modal style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:12px; border-radius:8px; width:100%; max-width:520px">
+                <div style="text-align:center;">
+                    <img id="titleCropImage" style="max-width:100%;"/>
+                </div>
+                <div style="margin-top:10px; display:flex; gap:8px; justify-content:center;">
+                    <button type="button" id="extractTitleBtn" class="scan-button">Extract Title</button>
+                    <button type="button" id="cancelCropBtn" class="scan-button">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Book Cover Button Section -->
+        <div class="book-cover-right">
+
+            <div class="form-group">
+                <label for="bookTitle">Title</label>
+                <input type="text" class="form-control" id="bookTitle" name="bookTitle" 
+                    placeholder="Enter Title Here" required
+                    data-intro="Step 4: The extracted title will appear here automatically. You may retype or edit it if needed."
+                    data-step="4">
+            </div>
+
+                <!-- Result/Error message -->
+            <div id="bookTitleResult" style="display:none; color:red;">
+                A book with this title already exists.
+            </div>
+
+            <!-- Author -->
+            <div class="form-group" id="authorContainer">
+                <label for="bookAuthor">Author</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="bookAuthor" name="author[]" placeholder="Enter Author's full name (Last Name, First Name)" required 
+                        data-intro="Step 5: Enter the author’s full name. You can add co-authors with the + button." 
+                        data-step="5">
+                    <button type="button" class="btn btn-outline-secondary add-coauthor">+</button>
+                </div>
+            </div>
+
+
+            <!-- Co-Author (will only be appended dynamically) -->
+            <div class="form-group" id="coAuthorContainer"></div>
+
+            <!-- Modal for choosing between Author or Co-Author -->
+            <div id="authorCoAuthorModal" style="display:none; position:fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 9999; justify-content: center; align-items: center;">
+                <div style="background: #fff; padding: 20px; border-radius: 8px; max-width: 400px; width: 100%;">
+                    <h3>Add</h3>
+
+                    <!-- Flex container for buttons -->
+                    <div class="button-container">
+                        <button type="button" id="confirmAuthorType" class="modal-button">Author</button>
+                        <button type="button" id="cancelAuthorType" class="modal-button">Co-Author</button>
+                    </div>
+                    <p>Click to add either an Author or Co-Author.</p>
+                </div>
+            </div>
+
+            <!-- Book Details Section -->
+        <div class="form-columns">
+            <div class="form-group">
+                <label for="YearofPublication">Publication Year</label>
+                <select 
+                    class="form-control" 
+                    id="YearofPublication" 
+                    name="YearofPublication" 
+                    required
+                    data-intro="Step 6: Select the year of publication. If not available, choose N/A." 
+                    data-step="6">
+                    <option value="">-- Select Year --</option>
+                    <option value="N/A">N/A</option> <!-- Added N/A option -->
+                </select>
+            </div>
+
+
+            <div class="form-group">
+                <label for="bookType">Book Type</label>
+                <select class="form-control" id="bookType" name="bookType" required
+                    data-intro="Step 7: Choose the type of book (Academic or Thesis)." 
+                    data-step="7">
+                    <option value="" selected disabled>Select Content Type</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Thesis">Thesis</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="dateUploaded">Upload Date</label>
+                <input type="date" class="form-control" id="dateUploaded" name="dateUploaded" required readonly>
+            </div>
+
+            <!-- Publisher Field with Dropdown + Input Combination -->
+            <div class="form-group">
+                <label for="publisher">Publisher</label>
+                <div class="input-group">
+                    <!-- Publisher input field (typable by default) -->
+                    <input type="text" id="publisher" class="form-control" name="publisher" 
+                        placeholder="Enter Publisher or select from list" required
+                        data-intro="Step 8: Enter the publisher name or select from the dropdown." 
+                        data-step="8">
+                    
+                    <!-- Button to show dropdown for selecting from existing publishers -->
+                    <button type="button" class="btn btn-outline-secondary add-publisher">▼</button>
+                </div>
+                
+                <!-- Dropdown to show when user wants to select an existing publisher -->
+                <div id="publisherDropdown" style="display:none; margin-top: 10px;">
+                    <select class="form-control" id="publisherSelect" name="publisherSelect">
+                        <option value="" selected disabled>Select Publisher</option>
+                        {% for publisher in publishers %}
+                            <option value="{{ publisher.publisher }}">{{ publisher.publisher }}</option> <!-- Use .publisher here -->
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+
+
+
+            <div class="form-group">
+                <label for="bookShelfCategory">Shelf Category</label>
+                <div class="input-group">
+                    <select class="form-control" id="bookShelfCategory" name="bookShelfCategory" required
+                            data-intro="Step 9: Select the shelf category or add a new one with the + button." 
+                            data-step="9">
+                        <option value="" selected disabled>Select Shelf Category</option>
+                        {% for category in categories %}
+                            <option value="{{ category.shelf_category }}">{{ category.shelf_category }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-outline-secondary add-category">+</button>
+                </div>
+                <div id="newCategoryInput" style="display:none; margin-top: 10px;">
+                    <input type="text" id="newCategoryText" class="form-control" placeholder="Enter new category" />
+                    <button type="button" id="saveNewCategory" class="btn btn-primary" style="margin-top: 5px;">Add Category</button>
+                </div>
+                <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
+            </div>
+        </div>
+
+
+        </div>
+
+        <!-- Fallback input that can trigger native camera on mobile if getUserMedia isn't available -->
+        <input type="file" id="bookCoverCamera" accept="image/*" capture="environment" style="display:none;">
+
+        <!-- Hidden input for captured images from getUserMedia -->
+        <input type="file" id="hiddenCameraInput" style="display:none;">
+
+
+
+        <!-- Simple camera modal (shown only when using getUserMedia) -->
+        
+
+    </div>
+
+
+    <!-- New Section Below Book Cover -->
+    <div class="scanning-section-container">
+        <div class="form-group">
+            <label for="scannedContentType">Select Content Type to Scan:</label>
+            <select class="form-control" id="scannedContentType" name="scanned_type" required
+                data-intro="Step 10: Choose what content to scan, Table of Contents or Index." 
+                data-step="10">
+                <option value="" selected disabled>Select Content Type</option>
+                <option value="TOC">Table of Contents (TOC)</option>
+                <option value="Index">Index</option>
+            </select>
+        </div>
+
+        <!-- Scanning Section -->
+        <div class="scanning-section">
+            <div class="book-image-and-scanned-content">
+                <!-- Camera Preview Section -->
+                <div class="camera-preview-container">
+                    <video id="cameraPreview" autoplay></video> <!-- Camera preview -->
+                    <button id="maximizePreview" class="maximize-button">↗️</button>
+                </div>
+
+                <!-- Captured Image Section -->
+                <div class="captured-image-container">
+                    <img id="capturedImage" src="#" alt="Captured Image" style="display: none; width: 100%; height: auto;">
+                    <!-- Maximize Button for Captured Image -->
+                    <button id="maximizeCapturedImage" class="maximize-button">↗️</button>
+                </div>
+            </div>
+
+            <!-- Camera Loader HTML -->
+            <div class="camera-loader-container" id="cameraLoader" style="display: none;">
+                <div class="loader"></div>
+                <div class="loader-text">Opening Camera...</div>
+            </div>
+
+            <div class="scan-actions-section">
+                <!-- Scan Book Button -->
+                <div class="scan-actions">
+                    <button type="button" id="captureButton" class="scan-button" 
+                            data-intro="Step 11: Capture a page for scanning." 
+                            data-step="11"
+                            data-tooltip="Capture">
+                        <img src="{% static 'images/capture.png' %}" alt="Capture" class="btn-img">
+                    </button>
+                </div>
+
+                <div class="scan-actions">
+                    <button type="button" id="cropButton" class="scan-button" 
+                        data-intro="Step 12: Once captured, crop the desired part to scan." 
+                        data-step="12"
+                        data-tooltip="Crop">
+                        <img src="{% static 'images/crop.png' %}" alt="Crop" class="btn-img">
+                    </button>
+                </div>
+
+                <div class="scan-actions">
+                    <button type="button" id="scanButton" class="scan-button" 
+                        data-intro="Step 13: After cropping you can now scan." 
+                        data-step="13"
+                        data-tooltip="Scan" disabled>
+                        <img src="{% static 'images/scan.png' %}" alt="Scan" class="btn-img">
+                    </button>
+                </div>
+
+                <div class="scan-actions">
+                    <button type="button" id="captureNextButton" class="scan-button" disabled>
+                        Scan Next Page
+                    </button>
+
+                </div>
+
+                <div class="scan-actions">
+                    <button type="button" id="retryButton" class="scan-button"
+                        data-intro="Step 14: If you are not satisfied with the current capture, click Retry to take it again."
+                        data-step="14">
+                        Retry
+                    </button>
+                </div>
+                
+                <div class="scan-actions">
+                    <button type="button" id="resetButton" class="scan-button"
+                        data-intro="Step 15: Use Reset if you want to clear everything and start scanning again from scratch."
+                        data-step="15">
+                        Reset
+                    </button>
+                </div>
+
+            </div>
+
+            
+        </div>
+
+        <!-- Scanned Content Section (inside the bookForm) -->
+        <div class="form-group">
+            <label for="scannedContent">Scanned Content</label>
+            <textarea class="form-control" id="scannedContent" name="scannedContent" rows="5" required 
+                placeholder="Scanned content will appear here..."
+                data-intro="Step 16: The scanned text will appear here. Review and edit if needed."
+                data-step="16"></textarea>
+        </div>
+
+        <!-- Lock button aligned to the left -->
+        <div class="scan-actions" style="margin-bottom: 15px; text-align: left;">
+            <button type="button" id="lockButton" class="scan-button"
+                data-intro="Step 17: When satisfied, click Lock to confirm the scanned content. An alert will ask for confirmation. Once locked, you cannot edit it."
+                data-step="17">
+                LOCK
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label for="bookKeyword">Keyword</label>
+            <textarea class="form-control" id="bookKeyword" name="bookKeyword" rows="5" required readonly
+                data-intro="Step 18: After locking, click Generate Keywords to automatically extract keywords from the scanned content."
+                data-step="18"></textarea>
+        </div>
+
+        <div class="scan-actions-section">
+            <div class="scan-actions">
+                <button type="button" id="editButton" class="scan-button"
+                    data-intro="Step 19: If needed, use Edit to make manual changes to scanned content before locking."
+                    data-step="19">
+                    EDIT
+                </button>
+            </div>
+
+            <div class="scan-actions">
+                <button type="button" id="generateKeywordsButton" class="scan-button" disabled
+                    data-intro="Step 20: Once locked, click here to generate keywords from the scanned content."
+                    data-step="20">
+                    Generate Keywords
+                </button>
+            </div>
+        </div>
+            
+    </div>
+
+    <button type="submit" id="addBookButton" class="add-book-button"
+        data-intro="Step 21: Finally, click Add Book to save all details and finish the process."
+        data-step="21">
+        Add Book
+    </button>
+
+</form>
+
+</div>
+
+{% endblock %}
+
+
+{% block script %}
+<script>
+// Auto-hide the flash message after 3 seconds
+window.addEventListener('DOMContentLoaded', function () {
+const messageElement = document.querySelector('.alert-success');
+if (messageElement) {
+    setTimeout(() => {
+    messageElement.style.opacity = 0;
+    messageElement.addEventListener('transitionend', function () {
+        messageElement.remove(); // Removes the message from the DOM after fading out
+    });
+    }, 3000); // 3000 ms = 3 seconds
+}
+});
+
+
+function startTutorial() {
+    introJs().oncomplete(function() {
+        // Do something when tutorial finishes
+    }).start();
+}
+
+
+// FOR TITLE CHECKING //
+// AFTER-TYPING duplicate-title check (case-insensitive)
+(function () {
+  const titleInput = document.getElementById('bookTitle');
+  const resultEl   = document.getElementById('bookTitleResult');
+  const submitBtn  = document.getElementById('addBookButton');
+
+  let debounceId;
+  let alertShownFor = ''; // remember the last duplicate value we've already alerted for
+
+  const normalize = s => (s || '').trim().replace(/\s+/g, ' ');
+
+  function checkNow() {
+    const title = normalize(titleInput.value);
+    if (!title) {
+      resultEl.style.display = 'none';
+      submitBtn.disabled = false;
+      alertShownFor = '';
+      return;
+    }
+
+    fetch('{% url "librarian_addbook" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ bookTitle: title, checkTitle: true })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.exists) {
+        resultEl.style.display = 'block';
+        resultEl.textContent = 'A book with this title already exists.';
+        submitBtn.disabled = true;
+
+        // Alert once per identical value
+        if (alertShownFor !== title) {
+          alertShownFor = title;
+          alert('A book with this title already exists!');
+        }
+      } else {
+        resultEl.style.display = 'none';
+        submitBtn.disabled = false;
+        alertShownFor = ''; // reset so future duplicates will alert
+      }
+    });
+  }
+
+  function scheduleCheck() {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(checkNow, 600); // ← runs AFTER typing pauses ~0.6s
+  }
+
+  // Run after typing stops
+  titleInput.addEventListener('input', scheduleCheck);
+
+  // Also check right away on blur (covers OCR/paste/focus-out)
+  titleInput.addEventListener('blur', checkNow);
+
+  // If user presses Enter in the title field, check immediately
+  titleInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(debounceId);
+      checkNow();
+    }
+  });
+
+  // If a value is already present on load (e.g., OCR filled), check it
+  document.addEventListener('DOMContentLoaded', () => {
+    if (normalize(titleInput.value)) checkNow();
+  });
+})();
+
+// FOR PUBLICATION YEAR //
+document.addEventListener("DOMContentLoaded", function () {
+    let select = document.getElementById("YearofPublication");
+    let startYear = 1900;
+    let endYear = 2025;
+
+    // Add the year options
+    for (let year = endYear; year >= startYear; year--) {
+        let option = document.createElement("option");
+        option.value = year;
+        option.text = year;
+        select.appendChild(option);
+    }
+
+    // If no year is selected, ensure N/A is an option
+    let naOption = document.createElement("option");
+    naOption.value = "N/A";
+    naOption.text = "N/A";
+    select.appendChild(naOption);
+});
+
+
+
+// FOR PUBLISHER //
+// Show dropdown when clicking the button (▼)
+document.querySelector('.add-publisher').addEventListener('click', function () {
+    // Toggle visibility of the publisher dropdown
+    const dropdown = document.getElementById('publisherDropdown');
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    
+    // If user is typing, hide dropdown
+    const inputField = document.getElementById('publisher');
+    inputField.addEventListener('input', function () {
+        dropdown.style.display = 'none';  // Hide dropdown when user starts typing
+    });
+});
+
+// Save the publisher when a user selects from dropdown
+document.getElementById('publisherSelect').addEventListener('change', function () {
+    const selectedPublisher = this.value;
+    const inputField = document.getElementById('publisher');
+    
+    // Set the selected publisher to the input field
+    inputField.value = selectedPublisher;
+    
+    // Hide the dropdown after selection
+    document.getElementById('publisherDropdown').style.display = 'none';
+});
+
+// Allow typing a new publisher
+document.getElementById('publisher').addEventListener('input', function () {
+    const inputField = this;
+    
+    // When user types, we will treat it as a new publisher
+    const newPublisher = inputField.value.trim();
+    
+    // If the field is empty, reset the selection
+    if (!newPublisher) {
+        document.getElementById('publisherSelect').value = '';
+    }
+});
+
+
+
+// "Add Author/Co-Author" button
+document.querySelector('.add-coauthor').addEventListener('click', function () {
+    // Show the modal with "Author" and "Co-Author" buttons
+    document.getElementById('authorCoAuthorModal').style.display = 'flex';
+});
+
+// Event listener for the "Author" button in the modal
+document.getElementById('confirmAuthorType').addEventListener('click', function () {
+    const container = document.getElementById('coAuthorContainer');
+    
+    // Create a new input field for Author (Last Name, First Name format)
+    const div = document.createElement('div');
+    div.classList.add('input-group', 'mb-2');
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.classList.add('form-control');
+    input.name = 'author[]'; // Use 'author[]' to ensure all are treated as part of an array
+    input.placeholder = 'Enter Last Name, First Name'; // Updated placeholder format
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.classList.add('btn', 'btn-outline-danger');
+    removeBtn.textContent = '–';
+    
+    // Append the input and remove button to the container
+    div.appendChild(input);
+    div.appendChild(removeBtn);
+    container.appendChild(div);
+    
+    // Add functionality to remove the input field
+    removeBtn.addEventListener('click', function () {
+        container.removeChild(div);
+    });
+    
+    // Hide the modal after confirming
+    document.getElementById('authorCoAuthorModal').style.display = 'none';
+});
+
+// Event listener for the "Co-Author" button in the modal
+document.getElementById('cancelAuthorType').addEventListener('click', function () {
+    const container = document.getElementById('coAuthorContainer');
+    
+    // Create a new input field for Co-Author (Last Name, First Name format)
+    const div = document.createElement('div');
+    div.classList.add('input-group', 'mb-2');
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.classList.add('form-control');
+    input.name = 'coAuthor[]';
+    input.placeholder = 'Enter Last Name, First Name'; // Updated placeholder format
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.classList.add('btn', 'btn-outline-danger');
+    removeBtn.textContent = '–';
+    
+    // Append the input and remove button to the container
+    div.appendChild(input);
+    div.appendChild(removeBtn);
+    container.appendChild(div);
+    
+    // Add functionality to remove the input field
+    removeBtn.addEventListener('click', function () {
+        container.removeChild(div);
+    });
+    
+    // Hide the modal after canceling
+    document.getElementById('authorCoAuthorModal').style.display = 'none';
+});
+
+
+// FOR SHELF CATEGORY // 
+// Show the input for new category when the "+" button is clicked
+document.querySelector('.add-category').addEventListener('click', function () {
+    document.getElementById('newCategoryInput').style.display = 'block';
+});
+
+// Event listener for the "Add Category" button
+document.getElementById('saveNewCategory').addEventListener('click', function () {
+    const newCategory = document.getElementById('newCategoryText').value.trim();
+    const select = document.getElementById('bookShelfCategory');
+
+    // Check if the new category already exists
+    const existingCategories = Array.from(select.options).map(option => option.value.toLowerCase());
+    if (existingCategories.includes(newCategory.toLowerCase())) {
+        alert("This category already exists.");
+        return;
+    }
+
+    if (newCategory !== "") {
+        // Create a new option element
+        const newOption = document.createElement('option');
+        newOption.value = newCategory;
+        newOption.textContent = newCategory;
+
+        // Append the new option to the dropdown
+        select.appendChild(newOption);
+
+        // Select the newly added category
+        select.value = newCategory;
+
+        // Clear the input field and hide it again
+        document.getElementById('newCategoryText').value = "";
+        document.getElementById('newCategoryInput').style.display = 'none';
+    } else {
+        alert("Please enter a valid category.");
+    }
+});
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Get today's date
+    const today = new Date();
+
+    // Get the current year, month, and day
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed, so add 1
+    const day = String(today.getDate()).padStart(2, '0'); // Pad single digits with zero
+
+    // Combine into the format YYYY-MM-DD
+    const fullDate = `${year}-${month}-${day}`;
+
+    // Set the value of the date input to today's date
+    document.getElementById('dateUploaded').value = fullDate;
+});
+
+// --------- Camera Preview ---------///
+// Add event listeners for dragging
+const cameraPreview = document.getElementById('cameraPreview');
+const capturedImage = document.getElementById('capturedImage');
+
+// Start dragging when mouse down
+cameraPreview.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    cameraPreview.classList.add('draggable');
+});
+
+// Move the content while dragging
+document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+
+    let deltaX = e.clientX - lastX;
+    let deltaY = e.clientY - lastY;
+
+    // Move both the preview and captured image
+    cameraPreview.style.transform += ` translate(${deltaX}px, ${deltaY}px)`;
+    capturedImage.style.transform += ` translate(${deltaX}px, ${deltaY}px)`;
+
+    lastX = e.clientX;
+    lastY = e.clientY;
+});
+
+// Stop dragging when mouse up
+document.addEventListener('mouseup', function() {
+    isDragging = false;
+    cameraPreview.classList.remove('draggable');
+});
+
+// Optionally, prevent dragging when zooming is not applied
+cameraPreview.addEventListener('wheel', function(e) {
+    if (zoomLevel <= 1) return; // Disable dragging if zoom level is not applied
+});
+
+
+
+// --- Dynamic options based on Book Type ---
+function updateScannedContentOptions() {
+    const bookType = document.getElementById('bookType').value;
+    const scannedContentType = document.getElementById('scannedContentType');
+
+    scannedContentType.innerHTML = ''; // clear old options
+
+    if (bookType === 'Academic') {
+        scannedContentType.innerHTML = `
+            <option value="" selected disabled>Select Content Type</option>
+            <option value="TOC">Table of Contents (TOC)</option>
+            <option value="Index">Index</option>
+        `;
+    } else if (bookType === 'Thesis') {
+        scannedContentType.innerHTML = `
+            <option value="Abstract" selected>Abstract</option>
+        `;
+
+        // Trigger camera automatically since it's the only option
+        handleScanDropdownSelection();
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function () {
+    updateScannedContentOptions();
+});
+
+// Update whenever Book Type changes
+document.getElementById('bookType').addEventListener('change', updateScannedContentOptions);
+
+
+// FOR SCANING CONTENT BUTTONS//
+
+// Function to handle the camera preview when dropdown is selected
+function handleScanDropdownSelection() {
+    const cameraPreview = document.getElementById('cameraPreview'); // Camera preview element
+    const scanOptions = document.getElementById('scanOptions'); // Dropdown container
+
+    // Show camera preview as soon as an option is selected
+    cameraPreview.style.display = 'block';
+
+    // Start the camera as soon as the user selects an option from the dropdown
+    startCamera();
+}
+
+// Function to start the camera preview
+function startCamera() {
+    const cameraPreview = document.getElementById('cameraPreview');
+    const scanOptions = document.getElementById('scanOptions'); // The dropdown container
+
+    // Show camera preview
+    cameraPreview.style.display = 'block';
+
+    // Enumerate devices to check if camera is detected
+    navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+            // Look for video devices (cameras)
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            if (videoDevices.length === 0) {
+                console.error("No video input devices found.");
+                alert("No camera detected. Please ensure your OCR camera is connected.");
+                return;
+            }
+
+            // Log the detected devices
+            console.log("Detected video devices:", videoDevices);
+
+            // Try to access the first available camera
+            const videoDevice = videoDevices[0];  // You can select a different camera if needed
+            console.log("Using device:", videoDevice);
+
+            // Access the camera using the deviceId
+            navigator.mediaDevices.getUserMedia({
+                video: { 
+                    deviceId: videoDevice.deviceId,  
+                    width: { ideal: 3264 },           
+                    height: { ideal: 2448 } 
+                }
+            })
+                .then((stream) => {
+                    console.log("Camera stream started.");
+                    cameraPreview.srcObject = stream;  // Show the camera feed inside the video element
+                })
+                .catch((err) => {
+                    console.error("Error accessing camera: ", err);
+                    alert("Error accessing the camera. Please check the connection and permissions.");
+                });
+        })
+        .catch((err) => {
+            console.error("Error enumerating devices: ", err);
+            alert("Error accessing camera devices. Please check your browser permissions.");
+        });
+}
+
+// Trigger the camera preview immediately once the dropdown is changed (TOC or Index)
+document.getElementById('scannedContentType').addEventListener('change', handleScanDropdownSelection);
+
+
+// Prevent form submission when clicking maximize preview button
+document.getElementById('maximizePreview').addEventListener('click', function(event) {
+    event.preventDefault();  // Prevent the default action (form submission)
+
+    const cameraPreviewContainer = document.querySelector('.camera-preview-container');
+    
+    // Toggle the maximized class on the camera preview container
+    cameraPreviewContainer.classList.toggle('maximized');
+    
+    // Change the button icon when toggled
+    const button = document.getElementById('maximizePreview');
+    if (cameraPreviewContainer.classList.contains('maximized')) {
+        button.innerHTML = '↙️';  // Change to "Restore" icon when maximized
+    } else {
+        button.innerHTML = '↗️';  // Change back to "Maximize" icon
+    }
+});
+
+// Prevent form submission when clicking maximize captured image button
+document.getElementById('maximizeCapturedImage').addEventListener('click', function(event) {
+    event.preventDefault();  // Prevent the default action (form submission)
+
+    const capturedImageContainer = document.querySelector('.captured-image-container');
+    
+    // Toggle the maximized class on the captured image container
+    capturedImageContainer.classList.toggle('maximized');
+    
+    // Change the button icon when toggled
+    const button = document.getElementById('maximizeCapturedImage');
+    if (capturedImageContainer.classList.contains('maximized')) {
+        button.innerHTML = '↙️';  // Change to "Restore" icon when maximized
+    } else {
+        button.innerHTML = '↗️';  // Change back to "Maximize" icon
+    }
+});
+
+
+let scannedContentArray = []; // This stores all the pages
+
+
+
+// --------- THIS IS FOR CAPTURE IMAGE FUNCTION ---------///
+
+// Function to capture a new image (same as "Scan")
+function captureImage(retake = false) {
+    const capturedImage = document.getElementById('capturedImage');
+    
+    // Check if there is an image in the capturedImage container
+    if (capturedImage.src && capturedImage.style.display === 'block') {
+        // The image in the capturedImage container is already the scanned image
+        const imgData = capturedImage.src; // Use the current image data
+
+        // Send the image to the server for OCR processing
+        fetch('/librarian/addbook/', {
+            method: 'POST',
+            body: JSON.stringify({ 'image_data': imgData }), // Send base64 image data
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'  // Ensure this is included for AJAX
+            }
+        })
+        .then(response => response.json())  // Parse the response as JSON
+        .then(data => {
+            if (data && data.extracted_text) {
+                // If it's a retake, replace the content of the current page
+                if (retake) {
+                    scannedContentArray[scannedContentArray.length - 1] = data.extracted_text.trim();
+                } else {
+                    // If it's a new scan, append the new content to the array
+                    scannedContentArray.push(data.extracted_text.trim());
+                }
+
+                // Get user-selected type (TOC / Index / etc.)
+                const scannedType = document.getElementById("scannedContentType").value;
+
+                // Clean OCR result depending on type
+                const cleaned = cleanUniversalOCR(
+                    scannedContentArray.join("\n\n"),
+                    scannedType
+                );
+
+                // Display cleaned text in textarea
+                document.getElementById('scannedContent').value = cleaned;
+
+            } else {
+                console.log("No extracted text found in the response.");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    } else {
+        console.error("No image captured in 'capturedImage'.");
+    }
+}
+
+// --------- BUTTONS AND CROP FUNCTIONS ---------///
+let cropper = null;
+
+document.getElementById('captureButton').addEventListener('click', function() {
+    const cameraPreview = document.getElementById('cameraPreview');
+    const canvas = document.createElement('canvas');
+    canvas.width = cameraPreview.videoWidth;
+    canvas.height = cameraPreview.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(cameraPreview, 0, 0);  // Draw the image from the camera feed to the canvas
+
+    // Convert canvas to image data
+    const imgData = canvas.toDataURL('image/png'); 
+
+    if (imgData) {
+        const capturedImage = document.getElementById('capturedImage');
+        capturedImage.src = imgData;  // Set the captured image
+        capturedImage.style.display = 'block';  // Make it visible
+
+        // Initialize the Cropper.js instance on the captured image
+        if (cropper) {
+            cropper.destroy();  // Destroy previous cropper instance if any
+        }
+
+        cropper = new Cropper(capturedImage, {
+            aspectRatio: NaN,  // Allow free resizing (no fixed aspect ratio)
+            viewMode: 1,       // Controls the cropping area (1 = inside the image, 2 = outside)
+            autoCropArea: 1, // Auto crop area
+            zoomable: false,    // Disable zooming
+            cropBoxResizable: true,  // Allow the crop box to be resized
+            cropBoxMovable: true,    // Allow the crop box to be moved
+            ready: function () {
+                // Make crop box border thick and colored for visibility
+                const cropBox = document.querySelector('.cropper-crop-box');
+                if (cropBox) {
+                    cropBox.style.border = '2px solid #00e0ff'; // Bright thick border
+                }
+                // Also make handles larger
+                const handles = document.querySelectorAll('.cropper-line, .cropper-point');
+                handles.forEach(h => {
+                    h.style.background = '#00e0ff';
+                    h.style.width = '10px';
+                    h.style.height = '10px';
+                    h.style.borderRadius = '2px';
+                });
+                console.log("Cropper is ready.");
+            },
+        });
+    } else {
+        // If no image is captured, show an alert
+        alert("No image found.");
+    }
+});
+
+
+// Function to make the image draggable (adjustable) with right-click
+function enableImageDrag(capturedImage) {
+    let isDragging = false;
+    let startX = 0, startY = 0;
+
+    // Start dragging when mouse down (right-click)
+    capturedImage.addEventListener('mousedown', function(e) {
+        if (e.button === 2) {  // Right-click to drag image
+            e.preventDefault();  // Prevent default right-click menu
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            // Change cursor to move
+            capturedImage.style.cursor = 'move';
+        }
+    });
+
+    // Move the image during dragging
+    document.addEventListener('mousemove', function(e) {
+        if (isDragging) {
+            let deltaX = e.clientX - startX;
+            let deltaY = e.clientY - startY;
+
+            // Move the image inside the container using the transform property
+            const currentTransform = getComputedStyle(capturedImage).transform;
+            const currentX = parseInt(currentTransform.split(',')[4]) || 0;
+            const currentY = parseInt(currentTransform.split(',')[5]) || 0;
+
+            capturedImage.style.transform = `translate(${currentX + deltaX}px, ${currentY + deltaY}px)`;  // Apply transformation for dragging
+
+            startX = e.clientX;
+            startY = e.clientY;
+        }
+    });
+
+    // Stop dragging when mouse up
+    document.addEventListener('mouseup', function() {
+        isDragging = false;
+        capturedImage.style.cursor = 'default'; // Reset cursor to default
+    });
+}
+
+
+// Crop Button Function (Updated with Cropper.js)
+document.getElementById('cropButton').addEventListener('click', function(event) {
+    event.preventDefault();  // Prevent form submission and page scroll to top
+
+    if (cropper) {
+        // Get the cropped image data URL
+        const croppedCanvas = cropper.getCroppedCanvas();
+
+        // Replace the captured image with the cropped image
+        const croppedImage = croppedCanvas.toDataURL('image/png');
+        const capturedImage = document.getElementById('capturedImage');
+        capturedImage.src = croppedImage;
+        capturedImage.style.display = 'block';  // Display the cropped image
+
+        // Destroy the cropper instance after cropping
+        cropper.destroy();
+        cropper = null;
+        document.getElementById('scanButton').disabled = false;
+        document.getElementById('captureNextButton').disabled = false;
+    } else {
+        // If no image has been captured yet
+        alert('Image not found.');
+    }
+});
+
+// Hide captureNextButton initially
+document.getElementById('captureNextButton').style.display = 'none';
+
+// Scan Book Button functionality
+document.getElementById('scanButton').addEventListener('click', function() {
+    const capturedImage = document.getElementById('capturedImage');
+    const loader = document.getElementById('loader'); // The loader container
+
+    // Show the loader when starting the scan
+    loader.style.display = 'flex';
+
+    if (capturedImage.style.display === 'block' && capturedImage.src) {
+        // If the image is already displayed and there's a valid image source
+        const imgData = capturedImage.src;  // The base64 image data
+
+        // Send the captured image data to the server for OCR processing
+        fetch('/librarian/addbook/', {
+            method: 'POST',
+            body: JSON.stringify({ 'image_data': imgData }), // Send base64 image data
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'  // Ensure this is included for AJAX
+            }
+        })
+        .then(response => response.json())  // Parse the response as JSON
+        .then(data => {
+            if (data && data.extracted_text) {
+                //  Pass extracted text through cleaner
+                const selectedType = document.getElementById("scannedContentType").value || "TOC";
+                const cleanedText = cleanUniversalOCR(data.extracted_text.trim(), selectedType);
+
+                // Insert cleaned text into textarea
+                document.getElementById('scannedContent').value = cleanedText;
+                scannedContentArray.push(cleanedText);
+
+            } else {
+                console.log("No extracted text found in the response.");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            // Hide the loader after the processing is complete (whether successful or not)
+            loader.style.display = 'none';
+            // Hide the scanButton and show the captureNextButton
+            document.getElementById('scanButton').style.display = 'none';
+            document.getElementById('captureNextButton').style.display = 'block';
+            document.getElementById('scanButton').disabled = true;
+            document.getElementById('captureNextButton').disabled = true;
+        });
+
+    } else {
+        // If no image has been captured yet
+        alert('Please capture an image first before scanning.');
+
+        // Hide the loader since the image is not ready
+        loader.style.display = 'none';
+    }
+});
+
+
+// Capture Next functionality: Appends the scanned content from the next page
+document.getElementById('captureNextButton').addEventListener('click', function() {
+    // Get the captured image from the existing capturedImage element
+    const capturedImage = document.getElementById('capturedImage');
+    
+    // Get the currently displayed scanned content
+    const scannedContent = document.getElementById('scannedContent');
+
+    // Show the loader while processing
+    const loader = document.getElementById('loader');
+    loader.style.display = 'flex';
+
+    // Ensure the captured image exists and has a valid source
+    if (capturedImage.style.display === 'block' && capturedImage.src) {
+        // Send the captured image to backend for OCR processing
+        fetch('/librarian/addbook/', {
+            method: 'POST',
+            body: JSON.stringify({ 'image_data': capturedImage.src }), // Send base64 image data
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'  // Ensure this is included for AJAX
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.extracted_text) {
+                // Append the newly extracted text to the existing content
+                const selectedType = document.getElementById("scannedContentType").value || "TOC";
+                // Clean the OCR text according to selected type
+                const newText = cleanUniversalOCR(data.extracted_text.trim(), selectedType);
+                if (newText && !scannedContent.value.includes(newText)) {
+                    scannedContentArray.push(newText);
+                    scannedContent.value += "\n\n" + newText; // Append new text with a new line
+                }
+            } else {
+                console.error("No extracted text found in the response.");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            // Hide the loader after the processing is complete (whether successful or not)
+            loader.style.display = 'none';
+            document.getElementById('scanButton').disabled = true;
+            document.getElementById('captureNextButton').disabled = true;
+        });
+    } else {
+        console.error("No image captured in 'capturedImage'.");
+        loader.style.display = 'none'; // Hide the loader if no image is available
+    }
+});
+
+// Retry button: Removes the last scan from the scanned content (undo the last scan)
+document.getElementById('retryButton').addEventListener('click', function() {
+    // Reset the captured image (clear it)
+    const capturedImage = document.getElementById('capturedImage');
+    capturedImage.src = '';  // Reset the image source
+    capturedImage.style.display = 'none';  // Hide the image
+  
+    if (scannedContentArray.length > 1) {
+        // Remove the last element (most recent scan)
+        scannedContentArray.pop(); 
+
+        // Update the scannedContent with the remaining content
+        const scannedContent = document.getElementById('scannedContent');
+        scannedContent.value = scannedContentArray.join("\n\n"); // Join remaining content with new lines
+
+    } else {
+        console.log("No previous scan to retry.");
+    }
+});
+
+// Reset button: Clear all captured content and reset state
+document.getElementById('resetButton').addEventListener('click', function() {
+    // Clear the scanned content
+    const scannedContent = document.getElementById('scannedContent');
+    scannedContent.value = '';  // Clear the text area
+
+    // Clear the captured image
+    const capturedImage = document.getElementById('capturedImage');
+    capturedImage.src = '';  // Reset the image source
+    capturedImage.style.display = 'none';  // Hide the image
+
+    // Reset the scanned content array
+    scannedContentArray = [];  // Clear the array to prevent appending old data
+
+    // Hide the captureNextButton and show the scanButton
+    document.getElementById('captureNextButton').style.display = 'none';
+    document.getElementById('scanButton').style.display = 'block';
+});
+
+// Flag to track if the scanning is finished (locked)
+let scanningFinished = false;
+
+// Lock Button - Confirm and lock the scanned content
+document.getElementById('lockButton').addEventListener('click', function(event) {
+    event.preventDefault();  // Prevent form submission
+    
+    const scannedContent = document.getElementById('scannedContent').value;
+    
+    // Check if the content is empty
+    if (!scannedContent.trim()) {
+        alert('Please scan content first!');
+        return;
+    }
+
+    // Confirmation for the user to ensure scanning is complete
+    const confirmation = confirm("Are you sure the scanned content is final? This will lock the content for keyword generation.");
+    if (confirmation) {
+        scanningFinished = true;
+        document.getElementById('lockButton').textContent = "Unlock"; // Change button to Unlock
+        document.getElementById('scannedContent').setAttribute('readonly', true); // Lock the content
+        document.getElementById('scannedContent').style.backgroundColor = "#f2f2f2"; // Change background to locked state
+
+        document.getElementById('generateKeywordsButton').disabled = false;
+    }
+});
+
+// Edit Button - Allows the user to edit the content if locked
+document.getElementById('editButton').addEventListener('click', function(event) {
+    event.preventDefault();  // Prevent form submission
+
+    // Only enable edit if the content is locked
+    if (scanningFinished) {
+        document.getElementById('scannedContent').removeAttribute('readonly'); // Make editable
+        document.getElementById('scannedContent').style.backgroundColor = "#fff"; // Make editable background
+
+        document.getElementById('lockButton').textContent = "Lock"; // Change lock button text
+        scanningFinished = false; // Unlock scanning process
+
+        document.getElementById('generateKeywordsButton').disabled = true;
+    }
+});
+
+// 🔹 Keep only THIS handler for #generateKeywordsButton
+function normalizeTechKeywords(keywords) {
+  const acronyms = [
+    "LAN","WAN","VLAN","OSI","TCP","UDP","IP","IPX","IOS","ISDN","SMTP",
+    "POP","HTTP","HTTPS","DNS","DHCP","NIC","MAC","VPN","API","SQL","RIP","OSPF","RJ45"
+  ];
+  return (keywords || "")
+    .split(", ")
+    .map(k => acronyms.includes(k.toUpperCase()) ? k.toUpperCase() : k)
+    .join(", ");
+}
+
+document.getElementById('generateKeywordsButton').addEventListener('click', function (event) {
+  event.preventDefault();
+
+  if (!scanningFinished) {
+    alert("Please lock the content first before generating keywords.");
+    return;
+  }
+
+  const text = (document.getElementById('scannedContent').value || "");
+  const typeRaw = document.getElementById('scannedContentType').value || 'TOC';
+  const typeKey = String(typeRaw).trim().toLowerCase();   // 'toc' | 'index' | 'figure'
+
+  // --- stop words ---
+  const baseStop = [
+    'a','an','and','are','as','at','be','by','but','for','have','how',
+    'i','if','in','it','is','me','more','my','not','of','on','or',
+    'that','the','this','to','was','we','will','with','you','your','can','gave'
+  ];
+
+  // shared noise (optional; add/remove to taste)
+  const sharedExtra = []; // e.g. ['see','also','figure'] if you want them gone in all modes
+
+  const figureExtra = ['purpose','study','abstract','entitled','entiteled','can','researchers','research','includes','include'];
+  const tocExtra    = ['chapter','lesson','page','pages','toc','glossary','index'];
+  const indexExtra  = ['see','also','figure','chapter','lesson'];
+
+  let stopSet;
+  switch (typeKey) {
+    case 'figure':
+      stopSet = new Set([...baseStop, ...sharedExtra, ...figureExtra]);
+      break;
+    case 'index':
+      stopSet = new Set([...baseStop, ...sharedExtra, ...indexExtra]);
+      break;
+    case 'toc':
+    default:
+      stopSet = new Set([...baseStop, ...sharedExtra, ...tocExtra]);
+      break;
+  }
+
+  // --- tokenize & filter ---
+  const tokens = (text.toLowerCase().match(/\b[a-z0-9][a-z0-9+\-]*\b/g) || [])
+    .filter(t => !/^\d+$/.test(t))                 // drop pure numbers
+    .filter(t => !/^\d+(?:[-–]\d+)?$/.test(t))     // drop numeric ranges like 10-20
+    .filter(t => t.length > 2 && !stopSet.has(t)); // drop short & stopwords
+
+  // --- frequency sort ---
+  const freq = {};
+  for (const t of tokens) freq[t] = (freq[t] || 0) + 1;
+  const sorted = Object.keys(freq).sort((a,b) => freq[b] - freq[a] || a.localeCompare(b));
+
+  // --- normalize acronyms and write output ---
+  const keywords = normalizeTechKeywords(sorted.join(', '));
+  document.getElementById('bookKeyword').value = keywords;
+});
+
+//----------------------------------------- FOR BOOK COVER CAMERA ------------------------------------------------//
+// Store the media stream globally to stop it later
+let _coverStream = null;
+
+function autoCropToPortrait(fileOrBlob, callback) {
+    const img = new Image();
+    img.onload = function () {
+        const canvas = document.createElement("canvas");
+        const targetWidth = 1400;   // 2:3 ratio
+        const targetHeight = 1800;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff"; 
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+        // ✅ Use Math.min to prevent over-zoom
+        const scale = Math.min(
+            targetWidth / img.width,
+            targetHeight / img.height
+        );
+
+        const x = (targetWidth / 2) - (img.width / 2) * scale;
+        const y = (targetHeight / 2) - (img.height / 2) * scale;
+
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+        canvas.toBlob(function (blob) {
+            callback(blob);
+        }, "image/jpeg", 0.9);
+    };
+    img.src = URL.createObjectURL(fileOrBlob);
+}
+
+
+document.getElementById('openCoverCamera').addEventListener('click', function () {
+    const cameraLoader = document.getElementById('cameraLoader');
+    const loader = document.getElementById('loader'); // Scanning loader
+    cameraLoader.style.display = 'flex';  // Show camera loader while camera is initializing
+    loader.style.display = 'none'; // Hide the scanning loader when opening the camera
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const modal = document.getElementById('coverCamModal');
+        const video = document.getElementById('coverCamPreview');
+
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: 'environment' },
+                width: { ideal: 1600 },
+                height: { ideal: 2048 },
+            }
+        }).then(stream => {
+            _coverStream = stream;
+            video.srcObject = stream;
+            modal.style.display = 'flex'; // Show the modal with video feed
+
+            // Hide the camera loader once the camera feed is ready
+            cameraLoader.style.display = 'none';
+        }).catch(err => {
+            // Log the specific error to console
+            console.error('Camera access error:', err);
+
+            // Hide the camera loader if camera access fails
+            cameraLoader.style.display = 'none';
+
+            // Handle error appropriately (permissions, device not found)
+            alert("An error occurred while accessing the camera. Please check the permissions.");
+            document.getElementById('bookCoverCamera').click(); // Fall back to file upload
+        });
+    } else {
+        alert("Your browser does not support camera access.");
+        document.getElementById('bookCoverCamera').click(); // Fallback to upload
+    }
+});
+
+
+
+// --------- Capture from live camera --------- //
+let coverCropper = null;
+let coverCapturedImageModal = null;
+let coverImageShowing = false;
+
+// Capture Image functionality
+document.getElementById('coverCamSnap').addEventListener('click', function () {
+    const video = document.getElementById('coverCamPreview');
+    const modal = document.getElementById('coverCamModal');
+    const loader = document.getElementById('loader');
+    const modalBody = modal.querySelector('.modal-body');
+    const captureButton = document.getElementById('coverCamSnap');
+    const zoomButton = document.getElementById('cropBookCoverButton');
+
+    // If image is showing, return to video mode
+    if (coverImageShowing) {
+        if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+        if (coverCapturedImageModal) {
+            modalBody.removeChild(coverCapturedImageModal);
+            coverCapturedImageModal = null;
+        }
+        video.style.display = 'block';
+        coverImageShowing = false;
+        zoomButton.style.display = 'none';
+        return;
+    }
+
+    // Otherwise, capture image from video
+    if (!video.srcObject || video.srcObject.active === false) {
+        alert("No camera feed detected. Please open the camera first.");
+        return;
+    }
+    
+    const canvas = document.createElement('canvas');
+    const w = video.videoWidth || 1280;
+    const h = video.videoHeight || 720;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);
+    const imgData = canvas.toDataURL('image/png');
+
+    // Display captured image in the coverPreview container (for saving)
+    const coverPreview = document.getElementById('coverPreview');
+    coverPreview.src = imgData;
+    coverPreview.style.display = 'block';
+
+    // Create or update the modal image
+    if (coverCapturedImageModal) {
+        if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+        modalBody.removeChild(coverCapturedImageModal);
+    }
+    coverCapturedImageModal = document.createElement('img');
+    coverCapturedImageModal.src = imgData;
+    coverCapturedImageModal.style.width = '100%';
+    coverCapturedImageModal.style.height = 'auto';
+    coverCapturedImageModal.style.display = 'block';
+    coverCapturedImageModal.style.background = '#000';
+    coverCapturedImageModal.style.objectFit = 'contain';
+    modalBody.appendChild(coverCapturedImageModal);
+
+    // Hide video
+    video.style.display = 'none';
+    coverImageShowing = true;
+    zoomButton.style.display = 'block'; // Show extract title button
+
+    // Initialize Cropper.js
+    coverCropper = new Cropper(coverCapturedImageModal, {
+        aspectRatio: NaN,
+        viewMode: 1,
+        autoCropArea: 1,
+        zoomable: true,
+        cropBoxResizable: true,
+        cropBoxMovable: true
+    });
+
+    // Hide the "Capture" button and show the "Extract Title" button after capture
+    captureButton.style.display = 'none'; // Hide capture button
+    zoomButton.style.display = 'block';   // Show extract title button
+});
+
+// Extract Title (Crop & OCR) handler
+document.getElementById('cropBookCoverButton').onclick = function () {
+    const modal = document.getElementById('coverCamModal');
+    const modalBody = modal.querySelector('.modal-body');
+    const video = document.getElementById('coverCamPreview');
+
+    if (!coverImageShowing || !coverCropper || !coverCapturedImageModal) {
+        alert('No image to extract title from.');
+        return;
+    }
+
+    // Get the cropped image data
+    const croppedCanvas = coverCropper.getCroppedCanvas();
+    const croppedImgData = croppedCanvas.toDataURL('image/png');
+
+    // Extract the title using OCR and wait for the extraction to finish before closing the modal
+    extractBookTitle(croppedImgData).then(() => {
+        // After extraction, return to video mode (remove image, show video)
+        if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+        if (coverCapturedImageModal) {
+            modalBody.removeChild(coverCapturedImageModal);
+            coverCapturedImageModal = null;
+        }
+        video.style.display = 'block';
+        coverImageShowing = false;
+        document.getElementById('cropBookCoverButton').style.display = 'none'; // Hide the extract title button
+        modal.style.display = 'none'; // Close the modal after extraction is complete
+    }).catch((error) => {
+        console.error(error);
+        alert('Error during title extraction');
+        // Ensure modal is also closed if there is an error
+        modal.style.display = 'none';
+    });
+};
+
+
+document.getElementById('coverCamCancel').addEventListener('click', function () {
+    // Reset modal state
+    const modal = document.getElementById('coverCamModal');
+    const video = document.getElementById('coverCamPreview');
+    const modalBody = modal.querySelector('.modal-body');
+    const zoomButton = document.getElementById('cropBookCoverButton');
+    
+
+    // Destroy cropper and remove image if present
+    if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+    if (coverCapturedImageModal) {
+        modalBody.removeChild(coverCapturedImageModal);
+        coverCapturedImageModal = null;
+    }
+    video.style.display = 'block';
+    coverImageShowing = false;
+    zoomButton.style.display = 'none';
+
+    // Stop camera and close modal
+    stopCoverStream();
+    modal.style.display = 'none';
+});
+
+// --------- Stop camera helper ---------
+function stopCoverStream() {
+    if (_coverStream) {
+        const tracks = _coverStream.getTracks();
+        tracks.forEach(track => track.stop());
+        _coverStream = null;
+    }
+}
+
+// --------- Preview from fallback input ---------
+document.getElementById('bookCoverCamera').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const uploadInput = document.getElementById('bookCoverUpload');
+    if (uploadInput) { uploadInput.value = ''; }
+
+    if (file && file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+        autoCropToPortrait(file, function(croppedBlob) {
+            const previewContainer = document.getElementById('coverPreviewContainer');
+            const previewImage = document.getElementById('coverPreview');
+            previewImage.src = URL.createObjectURL(croppedBlob);
+            previewContainer.style.display = 'block';
+            previewImage.style.display = 'block';
+        });
+    } else {
+        alert('Please take/select a valid image file (PNG, JPEG, or JPG).');
+        event.target.value = '';
+    }
+});
+
+
+
+
+
+
+// Handle file upload
+document.getElementById('bookCoverUpload').addEventListener('change', function (event) {
+  const file = event.target.files[0];
+  if (!file || !/^image\/(png|jpe?g)$/.test(file.type)) {
+    alert('Please select a valid image (PNG, JPEG, JPG).');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    // show full cover in left preview
+    const previewImage = document.getElementById('coverPreview');
+    previewImage.src = e.target.result;
+    document.getElementById('coverPreviewContainer').style.display = 'block';
+    previewImage.style.display = 'block';
+
+    // open crop modal for title crop
+    const modal = document.getElementById('titleCropModal');
+    const cropImage = document.getElementById('titleCropImage');
+    cropImage.src = e.target.result;
+
+    // wait until the thumbnail finishes loading before creating Cropper
+    cropImage.onload = function () {
+      if (window.titleCropper) window.titleCropper.destroy();
+      window.titleCropper = new Cropper(cropImage, {
+        aspectRatio: NaN,
+        viewMode: 1,
+        autoCropArea: 0.7
+      });
+      modal.style.display = 'flex';
+    };
+  };
+  reader.readAsDataURL(file);
+});
+
+// Extract button
+document.getElementById('extractTitleBtn').addEventListener('click', function() {
+  if (!window.titleCropper) return;
+
+  // Show scanning loader
+  const loader = document.getElementById('loader');
+  loader.style.display = 'flex'; 
+
+  // Get cropped canvas
+  const canvas = window.titleCropper.getCroppedCanvas({
+    width: 400, // adjust resolution
+    height: 200
+  });
+
+  // Convert to Base64
+  const croppedDataUrl = canvas.toDataURL('image/png');
+
+  // Send cropped image to backend OCR
+  fetch('{% url "librarian_addbook" %}', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+
+    body: JSON.stringify({ 'title_image_data': croppedDataUrl })
+  })
+  .then(res => res.json())
+  .then(data => {
+    loader.style.display = 'none';
+
+    if (data.book_title) {
+      document.getElementById('bookTitle').value = data.book_title;
+    } else {
+      alert('No title detected.');
+    }
+    document.getElementById('titleCropModal').style.display = 'none';
+  })
+  .catch(err => {
+    loader.style.display = 'none';
+    console.error(err);
+    alert('Error extracting title.');
+  });
+});
+
+// Cancel button
+document.getElementById('cancelCropBtn').addEventListener('click', function() {
+  document.getElementById('titleCropModal').style.display = 'none';
+  if (window.titleCropper) window.titleCropper.destroy();
+});
+
+
+// ---------------------------------- FOR BOOK TITLE EXTRACTION -------------------------//
+// Handle both file upload and camera capture for book title extraction
+document.getElementById('bookCoverUpload').addEventListener('change', handleImageExtraction);
+document.getElementById('openCoverCamera').addEventListener('click', handleCameraCapture);
+
+let capturedImageData = null;  // To store the image data after capturing
+
+function handleImageExtraction(event) {
+    let imageData;
+
+    if (event.target.id === 'bookCoverUpload') {
+        // For file upload
+        const file = event.target.files[0];
+        if (file && file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imageData = e.target.result;  // Get base64 image data
+            };
+            reader.readAsDataURL(file);  // Read the file as base64
+        } else {
+            alert('Please upload a valid image (PNG, JPEG, JPG).');
+        }
+    }
+}
+
+function handleCameraCapture() {
+    const video = document.getElementById('coverCamPreview');
+    const cameraLoader = document.getElementById('cameraLoader'); // Camera loader for initialization
+
+    // Show camera loader when the camera feed is not yet initialized
+    if (!video.srcObject || !video.srcObject.active) {
+        cameraLoader.style.display = 'flex';  // Show loader while camera feed is initializing
+        return;  // Do not proceed further if camera feed isn't available yet
+    }
+
+    // Proceed with capturing the image once the camera feed is ready
+    const canvas = document.createElement('canvas');
+    const w = video.videoWidth || 2480;
+    const h = video.videoHeight || 1600;
+    canvas.width = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);  // Capture the frame from video
+
+    // Get base64 data of captured image
+    capturedImageData = canvas.toDataURL('image/png');  
+
+    // Hide the camera loader once the capture is ready
+    cameraLoader.style.display = 'none';  // Hide loader after capturing the image
+
+    // Only after capturing the image, send it for title extraction
+    extractBookTitle(capturedImageData);
+}
+
+// --------- Extract book title from image --------- //
+// Function to extract the title from the image and handle the loader
+// Extract book title with OCR
+// Function to extract book title via OCR
+function extractBookTitle(imageData) {
+    return new Promise((resolve, reject) => {
+        const loader = document.getElementById('loader'); // Assume you have a loader element
+
+        // Show the loader before starting the extraction process
+        loader.style.display = 'flex';
+
+        // Send the Base64 image data to the backend for OCR processing
+        fetch('{% url "librarian_addbook" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ 'title_image_data': imageData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Hide the loader after the extraction is complete
+            loader.style.display = 'none';
+
+            if (data.book_title) {
+                // Set the extracted book title in the book title field
+                document.getElementById('bookTitle').value = data.book_title;
+                resolve(); // Resolve the promise after extraction
+            } else {
+                reject(new Error('Failed to extract book title. Error: ' + data.error));
+            }
+        })
+        .catch(error => {
+            // Hide the loader in case of an error
+            loader.style.display = 'none';
+
+            reject(new Error('Error during title extraction: ' + error)); // Reject the promise on error
+        });
+    });
+}
+// ---------------------------------- END NG BOOK TITLE EXTRACTION -------------------------//
+
+// turn a preview dataURL into a real File and attach it to the only named file input
+function dataURLtoFile(dataUrl, filename) {
+  const parts = dataUrl.split(',');
+  if (parts.length < 2) return null;
+  const mime = (parts[0].match(/data:(.*?);/) || [,'image/jpeg'])[1];
+  const bin  = atob(parts[1]);
+  const u8   = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new File([u8], filename, { type: mime });
+}
+
+document.getElementById('addBookButton').addEventListener('click', function (e) {
+  e.preventDefault();
+
+  // block if duplicate title warning is showing
+  const dupMsg = document.getElementById('bookTitleResult');
+  if (dupMsg && dupMsg.style.display !== 'none') {
+    alert('A book with this title already exists.');
+    return;
+  }
+
+  const form = document.getElementById('bookForm');
+
+  // browser validation
+  if (!form.reportValidity()) return;
+
+  // require keywords (readonly + required may be skipped by some browsers)
+  const kwEl = document.getElementById('bookKeyword');
+  if (!kwEl.value.trim()) {
+    alert('Please generate keywords first.');
+    return;
+  }
+
+  // ensure content type chosen
+  const st = document.getElementById('scannedContentType');
+  if (!st || !st.value) {
+    alert('Please select a content type.');
+    return;
+  }
+
+  // ensure date set (readonly sometimes empty)
+  const dateEl = document.getElementById('dateUploaded');
+  if (dateEl && !dateEl.value) {
+    const t = new Date();
+    dateEl.value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  }
+
+  // if no real file was picked but we’ve got a preview dataURL, convert & attach
+  const fileInput = document.getElementById('bookCoverUpload'); // the ONLY input with name="bookCover"
+  const preview   = document.getElementById('coverPreview');
+  const hasFile   = fileInput && fileInput.files && fileInput.files.length > 0;
+
+  if (!hasFile && preview && preview.src && preview.src.startsWith('data:')) {
+    const file = dataURLtoFile(preview.src, 'cover.jpg');
+    if (file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files; // now request.FILES['bookCover'] will exist
+    }
+  }
+
+  // prevent double submit
+  const btn = document.getElementById('addBookButton');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  // IMPORTANT: native submit → no XHR headers, no JSON body parsing
+  form.submit();
+
+  // safety re-enable in case navigation is blocked by an error page
+  setTimeout(() => { btn.disabled = false; btn.textContent = oldText; }, 8000);
+});
+
+
+
+function cleanUniversalOCR(text, type = "TOC") {
+    if (type === "Index") {
+        // Normalize weird dashes into normal hyphen
+        text = text.replace(/[–—−]/g, "-");
+        // Index-specific cleaning rules
+        text = text.replace(/[^a-zA-Z0-9\s.,\/()-]/g, " ");   // remove weird symbols but keep commas
+        text = text.replace(/\s+/g, " ");                // collapse spaces
+        text = text.replace(/,(\d)/g, ", $1");           // ensure space after commas
+        text = text.replace(/\n{2,}/g, "\n");
+        // Ensure each topic + pages goes to a new line
+        text = text.replace(
+            /([A-Za-z][A-Za-z\s']+?)\s+(\d{1,4}(?:\s*,\s*\d{1,4})*)(?=\s+[A-Za-z]|$)/g,
+            "\n$1 $2"
+        );
+
+        // Rule: if number ends without comma → force newline
+        text = text.replace(/(\d{1,4})(?=\s+[A-Za-z])/g, "$1\n");
+
+        // Remove single-character noise lines (like "a", "A", "b")
+        text = text.replace(/^\s*[A-Za-z]\s*$/gm, "");
+
+        // 🔹 Cleanup spaces around newlines
+        text = text.replace(/\s*\n\s*/g, "\n");
+
+        // Collapse multiple newlines again
+        text = text.replace(/\n{2,}/g, "\n");
+        return text.trim();
+
+    } else if (type === "Figure") {
+        // Simply return the raw OCR text, untouched
+        return text;
+
+    } else {
+        // 🔹 TOC-specific cleaning rules
+        text = text.replace(/[^a-zA-Z0-9\s.,\/()-]/g, " ");  // Remove unwanted symbols but preserve commas
+        text = text.replace(/\s+/g, " ");                    // Normalize spaces
+
+        // 1) Newline before Lesson/Chapter/Unit headings (keep whole line together)
+        text = text.replace(/\s*(?=(Lesson|Chapter|Unit)\s+\d+)/gi, "\n");
+
+        // 2) NEW: Also newline before any "topic + page number" IF it is NOT already a Chapter/Lesson/Unit line
+        text = text.replace(/(?<!Lesson|Chapter|Unit)\s+([A-Za-z0-9][A-Za-z0-9\s,'\-()\/]+?\s+\d{1,4})(?=\s|$)/gi, "\n$1");
+
+        // Ensure topic + page number formatting
+        text = text.replace(/([A-Za-z0-9][A-Za-z0-9\s,'\-()\/]+)\s+(\d{1,4})(?=\s|$)/g, "$1 $2");
+
+        // Insert space after commas in numbers
+        text = text.replace(/,(\d)/g, ", $1");
+
+        // Remove duplicate blank lines
+        text = text.replace(/\n{2,}/g, "\n");
+
+        // 🔹 Force only the last page number per line
+        text = text.replace(/(\d+)(?:\s+\d+)+/g, (match) => {
+            let nums = match.trim().split(/\s+/);
+            return nums[nums.length - 1]; // keep only the last number
+        });
+
+        // 🔹 Cut off stray words after the last page number
+        text = text.replace(/(\d{1,4})\s+\S+$/gm, "$1");
+
+        // Capitalize Lesson/Chapter/Unit properly
+        text = text.replace(/\b(lesson|chapter|unit)\b/gi, (match) =>
+            match.charAt(0).toUpperCase() + match.slice(1).toLowerCase()
+        );
+
+        return text.trim();
+    }
+}
+
+
+
+</script>
+{% endblock %}
+
+
+
+
+
+
+

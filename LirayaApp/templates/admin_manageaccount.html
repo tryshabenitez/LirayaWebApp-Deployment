@@ -1,0 +1,725 @@
+{% extends 'admin_inheritance.html' %}
+{% load static %}
+{% block title %}Admin Manage Accounts{% endblock %}
+{% block content %}
+  <div class="admin-main-content">
+
+    <!-- HEADER -->
+    <div class="admin-header">
+      <div class="admin-title">
+        <h1>Admin Account Management</h1>
+        <p>Welcome, {{ user_info.full_name }}!</p>
+      </div>
+      <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
+        <div class="profile-image-container">
+            <div class="profile-image-preview-homepage">
+                <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+            </div>
+        </div>
+      </button>
+    </div>
+   
+    <div class="admin-keyword-history">
+        <button class="admin-tab" id="manageAccountsButton" onclick="window.location.href='{% url 'admin_manageaccount' %}';">Manage Accounts</button>
+        <button class="admin-tab" id="createAccountsButton" onclick="window.location.href='{% url 'admin_createaccount' %}';">Create Accounts</button>
+    </div>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert 
+                    {% if message.tags == 'success' %}alert-success
+                    {% elif message.tags == 'error' %}alert-danger
+                    {% elif message.tags == 'warning' %}alert-warning
+                    {% elif message.tags == 'info' %}alert-info
+                    {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Manage Account Section -->
+ 
+    <!-- Search Bar -->
+    
+    <form method="get" action="{% url 'admin_manageaccount' %}">
+        <div class="admin-search-section">
+          <input type="text" name="search" placeholder="Search" value="{{ search_query }}">
+          <button type="submit">Search</button>
+        </div>
+        <!-- Sort Section -->
+        <div class="admin-sort-container">
+            <label class="admin_normal_bold">Sort By:</label>
+            <div class="admin-dropdown-section">
+                <select name="sort" id="sort" onchange="this.form.submit()">
+                    <option value="all" {% if request.GET.sort == 'all' %}selected{% endif %}>All</option> <!-- Added "All" option -->
+                    <option value="az" {% if request.GET.sort == 'az' %}selected{% endif %}>Alphabetically A-Z</option>
+                    <option value="za" {% if request.GET.sort == 'za' %}selected{% endif %}>Alphabetically Z-A</option>
+                </select>
+            </div>
+                <!-- Filter Role Section -->
+            <div class="admin-sort-container">
+                <label class="admin_normal_bold">Filter Role:</label>
+                <div class="admin-dropdown-section">
+                    <select name="role" id="role" onchange="this.form.submit()">
+                        <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
+                        <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="librarian" {% if role_filter == 'librarian' %}selected{% endif %}>Librarian</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filter Status Section -->
+            <div class="admin-sort-container">
+                <label class="admin_normal_bold">Filter Status:</label>
+                <div class="admin-dropdown-section">
+                    <select name="status" id="status" onchange="this.form.submit()">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                        <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="deactivated" {% if status_filter == 'deactivated' %}selected{% endif %}>Deactivated</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        
+    </form>
+    
+    
+   
+
+    <h2 class='admin_normal_bold'>
+        Total Accounts: 
+        <span class="number_emphasis">{{ total_accounts }}</span> 
+    </h2>
+
+
+    <div class="manage-account">
+      <table class="keyword-table">
+          <colgroup>
+            <col style="width: 5%">
+            <col style="width: 32%">
+            <col style="width: 15%">
+            <col style="width: 15%">
+            <col style="width: 33%">
+          </colgroup>
+        <thead>
+          <tr>
+            <th style="text-align: center;">No.</th> 
+            <th style="text-align: center;">Name</th> 
+            <th style="text-align: center;">Role</th>
+            <th style="text-align: center;">Status</th>
+            <th style="text-align: center;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if accounts %}
+            {% for account in accounts %}
+              <tr>
+                  <td>{{ row_number|add:forloop.counter|add:-1 }}</td>
+                  <td>{{ account.account.first_name }} {{ account.account.middle_name|default:"" }} {{ account.account.last_name }}</td>
+                  <td>{{ account.role }}</td>
+                  <td>{{ account.account_status }}</td>
+                  <td style="text-align: center;">
+                        {% if account.account_id == user_info.account_id %}
+                            Your Account
+                        {% else %}
+                            <button class="action_button" onclick="window.location.href='{% url 'admin_viewprofile' account.account_id %}'">View</button>
+
+                            {% if account.account_status == 'NEW' %}
+                                {# If current is NEW and it used to be NEW → only Deactivate #}
+                                {% if account.previous_status == 'NEW' %}
+                                    <button class="action_button deactivate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Deactivate
+                                    </button>
+                                {% else %}
+                                    {# Fallback to your old behavior if previous_status isn't NEW #}
+                                    <button class="action_button activate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Reactivate
+                                    </button>
+                                    <button class="action_button deactivate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Deactivate
+                                    </button>
+                                {% endif %}
+
+                            {% elif account.account_status == 'ACTIVE' %}
+                                {# If current is ACTIVE and it used to be ACTIVE → only Deactivate #}
+                                {% if account.previous_status == 'ACTIVE' %}
+                                    <button class="action_button deactivate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Deactivate
+                                    </button>
+                                {% else %}
+                                    {# Fallback: your original ACTIVE behavior (also Deactivate only) #}
+                                    <button class="action_button deactivate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Deactivate
+                                    </button>
+                                {% endif %}
+
+                            {% elif account.account_status == 'DEACTIVATED' %}
+                                {# If DEACTIVATED, show based on what it was before #}
+                                {% if account.previous_status == 'NEW' %}
+                                    {# From NEW → only Set as New #}
+                                    <button class="action_button activate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=new&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Reactivate
+                                    </button>
+                                {% elif account.previous_status == 'ACTIVE' %}
+                                    {# From ACTIVE → only Activate #}
+                                    <button class="action_button activate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Reactivate
+                                    </button>
+                                {% else %}
+                                    {# Legacy fallback if previous_status is blank/other #}
+                                    <button class="action_button activate"
+                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
+                                        Reactivate
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                  </td>
+
+              </tr>
+            {% endfor %}
+          {% else %}
+              <tr>
+                  <td colspan="5" style="text-align: center;">No profile found</td>
+              </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <div class="pagination">
+          {% if accounts.has_previous %}
+              <a href="?page=1&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">First</a>
+              <a href="?page={{ accounts.previous_page_number }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">Previous</a>
+          {% endif %}
+          
+          {% for i in accounts.paginator.page_range %}
+              <a href="?page={{ i }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}" class="{% if accounts.number == i %}active{% endif %}">{{ i }}</a>
+          {% endfor %}
+          
+          {% if accounts.has_next %}
+              <a href="?page={{ accounts.next_page_number }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">Next</a>
+              <a href="?page={{ accounts.paginator.num_pages }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">Last</a>
+          {% endif %}
+      </div>
+      
+    <div class="book-footer-wrapper">
+        <div class="book-footer">
+          <span class="admin_normal_bold">Generate Report: </span>
+          <!-- Modal trigger only (removed direct link) -->
+          <button type="button" id="openReportOptions" class="admin_button">Generate</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-footer">
+      Liraya © 2025. All rights reserved. <br>
+      TUPC. Technological University of the Philippines - Cavite Library
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUrl = window.location.pathname; // Get the URL path
+            const manageButton = document.getElementById('manageAccountsButton');
+            const createButton = document.getElementById('createAccountsButton');
+
+            // Check if the current URL path matches the page path
+            if (currentUrl.includes('/adminmanageaccount')) {
+                manageButton.classList.add('selected');
+            } else if (currentUrl.includes('/admincreateaccount')) {
+                createButton.classList.add('selected');
+            }
+        });
+    </script>
+
+
+    <!-- Report Options Modal -->
+    <div id="reportOptionsModal" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reportOptionsTitle">
+        <div class="modal-header">
+        <h3 id="reportOptionsTitle">Generate Account Report</h3>
+        <button type="button" class="modal-close" id="closeReportOptions" aria-label="Close">×</button>
+        </div>
+
+        <form id="reportOptionsForm" method="get" action="{% url 'generate_pdf' report_type='account_information' %}">
+        <div class="modal-body">
+            <p class="modal-sub">Choose the period and content to include</p>
+
+            <!-- A) Date mode -->
+            <fieldset class="option-group">
+            <legend class="group-title">Date range</legend>
+
+            <label class="radio">
+                <input type="radio" name="date_mode" value="week">
+                <span>One Week</span>
+            </label>
+
+            <label class="radio">
+                <input type="radio" name="date_mode" value="month">
+                <span>Month</span>
+            </label>
+
+            <label class="radio">
+                <input type="radio" name="date_mode" value="year">
+                <span>Year</span>
+            </label>
+
+            <label class="radio">
+                <input type="radio" name="date_mode" value="all" checked>
+                <span>All time</span>
+            </label>
+            </fieldset>
+
+            <!-- Conditional inputs for the chosen date mode -->
+            <div class="date-inputs">
+            <!-- Week -->
+            <div id="weekInputs" class="conditional hidden">
+                <label class="stack">
+                <span>End date (included) — 7-days Report</span>
+                <!-- floor today -->
+                <input type="date" name="week_ref"
+                    min="{{ earliest_date|date:'Y-m-d' }}"
+                    max="{% now 'Y-m-d' %}"
+                    value="{% now 'Y-m-d' %}">
+                </label>
+                <small class="hint">
+                The report covers the selected day and the previous 6 days.
+                Example: choosing Sept 9 covers Sept 3–9.
+                </small>
+            </div>
+
+            <!-- Month -->
+            <div id="monthInputs" class="conditional hidden">
+                <label class="stack">
+                <span>Month</span>
+                <select name="month" id="monthSelect">
+                    <option value="">-- Select Month --</option>
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+                </label>
+                <label class="stack">
+                <span>Year</span>
+                <!-- floor = 2025; ceiling = current year -->
+                <input type="number" name="year" id="yearForMonth"
+                    min="{{ earliest_year }}" 
+                    max="{% now 'Y' %}" 
+                    value="{% now 'Y' %}">
+                </label>
+                <small class="hint">
+                The report provides coverage of the entire selected month.
+                </small>
+            </div>
+
+            <!-- Year -->
+            <div id="yearInputs" class="conditional hidden">
+                <label class="stack">
+                <span>Year</span>
+                <!-- floor = 2025; ceiling = current year -->
+                <input type="number" name="year" id="yearForYear"
+                    min="{{ earliest_year }}" 
+                    max="{% now 'Y' %}" 
+                    value="{% now 'Y' %}">
+                </label>
+                <small class="hint">
+                The report provides coverage of the entire selected year.
+                </small>
+            </div>
+            </div>
+
+            <!-- B) Content options -->
+            <fieldset class="option-group">
+            <legend class="group-title">Content</legend>
+
+            <label class="checkbox">
+                <input type="checkbox" name="include_biodata" value="1" data-exclusive="report-mode" checked>
+                <span>Generates detailed reports per account, plus an overall summary.</span>
+            </label>
+
+            <label class="checkbox">
+                <input type="checkbox" name="summary_only" value="1" data-exclusive="report-mode">
+                <span>Generates only the overall summary without individual details.</span>
+            </label>
+
+
+            <!-- Carry current table state so the PDF mirrors the view -->
+            <input type="hidden" name="search" value="{{ search_query }}" data-filter-field>
+            <input type="hidden" name="role" value="{{ role_filter }}" data-filter-field>
+            <input type="hidden" name="status" value="{{ status_filter }}" data-filter-field>
+            <input type="hidden" name="sort" value="{{ request.GET.sort|default:'all' }}" data-filter-field>
+        </div>
+
+        <div class="modal-actions">
+            <button type="submit" class="admin_button">Generate</button>
+        </div>
+        </form>
+    </div>
+    </div>
+
+    <!-- Report loader overlay -->
+    <div class="loader-container" id="reportLoader" style="display:none;">
+    <div class="loader"></div>
+    <div class="loader-text">Generating PDF…</div>
+    </div>
+
+    <!-- Modal styles (maroon theme) -->
+    <style>
+      :root{
+        --brand:#4b0e0e;      /* maroon */
+        --brand-ink:#ffffff;  /* text on maroon */
+        --ink:#1f2328;        /* body text */
+        --line:#e5e7eb;       /* borders */
+        --panel:#ffffff;      /* card bg */
+        --panel-alt:#faf7f7;  /* light maroon tint */
+      }
+      .modal-overlay[hidden]{ display:none; }
+      .modal-overlay{
+        position:fixed; inset:0; background:rgba(0,0,0,.45);
+        display:flex; align-items:center; justify-content:center; z-index:1000;
+      }
+      .modal-card{
+        width:min(720px, 92vw); background:var(--panel); color:var(--ink);
+        border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); overflow:hidden;
+      }
+      .modal-header{
+        display:flex; align-items:center; justify-content:space-between;
+        background:var(--brand); color:var(--brand-ink); padding:14px 18px;
+      }
+      .modal-header h3{ margin:0; font-size:1.1rem; letter-spacing:.3px; }
+      .modal-close{ background:transparent; color:var(--brand-ink);
+        border:none; font-size:1.4rem; cursor:pointer; line-height:1; }
+      .modal-body{ padding:18px; }
+      .modal-sub{ margin:0 0 10px; color:#555; }
+      .option-group{ margin:14px 0 8px; padding:12px; border:1px solid var(--line);
+        border-radius:10px; background:var(--panel-alt); }
+      .group-title{ font-weight:600; margin:0 0 8px; }
+      .radio,.checkbox{ display:inline-flex; gap:8px; align-items:center; margin-right:14px; cursor:pointer; }
+      .stack{ display:flex; flex-direction:column; gap:6px; }
+      .date-inputs{ margin-top:10px; }
+      .conditional.hidden{ display:none; }
+      .hint{ color:#6b7280; }
+      .modal-actions{ display:flex; justify-content:flex-end; gap:10px; padding:14px 18px; border-top:1px solid var(--line); }
+      .admin_button{ padding:9px 16px; border-radius:8px; }
+      /* Center the "Generate Account Report" title; keep the × on the right */
+    .modal-header{
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;    /* center the title */
+        background: var(--brand);
+        color: var(--brand-ink);
+        padding: 14px 18px;
+    }
+
+    .modal-header h3{
+        margin: 0;
+        font-size: 1.1rem;
+        letter-spacing: .3px;
+        text-align: center;
+    }
+
+    .modal-close{
+        position: absolute;         /* remove from flex centering flow */
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        color: var(--brand-ink);
+        border: none;
+        font-size: 1.4rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .loader-container {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.7);
+        z-index: 2000;
+    }
+    .loader {
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #4b0e0e; /* maroon */
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+    .loader-text {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #4b0e0e;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    </style>
+
+    <!-- Page + Modal logic (enforce 7-day week, no-future limits, and exclusive report mode) -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal elements
+        const openBtn    = document.getElementById('openReportOptions');
+        const overlay    = document.getElementById('reportOptionsModal');
+        const closeBtn   = document.getElementById('closeReportOptions');
+        const form       = document.getElementById('reportOptionsForm');
+        const submitBtn  = document.getElementById('submitReportOptions');
+        const loader     = document.getElementById('reportLoader');
+
+        // Selector for the two mutually exclusive checkboxes
+        const EXCLUSIVE_SEL = 'input[type="checkbox"][data-exclusive="report-mode"]';
+
+        function showReportLoader() { loader.style.display = 'flex'; }
+        function hideReportLoader() { loader.style.display = 'none'; }
+
+        // Modal open/close
+        if (openBtn)  openBtn.addEventListener('click', ()=>{ overlay.hidden = false; });
+        if (closeBtn) closeBtn.addEventListener('click', ()=>{ overlay.hidden = true; });
+        overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.hidden=true; });
+
+        // ✅ Handle form submit with fetch (no refresh)
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          showReportLoader();
+        
+          // (Optional) disable buttons while working
+          if (openBtn)  openBtn.disabled  = true;
+          if (closeBtn) closeBtn.disabled = true;
+        
+          const EXCLUSIVE_SEL = 'input[type="checkbox"][data-exclusive="report-mode"]';
+        
+          // ✅ Make sure exactly ONE of the two checkboxes is selected
+          let chosen = form.querySelector(EXCLUSIVE_SEL + ':checked');
+          if (!chosen) {
+            // default to detailed if none is checked
+            const def = form.querySelector('input[name="include_biodata"]');
+            if (def) { def.checked = true; chosen = def; }
+          }
+        
+          // ✅ Disable ONLY the unchecked box, keep the chosen one enabled
+          const boxes = form.querySelectorAll(EXCLUSIVE_SEL);
+          boxes.forEach(el => { el.disabled = !el.checked; });
+        
+          try {
+            // Build URL with the chosen checkbox included
+            const params = new URLSearchParams(new FormData(form));
+            const url = form.action + (params.toString() ? ('?' + params.toString()) : '');
+        
+            const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/pdf' } });
+            if (!res.ok) throw new Error('Server returned ' + res.status);
+        
+            const ct = (res.headers.get('content-type') || '').toLowerCase();
+            if (!ct.includes('application/pdf')) {
+              const text = await res.text();
+              throw new Error('Unexpected response (not a PDF). ' + text.slice(0, 800));
+            }
+        
+            const blob = await res.blob();
+            const pdfUrl = URL.createObjectURL(blob);
+        
+            // filename
+            let fileName = "Account_Report.pdf";
+            const disposition = res.headers.get('content-disposition');
+            if (disposition && disposition.includes("filename=")) {
+              fileName = disposition.split("filename=")[1].replace(/["']/g, "");
+            }
+        
+            // download
+            const link = document.createElement("a");
+            link.href = pdfUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        
+            overlay.hidden = true; // close modal
+          } catch (err) {
+            alert('Failed to generate PDF.\n' + (err?.message || err));
+          } finally {
+            hideReportLoader();
+            // Re-enable UI and checkboxes
+            if (openBtn)  openBtn.disabled  = false;
+            if (closeBtn) closeBtn.disabled = false;
+            boxes.forEach(el => { el.disabled = false; });
+          }
+      });
+
+        // Conditional groups
+        const weekBox  = document.getElementById('weekInputs');
+        const monthBox = document.getElementById('monthInputs');
+        const yearBox  = document.getElementById('yearInputs');
+
+        // Inputs for constraints
+        const monthSel     = document.getElementById('monthSelect');
+        const yearForMonth = document.getElementById('yearForMonth');
+        const yearForYear  = document.getElementById('yearForYear');
+
+        function openModal(){
+            // re-enable both options so user can switch each time the modal opens
+            form.querySelectorAll(EXCLUSIVE_SEL).forEach(el => el.disabled = false);
+            overlay.hidden = false;
+        }
+        function closeModal(){ overlay.hidden = true; }
+
+        if (openBtn)  openBtn.addEventListener('click', openModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
+
+        // Show/hide a conditional block and disable its fields when hidden
+        function toggleGroup(groupEl, show){
+            groupEl.classList.toggle('hidden', !show);
+            groupEl.querySelectorAll('input, select').forEach(el => { el.disabled = !show; });
+        }
+
+        function setMode(mode){
+            toggleGroup(weekBox,  mode === 'week');
+            toggleGroup(monthBox, mode === 'month');
+            toggleGroup(yearBox,  mode === 'year');
+
+            if (form.week_ref) form.week_ref.required = (mode==='week');
+            if (form.month)    form.month.required    = (mode==='month');
+            if (form.year)     form.year.required     = (mode==='month' || mode==='year');
+
+            if (mode === 'month') {
+            clampYearInput(yearForMonth);
+            updateMonthOptions();
+            }
+        }
+
+        // Init from checked radio
+        const initMode = (form.querySelector('input[name="date_mode"]:checked')||{}).value || 'all';
+        setMode(initMode);
+
+        // Data limits
+        const TODAY            = new Date();                   // now
+        const CURRENT_YEAR     = TODAY.getFullYear();
+        const CURRENT_MONTH    = TODAY.getMonth() + 1;         // 1..12
+        const DATA_FLOOR_YEAR  = {{ earliest_year }};
+        const DATA_FLOOR_MONTH = {{ earliest_month }};
+        const DATA_FLOOR_DATE  = new Date("{{ earliest_date|date:'Y-m-d' }}");
+
+
+        // Clamp week_ref to [2025-09-01, today]
+        if (form.week_ref) {
+            const maxStr = form.week_ref.max; // today
+            const minStr = form.week_ref.min; // 2025-09-01
+            const chosen = new Date(form.week_ref.value || maxStr);
+            if (chosen > TODAY)           form.week_ref.value = maxStr;
+            if (chosen < DATA_FLOOR_DATE) form.week_ref.value = minStr;
+        }
+
+        // Keep year inputs within [2025, currentYear]
+        function clampYearInput(el) {
+            if (!el) return;
+            let v = parseInt(el.value || CURRENT_YEAR, 10);
+            if (v < DATA_FLOOR_YEAR) v = DATA_FLOOR_YEAR;
+            if (v > CURRENT_YEAR)    v = CURRENT_YEAR;
+            el.value = v;
+        }
+        clampYearInput(yearForMonth);
+        clampYearInput(yearForYear);
+
+        // Disable invalid months based on selected year
+        function updateMonthOptions() {
+            if (!monthSel || !yearForMonth) return;
+            const y = parseInt(yearForMonth.value || CURRENT_YEAR, 10);
+
+            Array.from(monthSel.options).forEach(opt => {
+            if (!opt.value) return; // skip placeholder
+            const m = parseInt(opt.value, 10);
+            let disable = false;
+
+            if (y === CURRENT_YEAR && m > CURRENT_MONTH) disable = true;   // future months
+            if (y === DATA_FLOOR_YEAR && m < DATA_FLOOR_MONTH) disable = true; // before Sept 2025
+            if (y < DATA_FLOOR_YEAR || y > CURRENT_YEAR) disable = true;   // out of range
+
+            opt.disabled = disable;
+            });
+
+            // If the currently selected month became disabled, clear it
+            if (monthSel.value) {
+            const sel = monthSel.options[monthSel.selectedIndex];
+            if (sel && sel.disabled) monthSel.value = '';
+            }
+        }
+        updateMonthOptions();
+
+        // --- Exclusive checkbox helpers ---
+        function enforceExclusive(target){
+            const boxes = form.querySelectorAll(EXCLUSIVE_SEL);
+
+            if (target && target.checked) {
+                boxes.forEach(el => {
+                    if (el !== target) el.checked = false; // uncheck others
+                });
+            }
+
+            // Ensure at least one stays checked
+            if (![...boxes].some(el => el.checked)) {
+                boxes[0].checked = true;
+            }
+        }
+
+        // Normalize once on load
+        form.querySelectorAll(EXCLUSIVE_SEL).forEach(el => {
+            el.addEventListener('change', () => enforceExclusive(el));
+        });
+        enforceExclusive(); // run immediately
+
+         
+
+        // React to changes (date mode, filters, month/year, and exclusive checkboxes)
+        form.addEventListener('change', (e)=>{
+            if (e.target.name === 'date_mode') setMode(e.target.value);
+
+            if (e.target === yearForMonth) {
+            clampYearInput(yearForMonth);
+            updateMonthOptions();
+            }
+            if (e.target === yearForYear) {
+            clampYearInput(yearForYear);
+            }
+
+            // Enforce exclusive selection for report mode
+            if (e.target.matches(EXCLUSIVE_SEL)) {
+            enforceExclusive(e.target);
+            }
+        });
+
+        // Safety: default 'sort' to 'all' if missing
+        const sortHidden = form.querySelector('input[name="sort"]');
+        if (sortHidden && !sortHidden.value) sortHidden.value = 'all';
+    });
+    </script>
+
+
+</div>
+{% endblock %}
+
+
+    

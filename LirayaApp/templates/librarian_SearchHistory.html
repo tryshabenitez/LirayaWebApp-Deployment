@@ -1,0 +1,146 @@
+{% extends 'Librarian_Inheritance.html' %}
+
+{% load static %}
+
+{% block title %}Librarian Search History{% endblock %}
+
+{% block content %}
+
+    <!-- HEADER -->
+    <div class="admin-header">
+        <div class="admin-title">
+            <h1>Librarian Search History</h1>
+            <p>Welcome, {{ user_info.full_name }}!</p>
+        </div>
+        <button class="profile-image-button" onclick="window.location.href='{% url 'librarian_profile' %}'">
+            <div class="profile-image-container">
+                <div class="profile-image-preview-homepage">
+                    <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                </div>
+            </div>
+        </button>
+    </div>
+
+    <!-- Filter Dropdown -->
+    <div class="admin-dropdown-section">
+        <label for="timeFilter">Filter by:</label>
+        <select id="timeFilter" name="timeFilter" onchange="filterSearchHistory()">
+            <option value="all">All Time</option>
+            <option value="last24hours">Last 24 Hours</option>
+            <option value="last7days">Last 7 Days</option>
+            <option value="last30days">Last 30 Days</option>
+            <option value="lastYear">Last 12 Months</option>
+        </select>
+    </div>
+
+    <!-- Search History Table -->
+    <div class="table-container">
+        <table class="keyword-table">
+            <thead>
+                <tr>
+                    <th>Searched Keyword</th>
+                    <th>Search Count</th>
+                    <th>Result</th>
+                    <th>Last Searched</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in keyword_logs %}
+                    <tr>
+                        <td>{{ log.user_keyword_search }}</td>
+                        <td>{{ log.user_search_count }}</td>
+                        <td>
+                            {% if log.books %}
+                                <ul style="list-style-type: none; padding-left: 0;">
+                                    {% for book in log.books %}
+                                        <li>{{ book }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                No results found
+                            {% endif %}
+                        </td>
+                        <td>{{ log.updated_at }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No search history available.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">&lt; Previous</a>
+        {% endif %}
+
+        {% for page_num in page_obj.paginator.page_range %}
+            <a href="?page={{ page_num }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+            {% if page_obj.number == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">Next &gt;</a>
+        {% endif %}
+    </div>
+
+
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="add-btn">Generate PDF</button>
+    </div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    function filterSearchHistory() {
+        var timeFilter = document.getElementById('timeFilter').value;
+
+        // Make an AJAX call to update the table based on selected filter
+        fetch(`/librarian-search-history/?timeFilter=${timeFilter}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update the table content based on the filtered data
+                var tableBody = document.querySelector('.keyword-table tbody');
+                tableBody.innerHTML = '';
+
+                // Loop through filtered data and add rows to the table
+                data.keyword_logs.forEach(log => {
+                    var row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${log.user_keyword_search}</td>
+                        <td>${log.user_search_count}</td>
+                        <td>
+                            ${log.books.length > 0 ? '<ul>' + log.books.map(book => `<li>${book}</li>`).join('') + '</ul>' : 'No results found'}
+                        </td>
+                        <td>${log.updated_at}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error fetching filtered data:', error));
+    }
+
+    // Function to generate PDF for a keyword
+    function generatePDF(keyword) {
+        console.log("Generating PDF for:", keyword);
+    }
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.querySelector('.add-btn');
+        if (btn) {
+        btn.addEventListener('click', () => {
+            const tf = document.getElementById('timeFilter')?.value || 'all';
+            // Adjust path to match your URL pattern, e.g. path('generate-pdf/<str:report_type>/')
+            window.location.href = `/generate-pdf/keyword_search_history/?timeFilter=${encodeURIComponent(tf)}`;
+        });
+        }
+    });
+</script>
+{% endblock %}
+

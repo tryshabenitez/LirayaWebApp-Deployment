@@ -1,0 +1,85 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LIRAYA - Library Information Resource and Access{% endblock %}</title>
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <!-- Your Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+</head>
+<body>
+
+<div class="background">
+  <!-- Sidebar & Main Content Area -->
+  <div class="content-area d-flex">
+    <!-- Slim Sidebar with labels -->
+    <div class="user-sidebar collapsed">
+      <!-- Menu Toggle Icon -->
+      <a href="javascript:void(0);" class="user-nav-item menu-toggle" onclick="toggleSidebar()">
+        <img src="{% static 'images/menu.png' %}" class="user-sidebar-icon" alt="Menu" />
+        <span class="user-nav-label" style="display: none;">Menu</span>
+      </a>
+
+      <!-- Refine Search Section -->
+      <div class="refine-search">Refine Search Results</div>
+      <select class="dropdown">
+        <option value="allFields">All Fields</option>
+        <option value="title">Title</option>
+        <option value="author">Author</option>
+        <option value="subject">Subject</option>
+      </select>
+
+      <!-- LRC Room Section -->
+      <div class="section-title">LRC Room</div>
+      <a href="#" class="menu-item">Ground Floor Library</a>
+      <a href="#" class="menu-item">Upper Ground Library</a>
+      <a href="#" class="menu-item">Thesis Room</a>
+
+      <!-- Shelf Category Section -->
+      <div class="section-title">Shelf Category</div>
+      <a href="#" class="menu-item">Computer Engineering</a>
+      <a href="#" class="menu-item">Electrical Engineering</a>
+      <a href="#" class="menu-item">Mechanical Engineering</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content flex-grow-1" id="mainContent">
+      {% block content %}
+        <!-- Content will be inserted here -->
+      {% endblock %}
+    </div>
+  </div>
+
+  <div class="footer">
+    <p class="footer-text">LIRAYA: Library Information Resource and Access</p>
+    <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+  // Toggle Sidebar Expansion
+  function toggleSidebar() {
+    const sidebar = document.querySelector(".user-sidebar");
+    const mainContent = document.getElementById("mainContent");
+
+    // Toggle the 'expanded' class on sidebar and shift main content accordingly
+    sidebar.classList.toggle("expanded");
+    sidebar.classList.toggle("collapsed");
+    mainContent.classList.toggle("shift-right");
+  }
+</script>
+
+{% block script %}{% endblock %}
+
+</body>
+</html>

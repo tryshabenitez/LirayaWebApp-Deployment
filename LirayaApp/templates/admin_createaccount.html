@@ -1,0 +1,152 @@
+{% extends 'admin_inheritance.html' %}
+{% load static %}
+{% block title %}Admin Create Accounts{% endblock %}
+
+{% block content %}
+<div class="admin-main-content">
+
+    <!-- HEADER -->
+    <div class="admin-header">
+      <div class="admin-title">
+        <h1>Admin Account Management</h1>
+        <p>Welcome, {{ user_info.full_name }}!</p>
+      </div>
+      <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
+        <div class="profile-image-container">
+            <div class="profile-image-preview-homepage">
+                <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+            </div>
+        </div>
+      </button>
+    </div>
+
+    <!-- NAV BUTTONS -->
+    <div class="admin-keyword-history">
+        <button class="admin-tab" id="manageAccountsButton" onclick="window.location.href='{% url 'admin_manageaccount' %}'">Manage Accounts</button>
+        <button class="admin-tab" id="createAccountsButton" onclick="window.location.href='{% url 'admin_createaccount' %}'">Create Accounts</button>
+    </div>
+
+    {% if messages %}
+        <div class="messages" style="margin: 20px auto; max-width: 800px;">
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    <div class="error-alert alert alert-success">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+
+    <!-- FORM -->
+    <div class="create-account">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-row-inline">
+                <div class="role-email-container" style="display: flex; gap: 20px; width: 100%; justify-content: center; align-items: center;">
+                    <!-- Role -->
+                    <label class="admin_normal_bold" for="role">Role:</label>
+                    <div class="admin-dropdown-section">
+                        <select id="role" name="role" class="admin-input-field" required>
+                            <option value="">Select Role</option>
+                            <option value="Admin" {% if input_values.role == "Admin" %}selected{% endif %}>Admin</option>
+                            <option value="Library Assistant" {% if input_values.role == "Library Assistant" %}selected{% endif %}>Librarian</option>
+                        </select>
+                        {% if errors.role %}
+                            <div class="field-error">{{ errors.role }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email -->
+                    <label for="email" class="admin_normal_bold">Email:</label>
+                    <input type="email" id="email" name="email" placeholder="Email" class="admin-input-field email-input" required value="{{ input_values.email|default:'' }}">
+                    {% if errors.email %}
+                        <div class="field-error">{{ errors.email }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="name-inputs">
+                <!-- First Name -->
+                <div class="name-col">
+                    <label for="first-name" class="admin_normal_bold">First Name:</label>
+                    <input type="text" id="first-name" name="first_name" 
+                    placeholder="First Name" class="admin-input-field" 
+                    value="{{ input_values.first_name|default:'' }}">
+                    {% if errors.first_name %}
+                        <div class="field-error">{{ errors.first_name }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Middle Name -->
+                <div class="name-col">
+                    <label for="middle-name" class="admin_normal_bold">Middle Name: <span style="font-weight: normal; font-style: italic;">(If none, input "n/a")</span></label>
+                    <input type="text" id="middle-name" name="middle_name" 
+                    placeholder="Middle Name" class="admin-input-field" 
+                    value="{{ input_values.middle_name|default:'' }}">
+                    {% if errors.middle_name %}
+                        <div class="field-error">{{ errors.middle_name }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Last Name -->
+                <div class="name-col">
+                    <label for="last-name" class="admin_normal_bold">Last Name:</label>
+                    <input type="text" id="last-name" name="last_name" 
+                    placeholder="Last Name" class="admin-input-field" 
+                    value="{{ input_values.last_name|default:'' }}">
+                    {% if errors.last_name %}
+                        <div class="field-error">{{ errors.last_name }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                <button type="submit" class="admin_button">Register</button>
+            </div>
+        </form>
+    </div>
+
+
+    <!-- FOOTER -->
+    <div class="admin-footer">
+        Liraya © 2025. All rights reserved. <br>
+        TUPC. Technological University of the Philippines - Cavite Library
+    </div>
+
+    <!-- JS for tab selection -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentUrl = window.location.pathname;
+            const manageButton = document.getElementById('manageAccountsButton');
+            const createButton = document.getElementById('createAccountsButton');
+
+            if (currentUrl.includes('/adminmanageaccount')) {
+                manageButton.classList.add('selected');
+            } else if (currentUrl.includes('/admincreateaccount')) {
+                createButton.classList.add('selected');
+            }
+        });
+
+    const loader = document.getElementById('loader'); // The loader container
+    // Always hide loader on page load (in case it was left visible)
+    window.addEventListener('pageshow', function() {
+        loader.style.display = 'none';
+    });
+
+    const form = document.querySelector('.create-account form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            loader.style.display = 'flex';
+            // If form is invalid (client-side), hide loader again
+            if (!form.checkValidity()) {
+                loader.style.display = 'none';
+            }
+        });
+    }
+    </script>
+
+</div>
+{% endblock %}
+

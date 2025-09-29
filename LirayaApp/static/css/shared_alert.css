@@ -1,0 +1,50 @@
+
+.error-alert {
+  background-color: #b02a37;      /* Eye-catching red */
+  color: white;
+  border: 2px solid white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.05rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  animation: fadePop 0.3s ease-in-out;
+}
+
+@keyframes fadePop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.field-error {
+  color: red;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+

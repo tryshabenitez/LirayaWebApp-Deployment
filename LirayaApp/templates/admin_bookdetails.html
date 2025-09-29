@@ -1,0 +1,109 @@
+{% extends 'admin_inheritance.html' %}
+{% load static %}
+{% block title %}Admin Book Details{% endblock %}
+
+{% block content %}
+  <div class="admin-main-content">
+
+    <!-- HEADER -->
+    <div class="admin-header">
+      <div class="admin-title">
+        <h1>Book Details</h1>
+        <p>Welcome, {{ user_info.full_name }}!</p>
+      </div>
+      <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
+        <div class="profile-image-container">
+            <div class="profile-image-preview-homepage">
+                <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+            </div>
+        </div>
+      </button>
+    </div>
+
+
+    <!-- Book Details Section -->
+    <div class="book-details">
+      <div class="admin-book-cover-section">
+        <div class="admin-book-cover-box">
+          <img src="{% if book.book_cover %}{{ book.book_cover.url }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}" alt="Book Cover">
+        </div>
+      </div>
+    
+      
+      <div class="book-info">
+        <div class="book-form">
+          <div class="two-column">
+            <div class="form-row">
+              <label for="title">Title:</label>
+              <input type="text" id="title" value="{{ book.title }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="author">Author:</label>
+              <input type="text" id="author" value="{{ book.author }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="author">Co-Author:</label>
+              <input type="text" id="co-author" value="{{ book.co_author|default:"N/A" }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="year">Year of Publication:</label>
+              <input type="text" id="yearofpublication" value="{{ book.year_of_publication }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="publisher">Publisher:</label>
+              <input type="text" id="publisher" value="{{ book.publisher|default:"N/A" }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="bookShelfCategory">Shelf Category:</label>
+              <input type="text" id="bookShelfCategory" value="{{ book.shelf_category }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="bookType">Book Type:</label>
+              <input type="text" id="bookType" value="{{ book.book_type }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="scannedType">Scanned Type:</label>
+              <input type="text" id="scannedType" value="{{ book.scanned_type }}" readonly>
+            </div>
+            <div class="form-row">
+              <label for="bookKeyword">Scanned Content:</label>
+              <textarea id="bookKeyword" rows="10" readonly>{{ book.scanned_content }}</textarea>
+            </div>
+            <div class="form-row">
+              <label for="bookKeyword">Keyword:</label>
+              <textarea id="bookKeyword" rows="5" readonly>{{ book.primary_keyword }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="book-footer-wrapper">
+      <div class="book-footer">
+          <span class="admin_normal_bold">Generate Report: </span>
+          <!-- Include book_id in the URL -->
+          <a href="{% url 'generate_pdf' report_type='book_details' %}?book_id={{ book.book_id }}">
+              <button class="admin_button">Generate</button>
+          </a>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="form-row-inline">
+      <button type="button" id="back-btn" class="admin_button" onclick="goBack()">Back</button>
+    </div>
+    
+
+    <div class="admin-footer">
+      Liraya © 2025. All rights reserved. <br>
+      TUPC. Technological University of the Philippines - Cavite Library
+    </div>
+  </div>
+
+<script>
+    // JavaScript function to handle the "Back" button click
+    function goBack() {
+        window.history.back();  // This will take the user to the previous page
+    }
+</script>
+{% endblock %}

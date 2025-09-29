@@ -1,0 +1,226 @@
+{% extends 'Librarian_Inheritance.html' %}
+
+{% load static %}
+
+{% block title %}Librarian Homepage{% endblock %}
+
+{% block content %}
+
+<!-- HEADER -->
+<div class="admin-header">
+    <div class="admin-title">
+        <h1>Librarian Homepage</h1>
+        <p>Welcome, {{ user_info.full_name }}!</p>
+    </div>
+    <button class="profile-image-button" onclick="window.location.href='{% url 'librarian_profile' %}'">
+        <div class="profile-image-container">
+            <div class="profile-image-preview-homepage">
+                <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+            </div>
+        </div>
+    </button>
+</div>
+
+{% if messages %}
+  <div class="messages">
+      {% for message in messages %}
+          <div class="alert 
+              {% if message.tags == 'success' %}alert-success
+              {% elif message.tags == 'error' %}alert-danger
+              {% elif message.tags == 'warning' %}alert-warning
+              {% elif message.tags == 'info' %}alert-info
+              {% endif %}">
+              {{ message }}
+          </div>
+      {% endfor %}
+  </div>
+{% endif %}
+
+<!-- Search Bar -->
+<form class="admin-search-section" id="search-form" method="GET" action="{% url 'librarian_homepage' %}">
+    <div class="search-box-wrap">
+        <input type="text" name="q" id="search-input" placeholder="Search" autocomplete="off" value="{{ query }}">
+        <div class="typeahead" id="suggestions-box" style="display:none;"></div>
+    </div>
+    <button type="submit">Search</button>
+    <div class="admin-dropdown-section">
+        <select name="field" id="search-field">
+            <option value="allFields" {% if field == 'allFields' %}selected{% endif %}>All Fields</option>
+            <option value="title" {% if field == 'title' %}selected{% endif %}>Title</option>
+            <option value="author" {% if field == 'author' %}selected{% endif %}>Author</option>
+            <option value="keywords" {% if field == 'keywords' %}selected{% endif %}>Keywords</option>
+        </select>
+    </div>
+    <input type="hidden" name="sort" value="{{ sort_by }}">
+</form>
+
+<!-- Recently Uploaded Section -->
+<div class="admin-section-container">
+    <div class="admin-section-title">Books Uploaded: {{ book_count }}</div>
+    
+    <div class="admin-sort-container">
+        <span class="admin_normal_bold">Sort</span>
+        <div class="admin-dropdown-section">
+            <form method="GET" action="">
+                <select name="sort" id="sort-select" onchange="this.form.submit()">
+                    <option value="all" {% if sort_by == "all" %}selected{% endif %}>All</option>
+                    <option value="newest_to_oldest" {% if sort_by == "newest_to_oldest" %}selected{% endif %}>Newest to Oldest</option>
+                    <option value="oldest_to_newest" {% if sort_by == "oldest_to_newest" %}selected{% endif %}>Oldest to Newest</option>
+                    <option value="author" {% if sort_by == "author" %}selected{% endif %}>Author</option>
+                    <option value="keyword" {% if sort_by == "keyword" %}selected{% endif %}>Keyword</option>
+                    <option value="subject" {% if sort_by == "subject" %}selected{% endif %}>Subject</option>
+                    <option value="title" {% if sort_by == "title" %}selected{% endif %}>Title</option>
+                </select>
+
+                <!-- keep search state while sorting -->
+                <input type="hidden" name="q" value="{{ query }}">
+                <input type="hidden" name="field" value="{{ field }}">
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Books Section (Grid Layout Style like Librarian's) -->
+<div class="book-section total-uploaded">
+    <div class="book-grid-horizontal">
+        {% for book in page_obj %}
+          {% if not book.is_archived %}
+            <div class="book-item" data-category="total">
+                <div class="book-container">
+                    <img src="{% if book.book_cover %}{{ book.book_cover.url }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}" 
+                        alt="Book Cover" 
+                        class="book-placeholder" 
+                        style="max-width: 140px; max-height: 200px; object-fit: cover;">
+                    
+                    <div class="book-info-hp">
+                        <h3>{{ book.title }}</h3>
+
+                        <form action="{% url 'view_book_details' book_id=book.book_id %}" method="get">
+                            <button type="submit" class="view-details">View Details</button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+          {% endif %}
+        {% empty %}
+            <div class="no-results">
+                {% if book_count == 0 %}
+                    No books found.
+                {% else %}
+                    No results for your search.
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+    <!-- Pagination Section -->
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if field != 'allFields' %}&field={{ field }}{% endif %}{% if sort_by != 'all' %}&sort={{ sort_by }}{% endif %}">< Previous</a>
+      {% endif %}
+
+      {% for page_num in page_obj.paginator.page_range %}
+        <a href="?page={{ page_num }}{% if query %}&q={{ query }}{% endif %}{% if field != 'allFields' %}&field={{ field }}{% endif %}{% if sort_by != 'all' %}&sort={{ sort_by }}{% endif %}" 
+        {% if page_obj.number == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if field != 'allFields' %}&field={{ field }}{% endif %}{% if sort_by != 'all' %}&sort={{ sort_by }}{% endif %}">Next ></a>
+      {% endif %}
+    </div>
+
+
+{% endblock %}
+
+{% block script %}
+<script>
+// Search suggestions
+const searchInput = document.getElementById('search-input');
+const suggestionsBox = document.getElementById('suggestions-box');
+
+searchInput.addEventListener('input', function() {
+  const query = searchInput.value.trim();
+  const field = document.getElementById('search-field').value;
+
+  // Show suggestions if the query is not empty
+  if (query.length > 0) {
+    // Fetch the suggestions from the backend
+    fetch(`/librarian_suggestions/?q=${query}&field=${field}`)
+      .then(response => response.json())
+      .then(data => {
+        const suggestions = data.results;
+
+        // If no suggestions, hide the suggestions box
+        if (suggestions.length === 0) {
+          suggestionsBox.style.display = 'none';
+        } else {
+          suggestionsBox.innerHTML = suggestions.map(s => {
+            const highlightedText = s.text.replace(new RegExp(query, 'gi'), match => {
+              return `<strong style="color: #d9534f;">${match}</strong>`;  // Highlight matching part in red
+            });
+
+            return `
+              <div class="typeahead-item" data-query="${s.text}" data-field="${s.type}">
+                <span class="suggestion-text">${highlightedText}</span>
+                <span class="suggestion-type">${s.type.toUpperCase()}</span>
+              </div>
+            `;
+          }).join('');
+          suggestionsBox.style.display = 'block';
+        }
+      });
+  } else {
+    suggestionsBox.style.display = 'none';  // Hide suggestions if query is empty
+  }
+});
+
+// Add click event listener for suggestions
+document.getElementById('suggestions-box').addEventListener('click', function(e) {
+  console.log('Click event triggered!'); // Log click event trigger
+  
+  // Check if the clicked target is either a .typeahead-item or the text inside the item
+  const typeaheadItem = e.target.closest('.typeahead-item');
+  
+  if (typeaheadItem) {
+    const selectedText = typeaheadItem.getAttribute('data-query');
+    const selectedField = typeaheadItem.getAttribute('data-field');
+
+    // Log the selected suggestion
+    console.log('Selected suggestion:', selectedText, selectedField);
+
+    // Set the input value to the clicked suggestion and the selected field
+    searchInput.value = selectedText;
+    document.getElementById('search-field').value = selectedField;
+
+    // Submit the form after selection
+    document.getElementById('search-form').submit();
+  }
+});
+
+// Automatically submit the form when the search field dropdown changes
+document.getElementById('search-field').addEventListener('change', function() {
+  document.getElementById('search-form').submit();  // Submit the form when the search field dropdown changes
+});
+
+document.getElementById('sort-select').addEventListener('change', function() {
+  // Automatically submit the form when the sorting option changes
+  document.getElementById('sort-form').submit();
+});
+
+
+// Handle the form submission manually
+document.getElementById('search-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const query = searchInput.value;
+  const field = document.getElementById('search-field').value;
+  const sortBy = document.querySelector('input[name="sort"]').value;
+
+  console.log('Form submission triggered'); // Log form submission
+
+  window.location.href = `/librarian/homepage/?q=${encodeURIComponent(query)}&field=${encodeURIComponent(field)}&sort=${encodeURIComponent(sortBy)}`;
+});
+</script>
+{% endblock %}
+

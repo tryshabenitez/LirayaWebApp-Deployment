@@ -1,0 +1,196 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: white;
+}
+
+.container-fluid {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  padding: 1rem 1rem; 
+}
+
+.left-panel {
+  width: 50%;
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
+
+.left-panel img {
+  max-width: 80%;
+}
+
+.right-panel {
+  width: 50%;
+  background-color: #561c24;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem; 
+  z-index: 1;
+  border-top-left-radius: 45px;
+  border-top-right-radius: 45px;
+  border-bottom-left-radius: 45px;
+  border-bottom-right-radius: 45px;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.form-label {
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+.form-control {
+  background-color: #722e33;
+  border: 2px solid rgba(255, 255, 255, 0.3); /* added border */
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 25px;
+  transition: all 0.3s ease; /* added smooth transition */
+}
+
+.form-control::placeholder {
+  color: #ddd;
+}
+
+/* FOCUS EFFECT */
+.form-control:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  
+}
+
+.btn-outline-light {
+  margin-top: 1.5rem;
+  padding: 10px;
+}
+
+.btn-light {
+  margin-top: 1rem;
+}
+
+.btn-light img {
+  width: 20px;
+  margin-right: 8px;
+}
+
+
+.profile-icon {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%; /* optional: makes it circular */
+}
+
+@media (max-width: 768px) {
+  .profile-icon {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-icon {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* Add left padding to make room for the icon */
+.input-wrapper .form-control {
+  padding-left: 45px;
+}
+
+/* Stronger selector to remove underline by default */
+.right-panel a.text-light.small {
+  text-decoration: none;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  font-size: 1rem; 
+}
+
+/* Add underline on hover only */
+.right-panel a.text-light.small:hover {
+  text-decoration: underline;
+  color: #ffc9c9;
+}
+
+
+.password-container {
+  position: relative;
+}
+
+.password-container .eye-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* Hide built-in Chrome password eye icon */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+/* Override autofill background + text color */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #722e33 inset !important;
+  -webkit-text-fill-color: white !important;
+  transition: background-color 5000s ease-in-out 0s; /* prevent flashing */
+}
+
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.15) inset !important;
+  -webkit-text-fill-color: white !important;
+}
+
+
+
+
+
+
+
+
+
