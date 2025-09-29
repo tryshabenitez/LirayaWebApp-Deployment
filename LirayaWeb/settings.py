@@ -180,3 +180,7 @@ SESSION_COOKIE_AGE = 18000
 
 # Reset timer with every request
 SESSION_SAVE_EVERY_REQUEST = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://lirayawebapp-deployment-production.up.railway.app",
+]
