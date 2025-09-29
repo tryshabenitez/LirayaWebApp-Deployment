@@ -8,8 +8,12 @@ matplotlib
 social-auth-app-django
 social-auth-core
 
+# OCR / AI / NLP dependencies
 opencv-python-headless
 torch
 torchvision
 easyocr
-
+numpy
+pandas
+spacy
+pyspellchecker
