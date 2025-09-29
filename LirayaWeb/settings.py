@@ -82,14 +82,15 @@ WSGI_APPLICATION = 'LirayaWeb.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("PGDATABASE"),
-        "USER": os.environ.get("PGUSER"),
-        "PASSWORD": os.environ.get("PGPASSWORD"),
-        "HOST": os.environ.get("PGHOST"),
-        "PORT": os.environ.get("PGPORT"),
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("MYSQLDATABASE", "railway"),
+        "USER": os.environ.get("MYSQLUSER", "root"),
+        "PASSWORD": os.environ.get("MYSQLPASSWORD"),
+        "HOST": os.environ.get("MYSQLHOST", "mysql.railway.internal"),
+        "PORT": os.environ.get("MYSQLPORT", "3306"),
     }
 }
+
 
 
 
