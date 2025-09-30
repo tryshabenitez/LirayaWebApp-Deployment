@@ -3003,24 +3003,17 @@ def librarian_view_details(request, book_id):
     if not account_id:
         return redirect('login')
 
-    try:
-        # Ensure the book belongs to this librarian
-        account = AccountInformation.objects.get(account_id=account_id)
-        book = get_object_or_404(Books, book_id=book_id, account=account)
-        categories = Books.objects.values('shelf_category').distinct()  # Fetch unique categories
-    except Exception as e:
-        logger.error(f"Error fetching book details: {e}")
-        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+    # Ensure the book belongs to this librarian
+    account = AccountInformation.objects.get(account_id=account_id)
+    book = get_object_or_404(Books, book_id=book_id, account=account)
+    categories = Books.objects.values('shelf_category').distinct()  # Fetch unique categories
 
-    # Handle archiving (make sure this is set correctly)
+   # Handle archiving (make sure this is set correctly)
     if 'archive' in request.GET:  # Handle archive action via GET request
-        try:
-            book.is_archived = not book.is_archived  # Toggle the archived status
-            book.save()
-            return JsonResponse({'success': True, 'message': 'Book archived successfully!'})
-        except Exception as e:
-            logger.error(f"Error archiving book: {e}")
-            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+        book.is_archived = not book.is_archived  # Toggle the archived status
+        book.save()
+
+        return JsonResponse({'success': True, 'message': 'Book deleted successfully!'})
 
     # --- Update path ---
     if request.method == 'POST':
@@ -3043,6 +3036,8 @@ def librarian_view_details(request, book_id):
                 for field in allowed_fields:
                     if field in data:
                         setattr(book, field, data[field])
+                # No updates to non-editable fields
+                # No file in JSON path
             else:
                 # multipart/form-data (FormData from the template)
                 for field in allowed_fields:
@@ -3051,30 +3046,19 @@ def librarian_view_details(request, book_id):
 
                 # Handle optional file upload
                 if 'book_cover' in request.FILES:
-                    new_book_cover = request.FILES['book_cover']
-                    
-                    # If the book already has a cover, delete it from Cloudinary
-                    if book.book_cover:
-                        # Extract public ID of the existing image (from Cloudinary URL)
-                        public_id = book.book_cover.name.split('/')[-1].split('.')[0]
-                        destroy(public_id)  # Delete old image from Cloudinary
-                    
-                    # Upload new image to Cloudinary
-                    cloudinary_response = upload(new_book_cover)
-                    book.book_cover = cloudinary_response['secure_url']  # Save the Cloudinary URL to the model
+                    book.book_cover = request.FILES['book_cover']
 
             book.save()
             return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
 
         except Exception as e:
-            logger.error(f"Error updating book details: {e}")
             return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
 
     # --- Render page ---
     context = {
         'book': book,
         'user_info': user_info,
-        'categories': categories
+        'categories': categories 
     }
     return render(request, 'Librarian_ViewDetails.html', context)
 
