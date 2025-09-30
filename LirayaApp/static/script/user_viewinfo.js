@@ -43,9 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function sentenceCase(str) {
     const s = String(str || '').trim();
     if (!s) return s;
-    const first = s[0].toUpperCase();
-    const rest  = s.slice(1);
-    return first + rest.toLowerCase();
+    return s[0].toUpperCase() + s.slice(1).toLowerCase();
   }
   function headlineCase(str) {
     return String(str || '').replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1));
@@ -55,18 +53,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Pull metadata
     const title     = metaEl?.dataset.title || '';
     const author    = metaEl?.dataset.author || '';
-    const coauthor  = metaEl?.dataset.coauthor || '';
+    theCoauthors    = metaEl?.dataset.coauthor || '';
     const year      = metaEl?.dataset.year || '';
     const publisher = metaEl?.dataset.publisher || '';
 
-    // ---------- Author strings ----------
-    const authorList = parseAuthors(author, coauthor);
+    // Authors
+    const authorList = parseAuthors(author, theCoauthors);
     const apaAuthors = formatApaAuthorList(authorList); // "Last, F. M., & Last, F. M."
+    const chicagoMlaAuthors = [author, theCoauthors].filter(Boolean).join('; ').trim();
 
-    // Chicago/MLA: show names as entered
-    const chicagoMlaAuthors = [author, coauthor].filter(Boolean).join('; ').trim();
-
-    // ---------- Escapes ----------
+    // Escapes
     const eApaAuthors = escapeHtml(apaAuthors);
     const eAuthorsCM  = escapeHtml(chicagoMlaAuthors);
     const eYear       = escapeHtml(year);
@@ -75,7 +71,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const titleAPA = escapeHtml(sentenceCase(title));
     const titleHL  = escapeHtml(headlineCase(title));
 
-    // ---------- Citations ----------
     // APA 7: Author(s). (Year). *Title in sentence case*. Publisher.
     const apa = `
       <div style="margin-bottom:10px;">
@@ -143,7 +138,19 @@ document.addEventListener('DOMContentLoaded', function () {
   const wrap    = document.getElementById('pages-table-wrapper');
   const anchor  = document.getElementById('pages-anchor');
   const holder  = document.getElementById('scanned-content-holder');
-  const raw     = holder ? holder.dataset.content || '' : '';
+  const rawAttr = holder ? holder.dataset.content || '' : '';
+
+  // Decode \uXXXX sequences that come from Django's escapejs
+  function decodeJsUnicodeEscapes(s) {
+    if (!s) return '';
+    return s
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+        String.fromCharCode(parseInt(hex, 16))
+      )
+      .replace(/\\u/g, ' '); // any stray "\u" without 4 hex digits -> space
+  }
+
+  const raw = decodeJsUnicodeEscapes(rawAttr);
 
   const modal      = document.getElementById('pages-modal');
   const modalBody  = document.getElementById('pages-modal-body');
@@ -172,13 +179,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // "Electron, 57-58" -> "Electron 57-58"
     s = s.replace(/,\s*(?=\d)/g, ' ');
 
-    // Ensure letters and numbers are separated (both directions)
-    // letter)(digit  -> "letter digit"
+    // Ensure digits and letters are separated BOTH ways
+    // letter)(digit -> "letter digit"
     s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');
     // digit)(letter or '(' -> "digit letter"
     s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');
-
-    // Also split after a digit if the next char is an uppercase start of a new term
+    // and if next is an uppercase start of a new term (safety)
     s = s.replace(/(\d)(?=[A-Z])/g, '$1 ');
 
     return s.trim();
@@ -193,18 +199,17 @@ document.addEventListener('DOMContentLoaded', function () {
     let words = [];
     let i = 0;
 
-    // Accept only tokens that are purely page lists like "12", "12,13,15", or "12-14"
-    const isPageChunk = (raw) => {
-      const t = String(raw).replace(/,$/, ''); // drop trailing comma
+    // Accept only clean page tokens: "12", "12,13,15", or "12-14"
+    const isPageChunk = (rawTok) => {
+      const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
       return /^\d+(?:[-,]\d+)*$/.test(t);
     };
 
     while (i < tokens.length) {
       const tok = tokens[i];
 
-      // accumulate keyword tokens until we hit a page-like token
       if (!isPageChunk(tok)) {
-        // remove a trailing comma on a word token
+        // keep building the keyword
         words.push(tok.replace(/,$/, ''));
         i++;
         continue;
@@ -218,19 +223,14 @@ document.addEventListener('DOMContentLoaded', function () {
         i++;
       }
 
-      // Build list keeping only the first number of any range (e.g., "57-59" -> "57")
+      // Keep only the first number of each range (e.g., "57-59" -> "57")
       const firstOnly = [];
       pageParts.forEach((part) => {
         part.split(',').forEach(chunk => {
           const c = chunk.trim();
           if (!c) return;
-
-          // strictly digits or digit-range at this point
-          const firstRaw = c.split('-')[0]; // grab left side of a range
-          // drop tokens like "0002"
-          if (/^0{2,}\d+$/.test(firstRaw)) return;
-
-          // normalize leading zeros
+          const firstRaw = c.split('-')[0];
+          if (/^0{2,}\d+$/.test(firstRaw)) return; // ignore artifact like "0002"
           let num = firstRaw.replace(/^0+/, '');
           if (num === '') num = '0';
           firstOnly.push(num);
@@ -388,7 +388,6 @@ function formatApaAuthorList(authorArray) {
   const formatted = authorArray.map(nameToApa).filter(Boolean)
 
   // APA 7: use comma between authors, and an ampersand before the final author.
-  // (We’re not applying the 20+ authors rule here; add if you need it.)
   if (formatted.length <= 1) return formatted.join('')
   if (formatted.length === 2) return `${formatted[0]} & ${formatted[1]}`
   return `${formatted.slice(0, -1).join(', ')}, & ${formatted[formatted.length - 1]}`
@@ -447,7 +446,6 @@ function showToast(message) {
   }, 1200);
 }
 function bindCopyLinkButton() {
-  // Find the sidebar button by its label (no HTML changes needed)
   const btn = Array.from(document.querySelectorAll('.action-btn'))
     .find(el => el.textContent.trim().toLowerCase() === 'copy page link');
   if (!btn) return;
@@ -468,10 +466,8 @@ function initQrCode() {
 
   if (!openBtn || !modal || !imgEl) return;
 
-  // Build a QR image using a public endpoint (no extra JS libs)
   function buildQrSrc(urlString) {
     const data = encodeURIComponent(urlString);
-    // 240x240 PNG QR
     return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${data}`;
   }
 
@@ -490,17 +486,14 @@ function initQrCode() {
   openBtn.addEventListener('click', openModal);
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
 
-  // Close when clicking the backdrop
   modal.addEventListener('click', function (e) {
     if (e.target === modal) closeModal();
   });
 
-  // Close on Escape
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
   });
 
-  // --- Direct download without leaving the page ---
   if (dlBtn) {
     dlBtn.addEventListener('click', async function (e) {
       e.preventDefault();
@@ -508,11 +501,9 @@ function initQrCode() {
       if (!src) return;
 
       try {
-        // Fetch as a blob so we can force a same-page download
         const res = await fetch(src, {
           mode: 'cors',
           cache: 'no-cache',
-          // helps some CDNs: avoids sending referrer
           referrerPolicy: 'no-referrer',
         });
         if (!res.ok) throw new Error('Failed to fetch QR image');
@@ -526,18 +517,14 @@ function initQrCode() {
         a.click();
         a.remove();
 
-        // Cleanup the object URL shortly after
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
       } catch (err) {
-        // If CORS blocks the blob download, fall back to opening in a new tab
-        // (user can still save from there)
         console.warn('QR direct download failed; opening in new tab instead.', err);
         window.open(src, '_blank', 'noopener');
       }
     });
   }
 
-  // Optional: open the QR image in a new tab
   if (openImgBtn) {
     openImgBtn.addEventListener('click', function () {
       if (imgEl && imgEl.src) window.open(imgEl.src, '_blank', 'noopener');
@@ -545,6 +532,5 @@ function initQrCode() {
   }
 }
 
-
-// Ensure it runs (place this near your other DOMContentLoaded initializers)
+// Ensure it runs
 document.addEventListener('DOMContentLoaded', initQrCode);
