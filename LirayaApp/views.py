@@ -3006,17 +3006,24 @@ def librarian_view_details(request, book_id):
     if not account_id:
         return redirect('login')
 
-    # Ensure the book belongs to this librarian
-    account = AccountInformation.objects.get(account_id=account_id)
-    book = get_object_or_404(Books, book_id=book_id, account=account)
-    categories = Books.objects.values('shelf_category').distinct()  # Fetch unique categories
+    try:
+        # Ensure the book belongs to this librarian
+        account = AccountInformation.objects.get(account_id=account_id)
+        book = get_object_or_404(Books, book_id=book_id, account=account)
+        categories = Books.objects.values('shelf_category').distinct()  # Fetch unique categories
+    except Exception as e:
+        logger.error(f"Error fetching book details: {e}")
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
 
-   # Handle archiving (make sure this is set correctly)
+    # Handle archiving (make sure this is set correctly)
     if 'archive' in request.GET:  # Handle archive action via GET request
-        book.is_archived = not book.is_archived  # Toggle the archived status
-        book.save()
-
-        return JsonResponse({'success': True, 'message': 'Book deleted successfully!'})
+        try:
+            book.is_archived = not book.is_archived  # Toggle the archived status
+            book.save()
+            return JsonResponse({'success': True, 'message': 'Book archived successfully!'})
+        except Exception as e:
+            logger.error(f"Error archiving book: {e}")
+            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
 
     # --- Update path ---
     if request.method == 'POST':
@@ -3039,8 +3046,6 @@ def librarian_view_details(request, book_id):
                 for field in allowed_fields:
                     if field in data:
                         setattr(book, field, data[field])
-                # No updates to non-editable fields
-                # No file in JSON path
             else:
                 # multipart/form-data (FormData from the template)
                 for field in allowed_fields:
@@ -3055,13 +3060,14 @@ def librarian_view_details(request, book_id):
             return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
 
         except Exception as e:
+            logger.error(f"Error updating book details: {e}")
             return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
 
     # --- Render page ---
     context = {
         'book': book,
         'user_info': user_info,
-        'categories': categories 
+        'categories': categories
     }
     return render(request, 'Librarian_ViewDetails.html', context)
 
