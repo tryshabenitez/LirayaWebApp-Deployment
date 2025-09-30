@@ -1357,8 +1357,8 @@ def admin_profile(request):
                             # Upload the new image to Cloudinary
                             cloudinary_response = uploader.upload(img_file)
                 
-                            # Save the Cloudinary URL to the model and save the account
-                            account.profile_picture = cloudinary_response['secure_url']
+                            # Save the Cloudinary URL (secure_url) to the model and save the account
+                            account.profile_picture = cloudinary_response['secure_url']  # Save the full URL
                             account.save()
                 
                             messages.success(request, "Profile picture updated successfully.")
