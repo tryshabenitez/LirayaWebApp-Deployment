@@ -165,10 +165,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  # 25 MB
 
 
-############ Function for profile pictures  ################
-MEDIA_URL = '/media/'  # URL for serving files
-MEDIA_ROOT = os.path.join(BASE_DIR, 'LirayaApp', 'media') 
-
 ############# function log in using email ###########
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get("GOOGLE_CLIENT_ID")
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
