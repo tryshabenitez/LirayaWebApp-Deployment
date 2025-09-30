@@ -90,7 +90,7 @@
       <!-- Book Photo Container -->
       <div class="book-cover-details">
         {% if book.book_cover %}
-          <img src="{{ book.book_cover.url }}" alt="Book Cover" class="cover-image">
+          <img src="{{ book.book_cover }}" alt="Book Cover" class="cover-image">
         {% else %}
           <img src="{% static 'images/book_placeholder.png' %}" alt="No Cover Available" class="cover-image">
         {% endif %}
