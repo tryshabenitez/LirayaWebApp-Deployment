@@ -3213,7 +3213,19 @@ def librarian_addbook(request):
         )
 
         if book_cover:
-            new_book.book_cover = book_cover
+            try:
+                # If book cover exists, delete old one from Cloudinary
+                if new_book.book_cover:
+                    public_id = new_book.book_cover.name.split('/')[-1].split('.')[0]
+                    destroy(public_id)  # Remove old image from Cloudinary
+
+                # Upload new image to Cloudinary
+                cloudinary_response = upload(book_cover)
+                new_book.book_cover = cloudinary_response['secure_url']  # Save the URL to the model
+
+            except Exception as e:
+                messages.error(request, f"Error uploading book cover: {e}")
+                return redirect('librarian_addbook')
 
         new_book.save()
         messages.success(request, 'Book successfully added!')
