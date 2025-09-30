@@ -89,7 +89,7 @@
         {% for book in page_obj %}
         <div class="book-item" data-category="total">
           <div class="book-container">
-            <img src="{% if book.book_cover %}{{ book.book_cover.url }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}" 
+            <img src="{% if book.book_cover %}{{ book.book_cover }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}" 
                 alt="Book Cover" 
                 class="book-placeholder" 
                 style="max-width: 140px; max-height: 200px; object-fit: cover;">
