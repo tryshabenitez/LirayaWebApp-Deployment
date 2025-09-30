@@ -1789,10 +1789,7 @@ def generate_pdf(request, report_type):
             ai = ua.account
 
             # profile picture absolute path (if any) — harmless if unused
-            try:
-                pp_path = ai.profile_picture.path if ai.profile_picture else None
-            except Exception:
-                pp_path = None
+            pp_url = ai.profile_picture if ai.profile_picture else None
 
             created_dt = ua.created_when
             created_on = created_dt.date() if created_dt else None
@@ -1914,7 +1911,7 @@ def generate_pdf(request, report_type):
                 "status": ua.account_status,
                 "username": ai.username,
                 "email": ai.email,
-                "profile_picture_path": pp_path,
+                "profile_picture_url": pp_url,
                 "birth_date": ai.birth_date.isoformat() if ai.birth_date else "—",
                 "age_years": age_years,
                 "contact": ai.contact_num,
