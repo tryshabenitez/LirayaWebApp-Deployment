@@ -73,6 +73,7 @@ from collections import defaultdict
 import pandas as pd
 from django.db import models
 from cloudinary import uploader
+from cloudinary.uploader import upload, destroy
 
 nlp = spacy.load('en_core_web_sm')
 
