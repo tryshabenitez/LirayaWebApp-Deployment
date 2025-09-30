@@ -3051,7 +3051,17 @@ def librarian_view_details(request, book_id):
 
                 # Handle optional file upload
                 if 'book_cover' in request.FILES:
-                    book.book_cover = request.FILES['book_cover']
+                    new_book_cover = request.FILES['book_cover']
+                    
+                    # If the book already has a cover, delete it from Cloudinary
+                    if book.book_cover:
+                        # Extract public ID of the existing image (from Cloudinary URL)
+                        public_id = book.book_cover.name.split('/')[-1].split('.')[0]
+                        destroy(public_id)  # Delete old image from Cloudinary
+                    
+                    # Upload new image to Cloudinary
+                    cloudinary_response = upload(new_book_cover)
+                    book.book_cover = cloudinary_response['secure_url']  # Save the Cloudinary URL to the model
 
             book.save()
             return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
