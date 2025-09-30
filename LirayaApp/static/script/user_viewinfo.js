@@ -30,73 +30,90 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// ---------- Citations Modal ----------
-(function () {
-  const citeBtn   = document.getElementById('cite-btn');
-  const citeModal = document.getElementById('cite-modal');
-  const closeBtn  = document.getElementById('close-cite-modal');
-  const bodyEl    = document.getElementById('cite-modal-body');
+function buildCitations() {
+  // Pull metadata
   const metaEl    = document.getElementById('book-meta');
+  const title     = metaEl?.dataset.title || '';
+  const author    = metaEl?.dataset.author || '';
+  const coauthor  = metaEl?.dataset.coauthor || '';
+  const year      = metaEl?.dataset.year || '';
+  const publisher = metaEl?.dataset.publisher || '';
 
-  if (!metaEl || !bodyEl || !citeBtn || !citeModal) return;
+  // ---------- Author strings ----------
+  // APA initials via your existing helpers
+  const authorList = parseAuthors(author, coauthor);
+  const apaAuthors = formatApaAuthorList(authorList); // "Last, F. M., & Last, F. M."
 
-  function buildCitations() {
-    // Pull metadata
-    const metaEl    = document.getElementById('book-meta');
-    const title     = metaEl?.dataset.title || '';
-    const author    = metaEl?.dataset.author || '';
-    const coauthor  = metaEl?.dataset.coauthor || '';
-    const year      = metaEl?.dataset.year || '';
-    const publisher = metaEl?.dataset.publisher || '';
+  // Chicago/MLA: show names as entered (simple and clear)
+  const chicagoMlaAuthors = [author, coauthor].filter(Boolean).join('; ').trim();
 
-    // Authors
-    const authorList = parseAuthors(author, coauthor);        // handles multi + initials prep
-    const apaAuthors = formatApaAuthorList(authorList);       // "Last, F. M., & Last, F. M."
-    const simpleJoined = [author, coauthor].filter(Boolean).join('; ').trim(); // as-entered for Chicago/MLA
+  // ---------- Escapes ----------
+  const eApaAuthors = escapeHtml(apaAuthors);
+  const eAuthorsCM  = escapeHtml(chicagoMlaAuthors);
+  const eYear       = escapeHtml(year);
+  const ePublisher  = escapeHtml(publisher);
 
-    // Escapes
-    const eTitle       = escapeHtml(title);
-    const eYear        = escapeHtml(year);
-    const ePublisherIt = publisher ? `<em>${escapeHtml(publisher)}</em>` : '';
-    const eApaAuthors  = escapeHtml(apaAuthors);
-    const eSimpleAuth  = escapeHtml(simpleJoined);
+  // ---------- Title casing helpers ----------
+  function sentenceCase(str) {
+    const s = String(str || '').trim();
+    if (!s) return s;
+    // Keep internal capital letters in acronyms, but make the rest lower
+    const first = s[0].toUpperCase();
+    const rest  = s.slice(1);
+    return first + rest.toLowerCase();
+  }
+  function headlineCase(str) {
+    // Simple headline/title case for display (not strict rules)
+    return String(str || '').replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1));
+  }
 
-    // APA 7: Author(s). (Year). Title. *Publisher*.
-    const apa = `
-        <div style="margin-bottom:10px;">
-        <strong>APA (7th ed.) Citation</strong><br>
-        ${eApaAuthors ? eApaAuthors + '. ' : ''}${eYear ? '(' + eYear + '). ' : ''}${eTitle ? eTitle + '. ' : ''}
-        ${ePublisherIt ? ePublisherIt + '.' : ''}
-        </div>
-    `;
+  const titleAPA = escapeHtml(sentenceCase(title));
+  const titleHL  = escapeHtml(headlineCase(title));
 
-    // Chicago 17: Author(s). Title. *Publisher*, Year.  (Title NOT italicized)
-    const chicago = `
-        <div style="margin-bottom:10px;">
-        <strong>Chicago Style (17th ed.) Citation</strong><br>
-        ${eSimpleAuth ? eSimpleAuth + '. ' : ''}${eTitle ? eTitle + '. ' : ''}
-        ${ePublisherIt}${eYear ? (publisher ? ', ' : '') + eYear + '.' : (publisher ? '.' : '')}
-        </div>
-    `;
+  // ---------- Citations ----------
+  // APA 7: Author(s). (Year). *Title in sentence case*. Publisher.
+  const apa = `
+    <div style="margin-bottom:10px;">
+      <strong>APA (7th ed.) Citation</strong><br>
+      ${eApaAuthors ? eApaAuthors + '. ' : ''}
+      ${eYear ? '(' + eYear + '). ' : ''}
+      ${titleAPA ? '<em>' + titleAPA + '</em>. ' : ''}
+      ${ePublisher ? ePublisher + '.' : ''}
+    </div>
+  `;
 
-    // MLA 9: Author(s). Title. *Publisher*, Year.  (Title NOT italicized)
-    const mla = `
-        <div style="margin-bottom:10px;">
-        <strong>MLA (9th ed.) Citation</strong><br>
-        ${eSimpleAuth ? eSimpleAuth + '. ' : ''}${eTitle ? eTitle + '. ' : ''}
-        ${ePublisherIt}${eYear ? ', ' + eYear + '.' : (publisher ? '.' : '')}
-        </div>
-    `;
+  // Chicago 17 (Notes & Bibliography): Full first names allowed, headline-case title, year at end.
+  // Pattern: Author(s). *Title in Headline Case*. Publisher, Year.
+  const chicago = `
+    <div style="margin-bottom:10px;">
+      <strong>Chicago Style (17th ed., Notes & Bibliography)</strong><br>
+      ${eAuthorsCM ? eAuthorsCM + '. ' : ''}
+      ${titleHL ? '<em>' + titleHL + '</em>. ' : ''}
+      ${ePublisher ? ePublisher + ', ' : ''}${eYear ? eYear + '.' : ''}
+    </div>
+  `;
 
-    // Optional warning (kept)
-    const warn = `
-        <div style="margin-top:6px; font-size:12px; color:#555;">
-        <em></em>
-        </div>
-    `;
+  // MLA 9: Author(s). *Title in Title Case*. Publisher, Year.
+  // Year placement and punctuation differ from APA; title styling matches Chicago for readability.
+  const mla = `
+    <div style="margin-bottom:10px;">
+      <strong>MLA (9th ed.) Citation</strong><br>
+      ${eAuthorsCM ? eAuthorsCM + '. ' : ''}
+      ${titleHL ? '<em>' + titleHL + '</em>. ' : ''}
+      ${ePublisher ? ePublisher + ', ' : ''}${eYear ? eYear + '.' : ''}
+    </div>
+  `;
 
-    return apa + chicago + mla + warn;
-    }
+  // Optional note
+  const warn = `
+    <div style="margin-top:6px; font-size:12px; color:#555;">
+      <em></em>
+    </div>
+  `;
+
+  return apa + chicago + mla + warn;
+}
+
 
 
   function openCiteModal() {
@@ -139,99 +156,104 @@ document.addEventListener('DOMContentLoaded', function () {
   function normalizeText(text) {
     if (!text) return '';
     let s = text;
-
+  
     // Normalize ALL odd spaces to a regular space (NBSP, en/em space, thin/hair, etc.)
     s = s.replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ');
-
+  
     // Remove zero-width characters (ZWNJ, ZWJ, BOM)
     s = s.replace(/[\u200C\u200D\uFEFF]/g, '');
-
+  
     // Normalize dash/minus/hyphen variants to a simple hyphen
-    s = s.replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE63\uFF0D]/g, '-');
-
+    s = s.replace(/[\u2010-\u2015\u2212\uFE63\uFF0D]/g, '-');
+  
     // Collapse extra spaces
     s = s.replace(/\s{2,}/g, ' ');
-
+  
     // "Electron, 57-58" -> "Electron 57-58"
     s = s.replace(/,\s*(?=\d)/g, ' ');
-
-    // Ensure letters and numbers are separated: "element12" -> "element 12"
+  
+    // Ensure letters and numbers are separated (both directions)
+    // letter)(digit  -> "letter digit"
     s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');
-
+    // digit)(letter or '(' -> "digit letter"
+    s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');
+  
+    // Also split after a digit if the next char is an uppercase start of a new term
+    s = s.replace(/(\d)(?=[A-Z])/g, '$1 ');
+  
     return s.trim();
   }
+
 
 
 
   function parsePairs(text) {
     const cleaned = normalizeText(text);
     if (!cleaned) return [];
-
+  
     const tokens = cleaned.split(/\s+/);
     const pairs = [];
     let words = [];
     let i = 0;
-
-    const stripNonPage = (t) => t.replace(/[^\d,\-]/g, '');
-    const isPageChunk = (t) => {
-      const c = stripNonPage(t);
-      return c && /^\d/.test(c) && /^[\d,\-]+$/.test(c);
+  
+    // Accept only tokens that are purely page lists like "12", "12,13,15", or "12-14"
+    const isPageChunk = (raw) => {
+      const t = String(raw).replace(/,$/, ''); // drop trailing comma
+      return /^\d+(?:[-,]\d+)*$/.test(t);
     };
-
+  
     while (i < tokens.length) {
       const tok = tokens[i];
-
-      // accumulate keyword tokens until we hit digits
-      if (!/^\d/.test(tok)) {
+  
+      // accumulate keyword tokens until we hit a page-like token
+      if (!isPageChunk(tok)) {
+        // remove a trailing comma on a word token
         words.push(tok.replace(/,$/, ''));
         i++;
         continue;
       }
       if (words.length === 0) { i++; continue; }
-
+  
       // collect contiguous page-like chunks
       const pageParts = [];
-      while (i < tokens.length) {
-        const raw = tokens[i];
-        const cleanedPart = stripNonPage(raw.replace(/,$/, ''));
-        if (!isPageChunk(cleanedPart)) break;
-        pageParts.push({ raw, cleaned: cleanedPart });
+      while (i < tokens.length && isPageChunk(tokens[i])) {
+        pageParts.push(tokens[i].replace(/,$/, ''));
         i++;
       }
-
-      // build list keeping only the FIRST number of any range,
-      // and drop OCR artifacts like "002" (two+ leading zeros)
+  
+      // Build list keeping only the first number of any range (e.g., "57-59" -> "57")
       const firstOnly = [];
-      pageParts.forEach(({ cleaned }) => {
-        cleaned.split(',').forEach(chunk => {
+      pageParts.forEach((part) => {
+        part.split(',').forEach(chunk => {
           const c = chunk.trim();
           if (!c) return;
-
-          // Ignore artifact tokens like "002", "0003", etc.
-          if (/^0{2,}\d+$/.test(c)) return;
-
-          const firstRaw = c.split('-')[0];
+  
+          // strictly digits or digit-range at this point
+          const firstRaw = c.split('-')[0]; // grab left side of a range
+          // drop tokens like "0002"
           if (/^0{2,}\d+$/.test(firstRaw)) return;
-
-          let num = firstRaw.replace(/\D/g, '').replace(/^0+/, '');
+  
+          // normalize leading zeros
+          let num = firstRaw.replace(/^0+/, '');
           if (num === '') num = '0';
           firstOnly.push(num);
         });
       });
-
+  
       const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
       const pages = firstOnly.length ? firstOnly.join(', ') : '—';
-
+  
       if (keyword) pairs.push({ keyword, pages });
       words = [];
     }
-
+  
     if (words.length) {
       pairs.push({ keyword: words.join(' ').trim(), pages: '—' });
     }
-
+  
     return pairs;
   }
+
 
 
 
@@ -319,48 +341,55 @@ function parseAuthors(primaryAuthor, coAuthors) {
 }
 
 function toApaInitials(givenAndMiddle) {
-  if (!givenAndMiddle) return ''
-  // Split on spaces; preserve hyphenated parts by converting each hyphen segment to an initial
-  const tokens = givenAndMiddle
+  if (!givenAndMiddle) return '';
+  // remove honorifics accidentally typed into given names
+  const cleaned = givenAndMiddle
+    .replace(/\b(Mr|Mrs|Ms|Miss|Dr|Prof)\.?\b/gi, '')
+    .trim();
+
+  if (!cleaned) return '';
+
+  return cleaned
     .split(/\s+/)
     .filter(Boolean)
-
-  const pieces = tokens.map(tok => {
-    // Handle hyphenated: "Jean-Luc" -> "J.-L."
-    if (tok.includes('-')) {
-      return tok
-        .split('-')
-        .filter(Boolean)
-        .map(seg => seg[0].toUpperCase() + '.')
-        .join('-')
-    }
-    // Regular word -> first letter + dot
-    return tok[0].toUpperCase() + '.'
-  })
-
-  return pieces.join(' ')
+    .map(tok => {
+      // Hyphenated given names → J.-L. pattern
+      if (tok.includes('-')) {
+        return tok
+          .split('-')
+          .filter(Boolean)
+          .map(seg => (seg[0] || '').toUpperCase() + '.')
+          .join('-');
+      }
+      return (tok[0] || '').toUpperCase() + '.';
+    })
+    .join(' ');
 }
 
 function nameToApa(rawName) {
-  if (!rawName) return ''
+  if (!rawName) return '';
 
-  const name = String(rawName).trim()
+  // Trim weird spaces and remove common suffixes from the *end*
+  let name = String(rawName)
+    .replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
+    .replace(/\s+(Jr\.?|Sr\.?|III|II|IV)\s*$/i, '')
+    .trim();
 
   // Case 1: "Last, First Middle"
   if (name.includes(',')) {
-    const [last, rest] = name.split(',', 2).map(s => s.trim()).filter(Boolean)
-    const initials = toApaInitials(rest || '')
-    return last ? (initials ? `${last}, ${initials}` : last) : initials
+    const [last, rest] = name.split(',', 2).map(s => s.trim()).filter(Boolean);
+    const initials = toApaInitials(rest || '');
+    return last ? (initials ? `${last}, ${initials}` : last) : initials;
   }
 
   // Case 2: "First Middle Last"
-  const tokens = name.split(/\s+/).filter(Boolean)
-  if (tokens.length === 1) return tokens[0] // only one token; just return as-is
+  const tokens = name.split(/\s+/).filter(Boolean);
+  if (tokens.length === 1) return tokens[0];
 
-  const last = tokens[tokens.length - 1]
-  const given = tokens.slice(0, -1).join(' ')
-  const initials = toApaInitials(given)
-  return `${last}, ${initials}`
+  const last = tokens[tokens.length - 1];
+  const given = tokens.slice(0, -1).join(' ');
+  const initials = toApaInitials(given);
+  return `${last}, ${initials}`;
 }
 
 function formatApaAuthorList(authorArray) {
