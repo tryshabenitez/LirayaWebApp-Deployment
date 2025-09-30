@@ -37,10 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'LirayaApp',
     'social_django',
-    'cloudinary',
-    'cloudinary_storage',
 ]
 
+# Cloudinary setup
 if os.environ.get("USE_CLOUDINARY", "false").lower() == "true":
     INSTALLED_APPS += ['cloudinary', 'cloudinary_storage']
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
