@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from reportlab.platypus import Table, TableStyle
 from .models import *
 from reportlab.platypus import Image
+import requests
 
 
 #----------------------------------- FORMAT AND STYLES-----------------------------------#
@@ -934,6 +935,18 @@ def _style_sheet():
 MAROON = colors.Color(0.294, 0.055, 0.055)        # same deep maroon
 ROSE   = colors.HexColor("#f3e9e9")   
 
+def _fetch_image_from_url(url, width=1.0*inch, height=1.0*inch):
+    """Fetch image from a URL (e.g., Cloudinary) and return as ReportLab Image."""
+    if not url:
+        return Spacer(1, height)
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        img_data = BytesIO(resp.content)
+        return Image(img_data, width, height)
+    except Exception:
+        return Spacer(1, height)
+
 def _center_banner(meta, styles):
     """Maroon title bar (white text), gray subtitle, and a borderless one-line meta row."""
     title = meta.get("title", "Account Information Report")
@@ -1281,13 +1294,8 @@ def _account_card_block(acct, styles, context):
     bio = acct["bio"]
 
     # Profile picture
-    if bio.get("profile_picture_path") and os.path.exists(bio["profile_picture_path"]):
-        try:
-            left = Image(bio["profile_picture_path"], width=1.0*inch, height=1.0*inch)
-        except Exception:
-            left = Spacer(1, 1.0*inch)
-    else:
-        left = Spacer(1, 1.0*inch)
+    pp_url = bio.get("profile_picture_url")
+    left = _fetch_image_from_url(pp_url, width=1.0*inch, height=1.0*inch)
 
     header = Table([[left, _info_rows(bio)]], colWidths=[1.2*inch, 4.0*inch])
     header.setStyle(TableStyle([
