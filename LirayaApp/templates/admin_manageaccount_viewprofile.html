@@ -14,7 +14,7 @@
             <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
                 <div class="profile-image-container">
                     <div class="profile-image-preview-homepage">
-                        <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                        <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
                     </div>
                 </div>
             </button>
