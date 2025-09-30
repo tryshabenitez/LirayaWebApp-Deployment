@@ -31,7 +31,7 @@ def predict_title_with_easyocr(image):
   
 #------------------------------------- INDEX/TOC/ABSTRACT -------------------------------------#
 
-_EASYOCR_READER = easyocr.Reader(['en', 'tl'], gpu=True)
+_EASYOCR_READER = easyocr.Reader(['en', 'tl'], gpu=False)
 
 #------------------ Pre-Processing Image ------------------#
 def _preprocess_image_for_ocr(img_pil: Image.Image) -> Image.Image:
