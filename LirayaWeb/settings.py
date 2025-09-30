@@ -186,5 +186,5 @@ SESSION_COOKIE_AGE = 18000
 SESSION_SAVE_EVERY_REQUEST = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://lirayawebapp-deployment-production.up.railway.app",
+    "https://liraya.up.railway.app",
 ]
