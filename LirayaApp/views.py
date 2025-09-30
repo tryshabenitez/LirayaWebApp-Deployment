@@ -1540,7 +1540,7 @@ def admin_records_view(request, account_id):
             'author': book.author,
             'year_of_publication': book.year_of_publication,
             'primary_keyword': book.primary_keyword,
-            'book_cover': book.book_cover.url if book.book_cover else None,
+            'book_cover': book.book_cover if book.book_cover else None,
             'book_id': book.book_id,  # Correctly accessing the primary key
         })
 
