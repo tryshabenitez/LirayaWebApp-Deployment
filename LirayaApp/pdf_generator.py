@@ -789,10 +789,12 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
                 Paragraph(category['title'], table_content_style),
                 Paragraph(category['author'], table_content_style),
                 Paragraph(str(category['date_uploaded']), table_content_style),
-                Paragraph(str(category['book_count']), table_content_style),  # Convert to string if it's a boolean # Convert to string if it's a boolean
+                Paragraph(str(category['book_count']), table_content_style)  # Book views count
             ])
     else:
-        table_data.append([Paragraph('N/A', table_content_style), 'NO DATA', 'NO DATA', 'N/A', 0])
+        # If no thesis books, add "No Data"
+        table_data.append([Paragraph('N/A', table_content_style), Paragraph('No Data', table_content_style), 
+                           Paragraph('No Data', table_content_style), Paragraph('N/A', table_content_style), Paragraph('0', table_content_style)])
 
     # Create the Thesis books table
     thesis_books_table = Table(table_data, colWidths=[0.5*inch, 2.8*inch, 1.3*inch, 1.2*inch, 0.6*inch, 0.9*inch])
@@ -853,10 +855,12 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
                 Paragraph(category['title'], table_content_style),
                 Paragraph(category['author'], table_content_style),
                 Paragraph(str(category['date_uploaded']), table_content_style),
-                Paragraph(str(category['book_count']), table_content_style),  # Convert to string if it's a boolean # Convert to string if it's a boolean
+                Paragraph(str(category['book_count']), table_content_style)  # Book views count
             ])
     else:
-        table_data.append([Paragraph('N/A', table_content_style), 'NO DATA', 'NO DATA', 'N/A', 0])
+        # If no academic books, add "No Data"
+        table_data.append([Paragraph('N/A', table_content_style), Paragraph('No Data', table_content_style), 
+                           Paragraph('No Data', table_content_style), Paragraph('N/A', table_content_style), Paragraph('0', table_content_style)])
 
     # Create the Academic books table
     academic_books_table = Table(table_data, colWidths=[0.5*inch, 2.8*inch, 1.3*inch, 1.2*inch, 0.6*inch, 0.9*inch])
