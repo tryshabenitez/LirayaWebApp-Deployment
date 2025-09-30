@@ -37,7 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'LirayaApp',
     'social_django',
+    'cloudinary',
+    'cloudinary_storage',
 ]
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',
