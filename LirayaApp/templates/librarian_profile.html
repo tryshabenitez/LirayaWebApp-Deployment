@@ -35,7 +35,7 @@
                 <div class="profile-left">
                     <div class="profile-image-container">
                         <div class="profile-image-preview">
-                            <img id="profile-preview" src="{% if account.profile_picture %}{{ account.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                            <img id="profile-preview" src="{% if account.profile_picture %}{{ account.profile_picture }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
                         </div>
                     </div>
                 </div>
