@@ -72,6 +72,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import pandas as pd
 from django.db import models
+from cloudinary import uploader
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -1337,33 +1338,39 @@ def admin_profile(request):
                 
                 elif form_type == 'image_upload':
                     cropped_image_data = request.POST.get('cropped_image')
-
+                
                     if cropped_image_data:
-                        # Extract the base64 image data
-                        format, imgstr = cropped_image_data.split(';base64,')  # Split the header and the data part
-                        ext = format.split('/')[-1]  # Get the file extension (e.g., jpeg, png)
-
-                        # Decode the base64 image
-                        img_data = base64.b64decode(imgstr)
-
-                        # Generate a filename using account_id, first_name, and last_name
-                        filename = f"{account.account_id}-{account.first_name}-{account.last_name}.{ext}"
-                        file_path = os.path.join(settings.MEDIA_ROOT, "profile_pics", filename)
-
-                        # Check if the file already exists
-                        if os.path.exists(file_path):
-                            # If the file exists, delete it (overwrite the file like Facebook)
-                            os.remove(file_path)
-                            print("File exists, overwriting.")
-
-                        # Create a ContentFile object to save the image
-                        img_file = ContentFile(img_data, name=filename)
-
-                        # Save the image to the profile_picture field in the AccountInformation model
-                        account.profile_picture.save(filename, img_file)
-
-                        # Save the account with the new profile picture
-                        account.save()
+                        try:
+                            # Extract the base64 image data
+                            format, imgstr = cropped_image_data.split(';base64,')  # Split the header and the data part
+                            ext = format.split('/')[-1]  # Get the file extension (e.g., jpeg, png)
+                
+                            # Decode the base64 image
+                            img_data = base64.b64decode(imgstr)
+                            img_file = ContentFile(img_data, name=f"{account.account_id}-{account.first_name}-{account.last_name}.{ext}")
+                
+                            # Check and remove the old image from Cloudinary if exists
+                            if account.profile_picture:
+                                public_id = account.profile_picture.name.split('/')[-1].split('.')[0]
+                                uploader.destroy(public_id)
+                
+                            # Upload the new image to Cloudinary
+                            cloudinary_response = uploader.upload(img_file)
+                
+                            # Save the Cloudinary URL to the model and save the account
+                            account.profile_picture = cloudinary_response['secure_url']
+                            account.save()
+                
+                            messages.success(request, "Profile picture updated successfully.")
+                
+                        except Exception as e:
+                            logger.error(f"Error uploading image to Cloudinary: {e}")
+                            messages.error(request, "Error uploading profile picture. Please try again.")
+                            return redirect('admin_profile')
+                    else:
+                        messages.error(request, "No image data provided.")
+                        return redirect('admin_profile')
+                        
                         
                 elif form_type == 'password_change':
                     try:
