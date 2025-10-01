@@ -22,10 +22,17 @@
   <!-- Left: Cover -->
   <div class="admin-book-cover-section">
     <div class="admin-book-cover-box">
-      <img id="coverPreview"
-           src="{% if book.book_cover %}{{ book.book_cover.url }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}"
-           alt="Cover Preview"
-           style="max-width:220px; height:auto;">
+        {% if book.book_cover %}
+            <img id="coverPreview"
+                 src="{{ book.book_cover.url }}"
+                 alt="Cover Preview"
+                 style="max-width:220px; height:auto;">
+        {% else %}
+            <img id="coverPreview"
+                 src="{% static 'images/book_placeholder.png' %}"
+                 alt="Default Cover Preview"
+                 style="max-width:220px; height:auto;">
+        {% endif %}
     </div>
 
     <!-- Cover file input (only visible on Edit) -->
