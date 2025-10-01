@@ -3000,67 +3000,69 @@ def librarian_view_details(request, book_id):
     account_id = request.session.get('account_id')
     user_info = get_user_info(account_id)
 
-    if not account_id:
-        return redirect('login')
+    if account_id:
+        # Ensure the book belongs to this librarian
+        account = AccountInformation.objects.get(account_id=account_id)
+        book = get_object_or_404(Books, book_id=book_id, account=account)
+        categories = Books.objects.values('shelf_category').distinct()  # Fetch unique categories
 
-    # Ensure the book belongs to this librarian
-    account = AccountInformation.objects.get(account_id=account_id)
-    book = get_object_or_404(Books, book_id=book_id, account=account)
-    categories = Books.objects.values('shelf_category').distinct()  # Fetch unique categories
-
-   # Handle archiving (make sure this is set correctly)
-    if 'archive' in request.GET:  # Handle archive action via GET request
-        book.is_archived = not book.is_archived  # Toggle the archived status
-        book.save()
-
-        return JsonResponse({'success': True, 'message': 'Book deleted successfully!'})
-
-    # --- Update path ---
-    if request.method == 'POST':
-        try:
-            ctype = (request.headers.get('Content-Type') or '').lower()
-
-            # Allowed text fields
-            allowed_fields = [
-                'title',
-                'author',
-                'co_author',
-                'year_of_publication',
-                'publisher',
-                'shelf_category',
-            ]
-
-            if ctype.startswith('application/json'):
-                # JSON body (legacy path)
-                data = json.loads(request.body.decode('utf-8'))
-                for field in allowed_fields:
-                    if field in data:
-                        setattr(book, field, data[field])
-                # No updates to non-editable fields
-                # No file in JSON path
-            else:
-                # multipart/form-data (FormData from the template)
-                for field in allowed_fields:
-                    if field in request.POST:
-                        setattr(book, field, request.POST.get(field))
-
-                # Handle optional file upload
-                if 'book_cover' in request.FILES:
-                    book.book_cover = request.FILES['book_cover']
-
+        # Handle archiving (make sure this is set correctly)
+        if 'archive' in request.GET:  # Handle archive action via GET request
+            book.is_archived = not book.is_archived  # Toggle the archived status
             book.save()
-            return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
 
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+            return JsonResponse({'success': True, 'message': 'Book deleted successfully!'})
 
-    # --- Render page ---
-    context = {
-        'book': book,
-        'user_info': user_info,
-        'categories': categories 
-    }
-    return render(request, 'Librarian_ViewDetails.html', context)
+        # --- Update path ---
+        if request.method == 'POST':
+            try:
+                ctype = (request.headers.get('Content-Type') or '').lower()
+
+                # Allowed text fields
+                allowed_fields = [
+                    'title',
+                    'author',
+                    'co_author',
+                    'year_of_publication',
+                    'publisher',
+                    'shelf_category',
+                ]
+
+                if ctype.startswith('application/json'):
+                    # JSON body (legacy path)
+                    data = json.loads(request.body.decode('utf-8'))
+                    for field in allowed_fields:
+                        if field in data:
+                            setattr(book, field, data[field])
+                    # No updates to non-editable fields
+                    # No file in JSON path
+                else:
+                    # multipart/form-data (FormData from the template)
+                    for field in allowed_fields:
+                        if field in request.POST:
+                            setattr(book, field, request.POST.get(field))
+
+                    # Handle optional file upload
+                    if 'book_cover' in request.FILES:
+                        book.book_cover = request.FILES['book_cover']
+
+                book.save()
+                return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
+
+            except Exception as e:
+                return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+
+        # --- Render page ---
+        context = {
+            'book': book,
+            'user_info': user_info,
+            'categories': categories 
+        }
+        return render(request, 'Librarian_ViewDetails.html', context)
+
+    # If account_id is not found, redirect to login
+    return redirect('login')
+
 
 @login_checker
 @role_required('LIBRARIAN')
