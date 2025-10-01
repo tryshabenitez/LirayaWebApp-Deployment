@@ -467,9 +467,11 @@ function initQrCode() {
   if (!openBtn || !modal || !imgEl) return;
 
   function buildQrSrc(urlString) {
-    const data = encodeURIComponent(urlString);
+    const qrUrl = urlString + (urlString.includes('?') ? '&qr=1' : '?qr=1');
+    const data = encodeURIComponent(qrUrl);
     return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${data}`;
   }
+
 
   function openModal() {
     const url = window.location.href;          // current page link
@@ -534,3 +536,80 @@ function initQrCode() {
 
 // Ensure it runs
 document.addEventListener('DOMContentLoaded', initQrCode);
+
+// Auto-open QR MODE modal if ?qr=1
+document.addEventListener('DOMContentLoaded', function () {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('qr') === '1') {
+    const qrModeModal = document.getElementById('qr-mode-modal');
+    if (qrModeModal) {
+      qrModeModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      document.getElementById('qr-tab-cover').click();
+    }
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+  const exitBtn = document.getElementById('exit-qr-mode');
+  if (exitBtn) {
+    exitBtn.addEventListener('click', function () {
+      const cleanUrl = window.location.href.replace(/[?&]qr=1/, '');
+      window.location.href = cleanUrl;
+    });
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  const coverBtn = document.getElementById('qr-tab-cover');
+  const detailsBtn = document.getElementById('qr-tab-details');
+  const pagesBtn = document.getElementById('qr-tab-pages');
+
+  const coverContent = document.getElementById('qr-cover-content');
+  const detailsContent = document.getElementById('qr-details-content');
+  const pagesContent = document.getElementById('qr-pages-content');
+
+  function showTab(tab) {
+    coverContent.style.display = (tab === 'cover') ? 'block' : 'none';
+    detailsContent.style.display = (tab === 'details') ? 'block' : 'none';
+    pagesContent.style.display = (tab === 'pages') ? 'block' : 'none';
+  }
+
+  if (coverBtn) coverBtn.addEventListener('click', () => showTab('cover'));
+  if (detailsBtn) detailsBtn.addEventListener('click', () => showTab('details'));
+  if (pagesBtn) pagesBtn.addEventListener('click', () => {
+  showTab('pages');
+  fillQrPages(); 
+});
+
+
+  showTab('cover'); // default
+});
+
+function fillQrPages() {
+  const tbody = document.getElementById('qr-pages-body');
+  if (!tbody) return;
+
+  // Clear old rows
+  tbody.innerHTML = '';
+
+  // Use the same global parser logic
+  const holder = document.getElementById('scanned-content-holder');
+  const rawAttr = holder ? holder.dataset.content || '' : '';
+  const raw = decodeJsUnicodeEscapes(rawAttr);
+  const pairs = parsePairs(raw);
+
+  if (!pairs.length) {
+    tbody.innerHTML = '<tr><td colspan="2">No page index available.</td></tr>';
+    return;
+  }
+
+  pairs.forEach((p, idx) => {
+    const tr = document.createElement('tr');
+    tr.className = idx % 2 === 0 ? 'row-odd' : 'row-even';
+    tr.innerHTML = `<td>${p.keyword}</td><td>${p.pages}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+
