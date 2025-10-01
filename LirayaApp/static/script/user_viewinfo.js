@@ -150,107 +150,6 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/\\u/g, ' '); // any stray "\u" without 4 hex digits -> space
   }
 
-  const raw = decodeJsUnicodeEscapes(rawAttr);
-
-  const modal      = document.getElementById('pages-modal');
-  const modalBody  = document.getElementById('pages-modal-body');
-  const modalClose = document.getElementById('close-pages-modal');
-
-  if (!modal || !modalBody || !wrap || !btn) return;
-
-  let built = false;
-
-  function normalizeText(text) {
-    if (!text) return '';
-    let s = text;
-
-    // Normalize ALL odd spaces to a regular space (NBSP, en/em space, thin/hair, etc.)
-    s = s.replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ');
-
-    // Remove zero-width characters (ZWNJ, ZWJ, BOM)
-    s = s.replace(/[\u200C\u200D\uFEFF]/g, '');
-
-    // Normalize dash/minus/hyphen variants to a simple hyphen
-    s = s.replace(/[\u2010-\u2015\u2212\uFE63\uFF0D]/g, '-');
-
-    // Collapse extra spaces
-    s = s.replace(/\s{2,}/g, ' ');
-
-    // "Electron, 57-58" -> "Electron 57-58"
-    s = s.replace(/,\s*(?=\d)/g, ' ');
-
-    // Ensure digits and letters are separated BOTH ways
-    // letter)(digit -> "letter digit"
-    s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');
-    // digit)(letter or '(' -> "digit letter"
-    s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');
-    // and if next is an uppercase start of a new term (safety)
-    s = s.replace(/(\d)(?=[A-Z])/g, '$1 ');
-
-    return s.trim();
-  }
-
-  function parsePairs(text) {
-    const cleaned = normalizeText(text);
-    if (!cleaned) return [];
-
-    const tokens = cleaned.split(/\s+/);
-    const pairs = [];
-    let words = [];
-    let i = 0;
-
-    // Accept only clean page tokens: "12", "12,13,15", or "12-14"
-    const isPageChunk = (rawTok) => {
-      const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
-      return /^\d+(?:[-,]\d+)*$/.test(t);
-    };
-
-    while (i < tokens.length) {
-      const tok = tokens[i];
-
-      if (!isPageChunk(tok)) {
-        // keep building the keyword
-        words.push(tok.replace(/,$/, ''));
-        i++;
-        continue;
-      }
-      if (words.length === 0) { i++; continue; }
-
-      // collect contiguous page-like chunks
-      const pageParts = [];
-      while (i < tokens.length && isPageChunk(tokens[i])) {
-        pageParts.push(tokens[i].replace(/,$/, ''));
-        i++;
-      }
-
-      // Keep only the first number of each range (e.g., "57-59" -> "57")
-      const firstOnly = [];
-      pageParts.forEach((part) => {
-        part.split(',').forEach(chunk => {
-          const c = chunk.trim();
-          if (!c) return;
-          const firstRaw = c.split('-')[0];
-          if (/^0{2,}\d+$/.test(firstRaw)) return; // ignore artifact like "0002"
-          let num = firstRaw.replace(/^0+/, '');
-          if (num === '') num = '0';
-          firstOnly.push(num);
-        });
-      });
-
-      const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
-      const pages = firstOnly.length ? firstOnly.join(', ') : '—';
-
-      if (keyword) pairs.push({ keyword, pages });
-      words = [];
-    }
-
-    if (words.length) {
-      pairs.push({ keyword: words.join(' ').trim(), pages: '—' });
-    }
-
-    return pairs;
-  }
-
   function buildTable() {
     const tbody = document.querySelector('#pages-table tbody');
     if (!tbody) return;
@@ -585,6 +484,88 @@ document.addEventListener('DOMContentLoaded', function() {
 
   showTab('cover'); // default
 });
+
+// ---------- Global Page Parser Helpers (used by both Show Pages and QR Mode) ----------
+function decodeJsUnicodeEscapes(s) {
+  if (!s) return '';
+  return s
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    )
+    .replace(/\\u/g, ' '); // any stray "\u" without 4 hex digits -> space
+}
+
+function parsePairs(text) {
+  function normalizeText(text) {
+    if (!text) return '';
+    let s = text;
+    s = s.replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ');
+    s = s.replace(/[\u200C\u200D\uFEFF]/g, '');
+    s = s.replace(/[\u2010-\u2015\u2212\uFE63\uFF0D]/g, '-');
+    s = s.replace(/\s{2,}/g, ' ');
+    s = s.replace(/,\s*(?=\d)/g, ' ');
+    s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');
+    s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');
+    s = s.replace(/(\d)(?=[A-Z])/g, '$1 ');
+    return s.trim();
+  }
+
+  const cleaned = normalizeText(text);
+  if (!cleaned) return [];
+
+  const tokens = cleaned.split(/\s+/);
+  const pairs = [];
+  let words = [];
+  let i = 0;
+
+  const isPageChunk = (rawTok) => {
+    const t = String(rawTok).replace(/,$/, '');
+    return /^\d+(?:[-,]\d+)*$/.test(t);
+  };
+
+  while (i < tokens.length) {
+    const tok = tokens[i];
+
+    if (!isPageChunk(tok)) {
+      words.push(tok.replace(/,$/, ''));
+      i++;
+      continue;
+    }
+    if (words.length === 0) { i++; continue; }
+
+    const pageParts = [];
+    while (i < tokens.length && isPageChunk(tokens[i])) {
+      pageParts.push(tokens[i].replace(/,$/, ''));
+      i++;
+    }
+
+    const firstOnly = [];
+    pageParts.forEach((part) => {
+      part.split(',').forEach(chunk => {
+        const c = chunk.trim();
+        if (!c) return;
+        const firstRaw = c.split('-')[0];
+        if (/^0{2,}\d+$/.test(firstRaw)) return;
+        let num = firstRaw.replace(/^0+/, '');
+        if (num === '') num = '0';
+        firstOnly.push(num);
+      });
+    });
+
+    const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
+    const pages = firstOnly.length ? firstOnly.join(', ') : '—';
+
+    if (keyword) pairs.push({ keyword, pages });
+    words = [];
+  }
+
+  if (words.length) {
+    pairs.push({ keyword: words.join(' ').trim(), pages: '—' });
+  }
+
+  return pairs;
+}
+
 
 function fillQrPages() {
   const tbody = document.getElementById('qr-pages-body');
