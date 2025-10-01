@@ -139,22 +139,16 @@ document.addEventListener('DOMContentLoaded', function () {
   const anchor  = document.getElementById('pages-anchor');
   const holder  = document.getElementById('scanned-content-holder');
   const rawAttr = holder ? holder.dataset.content || '' : '';
-
-  // Decode \uXXXX sequences that come from Django's escapejs
-  function decodeJsUnicodeEscapes(s) {
-    if (!s) return '';
-    return s
-      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
-        String.fromCharCode(parseInt(hex, 16))
-      )
-      .replace(/\\u/g, ' '); // any stray "\u" without 4 hex digits -> space
-  }
+  let built = false;
 
   function buildTable() {
     const tbody = document.querySelector('#pages-table tbody');
     if (!tbody) return;
 
+    const raw = decodeJsUnicodeEscapes(rawAttr);
     const pairs = parsePairs(raw);
+
+  
     if (!pairs.length) {
       const tr = document.createElement('tr');
       tr.innerHTML = '<td colspan="2">No page index available.</td>';
