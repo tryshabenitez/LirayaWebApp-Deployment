@@ -163,30 +163,30 @@ document.addEventListener('DOMContentLoaded', function () {
   function normalizeText(text) {
     if (!text) return '';
     let s = text;
-
-    // Normalize ALL odd spaces to a regular space (NBSP, en/em space, thin/hair, etc.)
+  
+    // Normalize ALL odd spaces to a regular space
     s = s.replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ');
-
-    // Remove zero-width characters (ZWNJ, ZWJ, BOM)
+  
+    // Remove zero-width characters
     s = s.replace(/[\u200C\u200D\uFEFF]/g, '');
-
-    // Normalize dash/minus/hyphen variants to a simple hyphen
+  
+    // Normalize dash/minus/hyphen variants
     s = s.replace(/[\u2010-\u2015\u2212\uFE63\uFF0D]/g, '-');
-
+  
     // Collapse extra spaces
     s = s.replace(/\s{2,}/g, ' ');
-
+  
     // "Electron, 57-58" -> "Electron 57-58"
     s = s.replace(/,\s*(?=\d)/g, ' ');
-
-    // Ensure digits and letters are separated BOTH ways
-    // letter)(digit -> "letter digit"
-    s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');
-    // digit)(letter or '(' -> "digit letter"
-    s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');
-    // and if next is an uppercase start of a new term (safety)
+  
+    // Separate digits and letters both ways
+    s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');  
+    s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');        
     s = s.replace(/(\d)(?=[A-Z])/g, '$1 ');
-
+  
+    // NEW: ensure letters + roman numerals are separated (FOREWORDvii → FOREWORD vii)
+    s = s.replace(/([A-Za-z])([ivxlcdm]+)/gi, '$1 $2');
+  
     return s.trim();
   }
 
@@ -199,43 +199,52 @@ document.addEventListener('DOMContentLoaded', function () {
     let words = [];
     let i = 0;
   
-    // Accept only clean page tokens: "12", "12,13,15", or "12-14"
     const isPageChunk = (rawTok) => {
-      const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
+      const t = String(rawTok).replace(/,$/, '');
       return /^\d+(?:[-,]\d+)*$/.test(t);
     };
   
-    // Utility: check if keyword is ignorable (chapter/figure + number)
     function isIgnorableKeyword(str) {
-      return /^(chapter|figure)\s+\d+$/i.test(str.trim());
+      const s = str.trim();
+  
+      // Loose match for Chapter (typos included) + number
+      if (/^(chapter|ciapter|chaptre|chaptr)\s*\d+$/i.test(s)) return true;
+  
+      // Loose match for Figure (typos included) + number
+      if (/^(figure|figuer|figre)\s*\d+$/i.test(s)) return true;
+  
+      // Foreword / Acknowledgments / Introduction with Roman numerals
+      if (/^(foreword|acknowledgments?|introduction)\s+[ivxlcdm]+$/i.test(s)) return true;
+  
+      // Generic "Word + Roman numeral" → ignore as front matter
+      if (/^[A-Za-z]+\s+[ivxlcdm]+$/i.test(s)) return true;
+  
+      return false;
     }
   
     while (i < tokens.length) {
       const tok = tokens[i];
   
       if (!isPageChunk(tok)) {
-        // keep building the keyword
         words.push(tok.replace(/,$/, ''));
         i++;
         continue;
       }
       if (words.length === 0) { i++; continue; }
   
-      // collect contiguous page-like chunks
       const pageParts = [];
       while (i < tokens.length && isPageChunk(tokens[i])) {
         pageParts.push(tokens[i].replace(/,$/, ''));
         i++;
       }
   
-      // Keep only the first number of each range (e.g., "57-59" -> "57")
       const firstOnly = [];
       pageParts.forEach((part) => {
         part.split(',').forEach(chunk => {
           const c = chunk.trim();
           if (!c) return;
           const firstRaw = c.split('-')[0];
-          if (/^0{2,}\d+$/.test(firstRaw)) return; // ignore artifact like "0002"
+          if (/^0{2,}\d+$/.test(firstRaw)) return;
           let num = firstRaw.replace(/^0+/, '');
           if (num === '') num = '0';
           firstOnly.push(num);
@@ -244,22 +253,19 @@ document.addEventListener('DOMContentLoaded', function () {
   
       const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
   
-      // -------- NEW IGNORE RULE --------
       if (isIgnorableKeyword(keyword)) {
         words = [];
         continue;
       }
-      // ---------------------------------
   
       const pages = firstOnly.length ? firstOnly.join(', ') : '—';
-  
       if (keyword) pairs.push({ keyword, pages });
       words = [];
     }
   
     if (words.length) {
       const keyword = words.join(' ').trim();
-      if (!isIgnorableKeyword(keyword)) {   // also ignore here
+      if (!isIgnorableKeyword(keyword)) {
         pairs.push({ keyword, pages: '—' });
       }
     }
