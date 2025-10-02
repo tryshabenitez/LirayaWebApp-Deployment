@@ -1073,11 +1073,15 @@ document.getElementById('scanButton').addEventListener('click', function() {
     if (capturedImage.style.display === 'block' && capturedImage.src) {
         // If the image is already displayed and there's a valid image source
         const imgData = capturedImage.src;  // The base64 image data
+        const scannedType = document.getElementById("scannedContentType").value || "TOC"; // Get the selected content type (TOC or Index)
 
         // Send the captured image data to the server for OCR processing
         fetch('/librarian/addbook/', {
             method: 'POST',
-            body: JSON.stringify({ 'image_data': imgData }), // Send base64 image data
+            body: JSON.stringify({
+                'image_data': imgData, 
+                'scanned_type': scannedType  // Send the scanned content type
+            }),  // Send base64 image data
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
@@ -1137,9 +1141,14 @@ document.getElementById('captureNextButton').addEventListener('click', function(
     // Ensure the captured image exists and has a valid source
     if (capturedImage.style.display === 'block' && capturedImage.src) {
         // Send the captured image to backend for OCR processing
+        const scannedType = document.getElementById("scannedContentType").value || "TOC"; // Get the selected content type (TOC or Index)
+      
         fetch('/librarian/addbook/', {
             method: 'POST',
-            body: JSON.stringify({ 'image_data': capturedImage.src }), // Send base64 image data
+            body: JSON.stringify({
+                'image_data': capturedImage.src, 
+                'scanned_type': scannedType  // Send the scanned content type
+            }),  // Send base64 image data
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
