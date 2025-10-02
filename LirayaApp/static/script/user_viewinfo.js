@@ -205,6 +205,11 @@ document.addEventListener('DOMContentLoaded', function () {
       return /^\d+(?:[-,]\d+)*$/.test(t);
     };
   
+    // Utility: check if keyword is ignorable (chapter/figure + number)
+    function isIgnorableKeyword(str) {
+      return /^(chapter|figure)\s+\d+$/i.test(str.trim());
+    }
+  
     while (i < tokens.length) {
       const tok = tokens[i];
   
@@ -239,13 +244,12 @@ document.addEventListener('DOMContentLoaded', function () {
   
       const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
   
-      // -------- NEW IGNORE RULE ADDED --------
-      // Skip entries like "CHAPTER 1", "CHAPTER 2", etc.
-      if (/^chapter\s+\d+$/i.test(keyword)) {
+      // -------- NEW IGNORE RULE --------
+      if (isIgnorableKeyword(keyword)) {
         words = [];
         continue;
       }
-      // ----------------------------------------
+      // ---------------------------------
   
       const pages = firstOnly.length ? firstOnly.join(', ') : '—';
   
@@ -255,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
     if (words.length) {
       const keyword = words.join(' ').trim();
-      if (!/^chapter\s+\d+$/i.test(keyword)) {   // also apply ignore rule here
+      if (!isIgnorableKeyword(keyword)) {   // also ignore here
         pairs.push({ keyword, pages: '—' });
       }
     }
@@ -263,12 +267,21 @@ document.addEventListener('DOMContentLoaded', function () {
     return pairs;
   }
 
-
   function buildTable() {
     const tbody = document.querySelector('#pages-table tbody');
     if (!tbody) return;
-
+  
     const pairs = parsePairs(raw);
+  
+    // --- NEW RULE: if no numeric pages at all, hide the Show Pages button ---
+    const hasPages = pairs.some(p => /\d/.test(p.pages));
+    if (!hasPages) {
+      const btn = document.getElementById('show-pages-btn');
+      if (btn) btn.style.display = 'none';  // hide button
+      return; // stop building
+    }
+    // ----------------------------------------------------------------------
+  
     if (!pairs.length) {
       const tr = document.createElement('tr');
       tr.innerHTML = '<td colspan="2">No page index available.</td>';
@@ -276,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
       built = true;
       return;
     }
-
+  
     pairs.forEach((p, idx) => {
       const tr = document.createElement('tr');
       tr.className = idx % 2 === 0 ? 'row-odd' : 'row-even';
@@ -284,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function () {
       tr.innerHTML = `<td>${esc(p.keyword)}</td><td>${esc(p.pages)}</td>`;
       tbody.appendChild(tr);
     });
-
+  
     built = true;
   }
 
