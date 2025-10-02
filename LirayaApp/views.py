@@ -3055,10 +3055,23 @@ def librarian_view_details(request, book_id):
                     if field in request.POST:
                         setattr(book, field, request.POST.get(field))
 
-                # Handle optional file upload (book cover)
+                # Handle book cover upload to Cloudinary
                 if 'book_cover' in request.FILES:
-                    book.book_cover = request.FILES['book_cover']
-
+                    book_cover = request.FILES['book_cover']
+                    try:
+                        # Delete old cover from Cloudinary if exists
+                        if book.book_cover:
+                            public_id = book.book_cover.name.split('/')[-1].split('.')[0]
+                            destroy(public_id)
+                
+                        # Upload new cover to Cloudinary
+                        cloudinary_response = upload(book_cover)
+                        book.book_cover = cloudinary_response['secure_url']  # Save secure URL
+                
+                    except Exception as e:
+                        messages.error(request, f"Error uploading book cover: {e}")
+                        return JsonResponse({'success': False, 'message': f"Error uploading book cover: {str(e)}"}, status=500)
+                        
             book.save()
             return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
 
