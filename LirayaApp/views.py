@@ -3071,7 +3071,7 @@ def librarian_view_details(request, book_id):
         'user_info': user_info,
         'categories': categories 
     }
-    return render(request, 'Librarian_ViewDetails.html', context)
+    return render(request, 'librarian_ViewDetails.html', context)
 
 
 
