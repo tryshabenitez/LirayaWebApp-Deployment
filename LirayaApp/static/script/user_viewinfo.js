@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Pull metadata
     const title     = metaEl?.dataset.title || '';
     const author    = metaEl?.dataset.author || '';
-    theCoauthors    = metaEl?.dataset.coauthor || '';
+    const theCoauthors = metaEl?.dataset.coauthor || '';
     const year      = metaEl?.dataset.year || '';
     const publisher = metaEl?.dataset.publisher || '';
 
@@ -193,21 +193,21 @@ document.addEventListener('DOMContentLoaded', function () {
   function parsePairs(text) {
     const cleaned = normalizeText(text);
     if (!cleaned) return [];
-
+  
     const tokens = cleaned.split(/\s+/);
     const pairs = [];
     let words = [];
     let i = 0;
-
+  
     // Accept only clean page tokens: "12", "12,13,15", or "12-14"
     const isPageChunk = (rawTok) => {
       const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
       return /^\d+(?:[-,]\d+)*$/.test(t);
     };
-
+  
     while (i < tokens.length) {
       const tok = tokens[i];
-
+  
       if (!isPageChunk(tok)) {
         // keep building the keyword
         words.push(tok.replace(/,$/, ''));
@@ -215,14 +215,14 @@ document.addEventListener('DOMContentLoaded', function () {
         continue;
       }
       if (words.length === 0) { i++; continue; }
-
+  
       // collect contiguous page-like chunks
       const pageParts = [];
       while (i < tokens.length && isPageChunk(tokens[i])) {
         pageParts.push(tokens[i].replace(/,$/, ''));
         i++;
       }
-
+  
       // Keep only the first number of each range (e.g., "57-59" -> "57")
       const firstOnly = [];
       pageParts.forEach((part) => {
@@ -236,20 +236,33 @@ document.addEventListener('DOMContentLoaded', function () {
           firstOnly.push(num);
         });
       });
-
+  
       const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
+  
+      // -------- NEW IGNORE RULE ADDED --------
+      // Skip entries like "CHAPTER 1", "CHAPTER 2", etc.
+      if (/^chapter\s+\d+$/i.test(keyword)) {
+        words = [];
+        continue;
+      }
+      // ----------------------------------------
+  
       const pages = firstOnly.length ? firstOnly.join(', ') : '—';
-
+  
       if (keyword) pairs.push({ keyword, pages });
       words = [];
     }
-
+  
     if (words.length) {
-      pairs.push({ keyword: words.join(' ').trim(), pages: '—' });
+      const keyword = words.join(' ').trim();
+      if (!/^chapter\s+\d+$/i.test(keyword)) {   // also apply ignore rule here
+        pairs.push({ keyword, pages: '—' });
+      }
     }
-
+  
     return pairs;
   }
+
 
   function buildTable() {
     const tbody = document.querySelector('#pages-table tbody');
