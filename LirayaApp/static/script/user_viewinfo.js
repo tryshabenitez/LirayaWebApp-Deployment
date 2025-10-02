@@ -164,13 +164,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!text) return '';
     let s = text;
   
-    // Normalize ALL odd spaces to a regular space
-    s = s.replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ');
+    // Remove zero-width and joiners entirely (do NOT turn into spaces)
+    s = s.replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, '');
   
-    // Remove zero-width characters
-    s = s.replace(/[\u200C\u200D\uFEFF]/g, '');
+    // Remove micro/uncommon spaces ONLY when they appear between letters
+    // (prevents A C K … artifacts from OCR)
+    s = s.replace(/([A-Za-z])[\u2000-\u200A\u202F\u205F]+(?=[A-Za-z])/g, '$1');
   
-    // Normalize dash/minus/hyphen variants
+    // Convert remaining exotic spaces to regular spaces (word separators)
+    s = s.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ');
+  
+    // Normalize dash/minus/hyphen variants to a simple hyphen
     s = s.replace(/[\u2010-\u2015\u2212\uFE63\uFF0D]/g, '-');
   
     // Collapse extra spaces
@@ -179,13 +183,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // "Electron, 57-58" -> "Electron 57-58"
     s = s.replace(/,\s*(?=\d)/g, ' ');
   
-    // Separate digits and letters both ways
-    s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');  
-    s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');        
-    s = s.replace(/(\d)(?=[A-Z])/g, '$1 ');
-  
-    // NEW: ensure letters + roman numerals are separated (FOREWORDvii → FOREWORD vii)
-    s = s.replace(/([A-Za-z])([ivxlcdm]+)/gi, '$1 $2');
+    // Ensure digits and letters are separated BOTH ways (safe)
+    s = s.replace(/([A-Za-z\)\]\.])(\d)/g, '$1 $2');   // letter before digit
+    s = s.replace(/(\d)(?=[A-Za-z(])/g, '$1 ');        // digit before letter
+    s = s.replace(/(\d)(?=[A-Z])/g, '$1 ');            // digit before capital
   
     return s.trim();
   }
@@ -194,36 +195,72 @@ document.addEventListener('DOMContentLoaded', function () {
     const cleaned = normalizeText(text);
     if (!cleaned) return [];
   
+    // We will split more precisely INSIDE the loop when we detect glued tokens
     const tokens = cleaned.split(/\s+/);
     const pairs = [];
     let words = [];
     let i = 0;
   
+    // Accept only clean page tokens: "12", "12,13,15", or "12-14"
     const isPageChunk = (rawTok) => {
-      const t = String(rawTok).replace(/,$/, '');
+      const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
       return /^\d+(?:[-,]\d+)*$/.test(t);
     };
   
+    // Break up glued tokens like:
+    //   "Chapter12" -> ["Chapter","12"]
+    //   "FOREWORDvii" -> ["FOREWORD","vii"]  (roman part handled as text, not page)
+    //   "ixChapter" -> ["ix","Chapter"]
+    //   "Figure3" -> ["Figure","3"]
+    function splitTokenIfGlued(tok) {
+      let m;
+  
+      // Chapter/Figure (with common OCR typos) glued to digits
+      m = tok.match(/^(chapter|chaptr|chaptre|ciapter|figure|figuer|figre)(\d+)$/i);
+      if (m) return [m[1], m[2]];
+  
+      // Letters glued to digits at the end: "Keyword31"
+      m = tok.match(/^([A-Za-z]+)(\d+)$/);
+      if (m) return [m[1], m[2]];
+  
+      // Letters glued to roman numerals at the end (≥2 to avoid splitting normal words on single 'i')
+      // e.g., "FOREWORDvii" -> ["FOREWORD","vii"]
+      m = tok.match(/^([A-Za-z]{3,})([ivxlcdm]{2,})$/i);
+      if (m) return [m[1], m[2]];
+  
+      // Roman numerals glued before Chapter/Figure (e.g., "ixChapter")
+      m = tok.match(/^([ivxlcdm]{2,})(chapter|chaptr|chaptre|ciapter|figure|figuer|figre)$/i);
+      if (m) return [m[1], m[2]];
+  
+      return null;
+    }
+  
+    // Ignore headings like "Chapter 2", "Figure 3" (case-insensitive, with common OCR typos)
+    // Also ignore typical front-matter like "Foreword vii", "Acknowledgments viii", "Introduction ix"
     function isIgnorableKeyword(str) {
       const s = str.trim();
   
-      // Loose match for Chapter (typos included) + number
-      if (/^(chapter|ciapter|chaptre|chaptr)\s*\d+$/i.test(s)) return true;
-  
-      // Loose match for Figure (typos included) + number
+      if (/^(chapter|chaptr|chaptre|ciapter)\s*\d+$/i.test(s)) return true;
       if (/^(figure|figuer|figre)\s*\d+$/i.test(s)) return true;
   
-      // Foreword / Acknowledgments / Introduction with Roman numerals
+      // Front matter + Roman numerals
       if (/^(foreword|acknowledgments?|introduction)\s+[ivxlcdm]+$/i.test(s)) return true;
   
-      // Generic "Word + Roman numeral" → ignore as front matter
-      if (/^[A-Za-z]+\s+[ivxlcdm]+$/i.test(s)) return true;
+      // Generic "Word + Roman numerals" often indicate front matter; be conservative
+      if (/^[A-Za-z]{3,}\s+[ivxlcdm]{2,}$/i.test(s)) return true;
   
       return false;
     }
   
     while (i < tokens.length) {
-      const tok = tokens[i];
+      let tok = tokens[i];
+  
+      // If token is glued, split it in-place so subsequent logic sees parts separately
+      const split = splitTokenIfGlued(tok);
+      if (split) {
+        tokens.splice(i, 1, split[0], split[1]);
+        tok = tokens[i];
+      }
   
       if (!isPageChunk(tok)) {
         words.push(tok.replace(/,$/, ''));
@@ -232,19 +269,27 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       if (words.length === 0) { i++; continue; }
   
+      // Collect contiguous page-like chunks ("12", "12-14", "12,13")
       const pageParts = [];
-      while (i < tokens.length && isPageChunk(tokens[i])) {
+      while (i < tokens.length) {
+        // If next is glued, split before checking again
+        const nextTok = tokens[i];
+        const s2 = splitTokenIfGlued(nextTok);
+        if (s2) tokens.splice(i, 1, s2[0], s2[1]);
+  
+        if (!isPageChunk(tokens[i])) break;
         pageParts.push(tokens[i].replace(/,$/, ''));
         i++;
       }
   
+      // Keep only the first number of each range (e.g., "57-59" -> "57")
       const firstOnly = [];
       pageParts.forEach((part) => {
         part.split(',').forEach(chunk => {
           const c = chunk.trim();
           if (!c) return;
           const firstRaw = c.split('-')[0];
-          if (/^0{2,}\d+$/.test(firstRaw)) return;
+          if (/^0{2,}\d+$/.test(firstRaw)) return; // ignore artifact like "0002"
           let num = firstRaw.replace(/^0+/, '');
           if (num === '') num = '0';
           firstOnly.push(num);
@@ -253,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
       const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
   
+      // Skip Chapter/Figure headings etc.
       if (isIgnorableKeyword(keyword)) {
         words = [];
         continue;
@@ -279,14 +325,14 @@ document.addEventListener('DOMContentLoaded', function () {
   
     const pairs = parsePairs(raw);
   
-    // --- NEW RULE: if no numeric pages at all, hide the Show Pages button ---
+    // NEW: if no numeric pages at all, hide the button and stop
     const hasPages = pairs.some(p => /\d/.test(p.pages));
     if (!hasPages) {
       const btn = document.getElementById('show-pages-btn');
-      if (btn) btn.style.display = 'none';  // hide button
-      return; // stop building
+      if (btn) btn.style.display = 'none';
+      built = true;
+      return;
     }
-    // ----------------------------------------------------------------------
   
     if (!pairs.length) {
       const tr = document.createElement('tr');
@@ -306,6 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
     built = true;
   }
+
 
   function openModal() {
     if (!built) buildTable();
