@@ -52,6 +52,7 @@
                             <option value="">Select Role</option>
                             <option value="Admin" {% if input_values.role == "Admin" %}selected{% endif %}>Admin</option>
                             <option value="Library Assistant" {% if input_values.role == "Library Assistant" %}selected{% endif %}>Librarian</option>
+                            <option value="Department" {% if input_values.role == "Department" %}selected{% endif %}>Department User</option> 
                         </select>
                         {% if errors.role %}
                             <div class="field-error">{{ errors.role }}</div>
