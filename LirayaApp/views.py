@@ -120,8 +120,14 @@ def role_required(required_role):
                 account = AccountInformation.objects.get(account_id=account_id)
                 user_account = UserAccounts.objects.get(account=account)
 
-                # Check if the user's role matches the required role
-                if user_account.role.upper() != required_role.upper():
+                # Allow DEPARTMENT to be treated the same as LIBRARIAN
+                if not (
+                    user_account.role.upper() == required_role.upper()
+                    or (
+                        required_role.upper() == "LIBRARIAN"
+                        and user_account.role.upper() == "DEPARTMENT"
+                    )
+                ):
                     error_message = "access_restricted"
                     
                     # Add the error message to the Django messages framework
@@ -130,7 +136,7 @@ def role_required(required_role):
                     # Role-specific redirection
                     if user_account.role.upper() == "ADMIN":
                         return redirect(reverse('admin_homepage') + f"?error_message={error_message}")
-                    elif user_account.role.upper() == "LIBRARIAN":
+                    elif user_account.role.upper() in ["LIBRARIAN", "DEPARTMENT"]:
                         return redirect(reverse('librarian_homepage') + f"?error_message={error_message}")
                     else:
                         return redirect(reverse('error_page') + f"?error_message={error_message}")  # Redirect to error page
@@ -1018,7 +1024,12 @@ def admin_createaccount(request):
 
 
         # Format role
-        role = role.upper().replace("LIBRARY ASSISTANT", "LIBRARIAN")
+        if role.upper() == "LIBRARY ASSISTANT":
+            role = "LIBRARIAN"
+        elif role.upper() == "DEPARTMENT":
+            role = "DEPARTMENT"   
+        else:
+            role = role.upper()
 
         # Generate username: liraya_0000, liraya_0001, etc.
         latest_account = AccountInformation.objects.filter(username__startswith='liraya_').order_by('-account_id').first()
@@ -3656,7 +3667,7 @@ def login_view(request):
         role = user_account.role.upper()
         if role == 'ADMIN':
             return redirect('admin_homepage')
-        elif role == 'LIBRARIAN':
+        elif role in ['LIBRARIAN', 'DEPARTMENT']: 
             return redirect('librarian_homepage')
         else:
             messages.error(request, "Unknown role type.")
@@ -3698,7 +3709,7 @@ def google_login_redirect(request):
         role = user_account.role.upper()
         if role == 'ADMIN':
             return redirect('admin_homepage')
-        elif role == 'LIBRARIAN':
+        elif role in ['LIBRARIAN', 'DEPARTMENT']: 
             return redirect('librarian_homepage')
         else:
             messages.error(request, "Unknown role type.")
@@ -3970,7 +3981,7 @@ def first_login_view(request):
         role = user_account.role.upper()
         if role == 'ADMIN':
             return redirect('admin_profile')
-        elif role == 'LIBRARIAN':
+        elif role in ['LIBRARIAN', 'DEPARTMENT']:
             return redirect('librarian_profile')
         else:
             messages.error(request, "Unknown role. Please contact system administrator.")
