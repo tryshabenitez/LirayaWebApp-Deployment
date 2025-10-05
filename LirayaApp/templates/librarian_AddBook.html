@@ -370,6 +370,9 @@
                 placeholder="Scanned content will appear here..."
                 data-intro="Step 16: The scanned text will appear here. Review and edit if needed."
                 data-step="16"></textarea>
+                <div id="scannedContentPreview" class="form-control" 
+               style="margin-top:10px; min-height:150px; white-space:pre-wrap; word-wrap:break-word; overflow-y:auto;">
+</div>
         </div>
 
         <!-- Lock button aligned to the left -->
@@ -1944,8 +1947,8 @@ const scannedContentBox = document.getElementById('scannedContent');
 let spellPopup = null;
 
 function runSpellCheck() {
-  const text = scannedContentBox.value;
-  if (!text.trim()) return;
+  const text = document.getElementById('scannedContent').value.trim();
+  if (!text) return;
 
   fetch('/check-spelling/', {
     method: 'POST',
@@ -1958,36 +1961,17 @@ function runSpellCheck() {
   .then(res => res.json())
   .then(data => {
     const errors = data.errors || {};
+    const preview = document.getElementById('scannedContentPreview');
 
-    // create a preview div if not exists
-    let overlay = document.getElementById('spellOverlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'spellOverlay';
-      overlay.className = 'form-control';
-      overlay.style.position = 'absolute';
-      overlay.style.pointerEvents = 'none'; // allow typing through
-      overlay.style.whiteSpace = 'pre-wrap';
-      overlay.style.wordWrap = 'break-word';
-      overlay.style.color = 'transparent';
-      overlay.style.overflowY = 'auto';
-      overlay.style.zIndex = 5;
-      overlay.style.top = scannedContentBox.offsetTop + 'px';
-      overlay.style.left = scannedContentBox.offsetLeft + 'px';
-      overlay.style.width = scannedContentBox.offsetWidth + 'px';
-      overlay.style.height = scannedContentBox.offsetHeight + 'px';
-      scannedContentBox.parentNode.appendChild(overlay);
-    }
-
-    // render spell highlights inside overlay
+    // Build the HTML content with underlines
     const html = text.replace(/\b([A-Za-z']+)\b/g, match => {
       const clean = match.replace(/[^a-zA-Z]/g, '');
       return errors[clean]
-        ? `<span class="misspelled">${match}</span>`
+        ? `<span class="misspelled" data-word="${clean}">${match}</span>`
         : match;
     }).replace(/\n/g, '<br>');
 
-    overlay.innerHTML = html;
+    preview.innerHTML = html;
   })
   .catch(err => console.error('Spellcheck error:', err));
 }
