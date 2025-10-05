@@ -1963,6 +1963,7 @@ function cleanUniversalOCR(text, type = "TOC") {
 }
 
 // ================= NEW SPELL CHECKER (LanguageTool + Editable Preview) ================= //
+// ================= SPELL CHECKER FOR SCANNED CONTENT ================= //
 const scannedContentBox = document.getElementById('scannedContent');
 let spellPopup = null;
 
@@ -2015,61 +2016,80 @@ function runSpellCheck() {
       });
     }
 
+    
     editable.innerHTML = newHtml;  // always rebuild for consistent highlight refresh
   })
   .catch(err => console.error('Spellcheck error:', err));
 }
 
-// --- Suggestion popup ---
+
 function showSuggestions(wordElement, suggestions) {
   if (spellPopup) spellPopup.remove();
 
   spellPopup = document.createElement('div');
   spellPopup.className = 'spell-popup';
 
+  // Scrollable container for suggestions
   const scrollContainer = document.createElement('div');
   scrollContainer.className = 'suggestions-container';
-  scrollContainer.style.maxHeight = '120px';  // make suggestions scrollable
-  scrollContainer.style.overflowY = 'auto';
 
   suggestions.forEach(sug => {
     const opt = document.createElement('div');
     opt.className = 'suggestion-item';
     opt.textContent = sug;
     opt.onclick = () => {
+      // Replace in editable area
       wordElement.outerHTML = sug;
       spellPopup.remove();
+
+      // ✅ Sync back to textarea
+      const editable = document.getElementById('scannedContentEditable');
+      const textarea = document.getElementById('scannedContent');
+      if (editable && textarea) {
+        textarea.value = editable.innerText.replace(/\n/g, '\r\n');
+      }
+
+      // ✅ Optional: also update array so later pages append correctly
+      if (typeof scannedContentArray !== 'undefined') {
+        scannedContentArray = textarea.value.split(/\r?\n\r?\n/);
+      }
     };
     scrollContainer.appendChild(opt);
   });
 
   spellPopup.appendChild(scrollContainer);
 
+  // Add fixed ignore button
   const ignore = document.createElement('div');
   ignore.className = 'ignore-item';
   ignore.textContent = 'Ignore';
   ignore.onclick = () => {
-    wordElement.outerHTML = wordElement.textContent;
+    const wordText = wordElement.textContent;
+    wordElement.outerHTML = wordText;
     spellPopup.remove();
   };
   spellPopup.appendChild(ignore);
 
+  // Position popup
   const rect = wordElement.getBoundingClientRect();
   spellPopup.style.top = `${rect.bottom + window.scrollY + 5}px`;
   spellPopup.style.left = `${rect.left + window.scrollX}px`;
-
   document.body.appendChild(spellPopup);
 
+  // Auto-close on outside click
   document.addEventListener('click', e => {
     if (!spellPopup.contains(e.target)) spellPopup.remove();
   }, { once: true });
 }
 
-// --- click handler ---
+
+
+// Attach click event to misspelled words
 document.addEventListener('click', function (e) {
   if (e.target.classList.contains('misspelled')) {
     const word = e.target.getAttribute('data-word');
 
+    // Ask backend for suggestions
     fetch('/check-spelling/', {
       method: 'POST',
       headers: {
@@ -2081,17 +2101,19 @@ document.addEventListener('click', function (e) {
     .then(res => res.json())
     .then(data => {
       const suggestions = data.errors[word];
+
       if (suggestions && suggestions.length > 0) {
+        // ✅ Only show popup if there are real suggestions
         showSuggestions(e.target, suggestions);
       } else {
-        // Remove underline if no suggestions
-        e.target.outerHTML = e.target.textContent;
+        // 🚫 If there are no suggestions, remove the underline
+        const text = e.target.textContent;
+        e.target.outerHTML = text; // replaces the span with plain text
       }
     })
     .catch(err => console.error('Error fetching suggestions:', err));
   }
 });
-
 
 
 
