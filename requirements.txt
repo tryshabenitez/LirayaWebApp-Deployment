@@ -8,11 +8,16 @@ matplotlib
 social-auth-app-django
 social-auth-core
 
+# CPU-only versions to avoid GPU driver conflicts on Railway
+torch==2.8.0+cpu
+torchvision==0.23.0+cpu
+easyocr
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+
 # OCR / AI / NLP dependencies
 opencv-python-headless
-torch
-torchvision
-easyocr
+
 pandas
 pyspellchecker
 
@@ -24,6 +29,7 @@ django-cloudinary-storage
 numpy<2.0
 spacy==3.7.5
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz
+
 
 
 
