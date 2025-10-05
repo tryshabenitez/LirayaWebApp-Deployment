@@ -1108,25 +1108,18 @@ document.getElementById('scanButton').addEventListener('click', function() {
         })
         .then(response => response.json())  // Parse the response as JSON
         .then(data => {
-            if (data.extracted_text) {
-                // Append the newly extracted text to the existing content
+            if (data && data.extracted_text) {
+                //  Pass extracted text through cleaner
                 const selectedType = document.getElementById("scannedContentType").value || "TOC";
-                // Clean the OCR text according to selected type
-                const newText = cleanUniversalOCR(data.extracted_text.trim(), selectedType);
+                const cleanedText = cleanUniversalOCR(data.extracted_text.trim(), selectedType);
 
-                if (newText && !scannedContent.value.includes(newText)) {
-                    scannedContentArray.push(newText);
-                    scannedContent.value += "\n\n" + newText; // Append new text with a new line
+                // Insert cleaned text into textarea
+                document.getElementById('scannedContent').value = cleanedText;
+                scannedContentArray.push(cleanedText);
 
-                    // 🔹 Keep editable area (if visible) in sync with textarea
-                    const editable = document.getElementById('scannedContentEditable');
-                    if (editable) {
-                        editable.innerText += "\n\n" + newText;
-                    }
+                // 🔹 Run spell checker immediately after inserting cleaned text
+                runSpellCheck();     
 
-                    // 🔹 Force a fresh spell-check render after adding the new page
-                    setTimeout(() => runSpellCheck(), 500);
-                }
             } else {
                 console.log("No extracted text found in the response.");
             }
@@ -1190,9 +1183,19 @@ document.getElementById('captureNextButton').addEventListener('click', function(
                 const selectedType = document.getElementById("scannedContentType").value || "TOC";
                 // Clean the OCR text according to selected type
                 const newText = cleanUniversalOCR(data.extracted_text.trim(), selectedType);
+
                 if (newText && !scannedContent.value.includes(newText)) {
                     scannedContentArray.push(newText);
                     scannedContent.value += "\n\n" + newText; // Append new text with a new line
+
+                    // 🔹 Keep editable area (if visible) in sync with textarea
+                    const editable = document.getElementById('scannedContentEditable');
+                    if (editable) {
+                        editable.innerText += "\n\n" + newText;
+                    }
+
+                    // 🔹 Force a fresh spell-check render after adding the new page
+                    setTimeout(() => runSpellCheck(), 500);
                 }
             } else {
                 console.error("No extracted text found in the response.");
