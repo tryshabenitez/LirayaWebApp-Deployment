@@ -2072,6 +2072,29 @@ h2 {
 
 
  /* === SPELLCHECKER STYLES === */
+
+#scannedContent {
+  position: relative;
+  background-color: #fff;
+  color: #000;
+  z-index: 1;
+}
+
+/* Overlay that shows red underlines (ghost layer) */
+#spellOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* lets user click/type through it */
+  color: transparent;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto;
+  z-index: 2;
+}
+
 .misspelled {
   text-decoration: underline wavy #d93025;
   text-decoration-thickness: 1.5px;
