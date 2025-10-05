@@ -624,10 +624,14 @@ def user_viewinfo(request):
 ########### ADMIN DASHBOARD ############
 logger = logging.getLogger(__name__)
 
+
 def get_user_info(account_id):
     # Retrieve the account information based on account_id
     account = get_object_or_404(AccountInformation, account_id=account_id)
     
+    # Retrieve the user account information to get the role
+    user_account = UserAccounts.objects.get(account=account)
+
     # Handle middle name (None if N/A, na, or blank)
     if account.middle_name and account.middle_name.lower() in ['n/a', 'na']:
         account.middle_name = None
@@ -635,13 +639,13 @@ def get_user_info(account_id):
     # Format the full name (First, Middle, and Last Name)
     full_name = f"{account.first_name} {account.middle_name or ''} {account.last_name}".strip()
 
-    # Return the user information as a dictionary
+    # Return the user information as a dictionary, including the role
     return {
         'account_id': account.account_id,
         'profile_picture': account.profile_picture,
         'full_name': full_name,
+        'role': user_account.role  # Include the role from UserAccounts
     }
-
 
 
 @login_checker
