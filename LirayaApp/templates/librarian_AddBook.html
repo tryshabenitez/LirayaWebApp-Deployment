@@ -1958,41 +1958,36 @@ function runSpellCheck() {
   .then(res => res.json())
   .then(data => {
     const errors = data.errors || {};
-    const newHtml = text
-      .replace(/\b([A-Za-z']+)\b/g, (match) => {
-        const clean = match.replace(/[^a-zA-Z]/g, '');
-        return errors[clean]
-          ? `<span class="misspelled" data-word="${clean}" title="Click for suggestions">${match}</span>`
-          : match;
-      })
-      .replace(/\n/g, '<br>');
 
-    let editable = document.getElementById('scannedContentEditable');
-    if (!editable) {
-      const parent = scannedContentBox.parentNode;
-      editable = document.createElement('div');
-      editable.id = 'scannedContentEditable';
-      editable.contentEditable = true;
-      editable.spellcheck = false;
-      editable.className = 'form-control';
-      editable.style.whiteSpace = 'pre-wrap';
-      editable.style.overflowY = 'auto';
-      editable.style.minHeight = getComputedStyle(scannedContentBox).minHeight || '150px';
-      editable.style.height = getComputedStyle(scannedContentBox).height;
-      editable.style.padding = getComputedStyle(scannedContentBox).padding;
-      editable.style.border = getComputedStyle(scannedContentBox).border;
-      editable.style.boxSizing = 'border-box';
-      scannedContentBox.style.display = 'none';
-      parent.appendChild(editable);
-
-      editable.addEventListener('input', () => {
-        scannedContentBox.value = editable.innerText.replace(/\n/g, '\r\n');
-      });
+    // create a preview div if not exists
+    let overlay = document.getElementById('spellOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'spellOverlay';
+      overlay.className = 'form-control';
+      overlay.style.position = 'absolute';
+      overlay.style.pointerEvents = 'none'; // allow typing through
+      overlay.style.whiteSpace = 'pre-wrap';
+      overlay.style.wordWrap = 'break-word';
+      overlay.style.color = 'transparent';
+      overlay.style.overflowY = 'auto';
+      overlay.style.zIndex = 5;
+      overlay.style.top = scannedContentBox.offsetTop + 'px';
+      overlay.style.left = scannedContentBox.offsetLeft + 'px';
+      overlay.style.width = scannedContentBox.offsetWidth + 'px';
+      overlay.style.height = scannedContentBox.offsetHeight + 'px';
+      scannedContentBox.parentNode.appendChild(overlay);
     }
 
-    if (editable.innerHTML !== newHtml) {
-      editable.innerHTML = newHtml;
-    }
+    // render spell highlights inside overlay
+    const html = text.replace(/\b([A-Za-z']+)\b/g, match => {
+      const clean = match.replace(/[^a-zA-Z]/g, '');
+      return errors[clean]
+        ? `<span class="misspelled">${match}</span>`
+        : match;
+    }).replace(/\n/g, '<br>');
+
+    overlay.innerHTML = html;
   })
   .catch(err => console.error('Spellcheck error:', err));
 }
