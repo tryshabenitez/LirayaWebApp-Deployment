@@ -1111,16 +1111,25 @@ document.getElementById('scanButton').addEventListener('click', function() {
         })
         .then(response => response.json())  // Parse the response as JSON
         .then(data => {
-            if (data && data.extracted_text) {
-                //  Pass extracted text through cleaner
+            if (data.extracted_text) {
+                // Append the newly extracted text to the existing content
                 const selectedType = document.getElementById("scannedContentType").value || "TOC";
-                const cleanedText = cleanUniversalOCR(data.extracted_text.trim(), selectedType);
+                // Clean the OCR text according to selected type
+                const newText = cleanUniversalOCR(data.extracted_text.trim(), selectedType);
 
-                // Insert cleaned text into textarea
-                document.getElementById('scannedContent').value = cleanedText;
-                scannedContentArray.push(cleanedText);
-                // 🔹 Run spell checker immediately after inserting cleaned text
-                runSpellCheck();
+                if (newText && !scannedContent.value.includes(newText)) {
+                    scannedContentArray.push(newText);
+                    scannedContent.value += "\n\n" + newText; // Append new text with a new line
+
+                    // 🔹 Keep editable area (if visible) in sync with textarea
+                    const editable = document.getElementById('scannedContentEditable');
+                    if (editable) {
+                        editable.innerText += "\n\n" + newText;
+                    }
+
+                    // 🔹 Force a fresh spell-check render after adding the new page
+                    setTimeout(() => runSpellCheck(), 500);
+                }
             } else {
                 console.log("No extracted text found in the response.");
             }
@@ -1253,7 +1262,14 @@ let scanningFinished = false;
 document.getElementById('lockButton').addEventListener('click', function(event) {
     event.preventDefault();  // Prevent form submission
     
-    const scannedContent = document.getElementById('scannedContent').value;
+    // Sync editable area to textarea before locking
+    const editable = document.getElementById('scannedContentEditable');
+    const scannedBox = document.getElementById('scannedContent');
+    if (editable && scannedBox) {
+        scannedBox.value = editable.innerText.replace(/\n/g, '\r\n');
+    }
+
+    const scannedContent = scannedBox.value;
     
     // Check if the content is empty
     if (!scannedContent.trim()) {
@@ -1817,6 +1833,13 @@ document.getElementById('addBookButton').addEventListener('click', function (e) 
     return;
   }
 
+  // Sync latest spellchecked text before submission
+  const editable = document.getElementById('scannedContentEditable');
+  const scannedBox = document.getElementById('scannedContent');
+  if (editable && scannedBox) {
+    scannedBox.value = editable.innerText.replace(/\n/g, '\r\n');
+  }
+
   const form = document.getElementById('bookForm');
 
   // browser validation
@@ -1942,13 +1965,13 @@ function cleanUniversalOCR(text, type = "TOC") {
     }
 }
 
-// ================= SPELL CHECKER FOR SCANNED CONTENT ================= //
+// ================= NEW SPELL CHECKER (LanguageTool + Editable Preview) ================= //
 const scannedContentBox = document.getElementById('scannedContent');
 let spellPopup = null;
 
 function runSpellCheck() {
-  const text = document.getElementById('scannedContent').value.trim();
-  if (!text) return;
+  const text = scannedContentBox.value;
+  if (!text.trim()) return;
 
   fetch('/check-spelling/', {
     method: 'POST',
@@ -1961,22 +1984,46 @@ function runSpellCheck() {
   .then(res => res.json())
   .then(data => {
     const errors = data.errors || {};
-    const preview = document.getElementById('scannedContentPreview');
+    const newHtml = text
+      .replace(/\b([A-Za-z']+)\b/g, (match) => {
+        const clean = match.replace(/[^a-zA-Z]/g, '');
+        return errors[clean]
+          ? `<span class="misspelled" data-word="${clean}" title="Click for suggestions">${match}</span>`
+          : match;
+      })
+      .replace(/\n/g, '<br>');
 
-    // Build the HTML content with underlines
-    const html = text.replace(/\b([A-Za-z']+)\b/g, match => {
-      const clean = match.replace(/[^a-zA-Z]/g, '');
-      return errors[clean]
-        ? `<span class="misspelled" data-word="${clean}">${match}</span>`
-        : match;
-    }).replace(/\n/g, '<br>');
+    // --- find or create editable area once ---
+    let editable = document.getElementById('scannedContentEditable');
+    if (!editable) {
+      const parent = scannedContentBox.parentNode;
+      editable = document.createElement('div');
+      editable.id = 'scannedContentEditable';
+      editable.contentEditable = true;
+      editable.spellcheck = false;
+      editable.className = 'form-control';
+      editable.style.whiteSpace = 'pre-wrap';
+      editable.style.overflowY = 'auto';
+      editable.style.minHeight = getComputedStyle(scannedContentBox).minHeight || '150px';
+      editable.style.height = getComputedStyle(scannedContentBox).height;
+      editable.style.padding = getComputedStyle(scannedContentBox).padding;
+      editable.style.border = getComputedStyle(scannedContentBox).border;
+      editable.style.boxSizing = 'border-box';
+      scannedContentBox.style.display = 'none';
+      parent.appendChild(editable);
 
-    preview.innerHTML = html;
+      // keep hidden textarea synced
+      editable.addEventListener('input', () => {
+        scannedContentBox.value = editable.innerText.replace(/\n/g, '\r\n');
+      });
+    }
+
+    editable.innerHTML = newHtml;  // always rebuild for consistent highlight refresh
   })
   .catch(err => console.error('Spellcheck error:', err));
 }
 
-
+// --- Suggestion popup ---
 function showSuggestions(wordElement, suggestions) {
   if (spellPopup) spellPopup.remove();
 
@@ -1985,6 +2032,8 @@ function showSuggestions(wordElement, suggestions) {
 
   const scrollContainer = document.createElement('div');
   scrollContainer.className = 'suggestions-container';
+  scrollContainer.style.maxHeight = '120px';  // make suggestions scrollable
+  scrollContainer.style.overflowY = 'auto';
 
   suggestions.forEach(sug => {
     const opt = document.createElement('div');
@@ -2003,8 +2052,7 @@ function showSuggestions(wordElement, suggestions) {
   ignore.className = 'ignore-item';
   ignore.textContent = 'Ignore';
   ignore.onclick = () => {
-    const wordText = wordElement.textContent;
-    wordElement.outerHTML = wordText;
+    wordElement.outerHTML = wordElement.textContent;
     spellPopup.remove();
   };
   spellPopup.appendChild(ignore);
@@ -2020,7 +2068,7 @@ function showSuggestions(wordElement, suggestions) {
   }, { once: true });
 }
 
-// Attach click event to misspelled words
+// --- click handler ---
 document.addEventListener('click', function (e) {
   if (e.target.classList.contains('misspelled')) {
     const word = e.target.getAttribute('data-word');
@@ -2039,8 +2087,8 @@ document.addEventListener('click', function (e) {
       if (suggestions && suggestions.length > 0) {
         showSuggestions(e.target, suggestions);
       } else {
-        const text = e.target.textContent;
-        e.target.outerHTML = text;
+        // Remove underline if no suggestions
+        e.target.outerHTML = e.target.textContent;
       }
     })
     .catch(err => console.error('Error fetching suggestions:', err));
