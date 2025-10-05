@@ -56,6 +56,8 @@ from django.template.loader import render_to_string
 from django.utils.timezone import now
 from django.contrib.auth import update_session_auth_hash
 from spellchecker import SpellChecker
+from django.views.decorators.csrf import csrf_exempt
+import requests
 from django.http import JsonResponse
 from difflib import get_close_matches
 from collections import Counter
@@ -3101,6 +3103,54 @@ def librarian_view_details(request, book_id):
     }
     return render(request, 'librarian_ViewDetails.html', context)
 
+@csrf_exempt
+def check_spelling(request):
+    print("DEBUG:", request.method, request.body)
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            text = data.get('text', '').strip()
+            print("DEBUG: Text length =", len(text))
+
+            if not text:
+                return JsonResponse({'errors': {}}, status=200)
+
+            # 🔹 Detect language
+            language = 'tl' if any(ch in text for ch in 'ñáéíóú') else 'en-US'
+
+            # 🔹 Send request to LanguageTool API using settings value
+            response = requests.post(
+                settings.LANGUAGETOOL_URL,  # ✅ use from settings
+                data={
+                    'text': text,
+                    'language': language
+                },
+                timeout=10
+            )
+
+            if response.status_code != 200:
+                print("DEBUG: LanguageTool API error", response.status_code, response.text)
+                return JsonResponse({'error': 'LanguageTool API error'}, status=500)
+
+            lt_result = response.json()
+            print("DEBUG: Matches found =", len(lt_result.get('matches', [])))
+
+            errors = {}
+            for match in lt_result.get('matches', []):
+                word = text[match['offset']: match['offset'] + match['length']]
+                suggestions = [s['value'] for s in match.get('replacements', [])]
+                if suggestions:
+                    errors[word] = suggestions[:8]  # limit to top 8
+
+            return JsonResponse({'errors': errors})
+
+        except Exception as e:
+            print("DEBUG ERROR:", e)
+            traceback.print_exc()
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
 
