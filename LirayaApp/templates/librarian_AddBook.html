@@ -222,17 +222,33 @@
                             data-intro="Step 9: Select the shelf category or add a new one with the + button." 
                             data-step="9">
                         <option value="" selected disabled>Select Shelf Category</option>
-                        {% for category in categories %}
-                            <option value="{{ category.shelf_category }}">{{ category.shelf_category }}</option>
-                        {% endfor %}
+                        {% if user_info.role == 'DEPARTMENT' %}
+                            <!-- Predefined categories for DEPARTMENT role -->
+                            {% for category in department_categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Categories fetched for LIBRARIAN role -->
+                            {% for category in categories %}
+                                <option value="{{ category.shelf_category }}">{{ category.shelf_category }}</option>
+                            {% endfor %}
+                        {% endif %}
                     </select>
-                    <button type="button" class="btn btn-outline-secondary add-category">+</button>
+                    {% if user_info.role == 'DEPARTMENT' %}
+                        <!-- Hide the add button for DEPARTMENT role -->
+                        <button type="button" class="btn btn-outline-secondary add-category" style="display:none;">+</button>
+                    {% else %}
+                        <button type="button" class="btn btn-outline-secondary add-category">+</button>
+                    {% endif %}
                 </div>
                 <div id="newCategoryInput" style="display:none; margin-top: 10px;">
                     <input type="text" id="newCategoryText" class="form-control" placeholder="Enter new category" />
                     <button type="button" id="saveNewCategory" class="btn btn-primary" style="margin-top: 5px;">Add Category</button>
                 </div>
-                <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
+                {% if user_info.role != 'DEPARTMENT' %}
+                    <!-- Only show this message if the role is LIBRARIAN (can add categories) -->
+                    <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
+                {% endif %}
             </div>
         </div>
 
