@@ -366,6 +366,7 @@
         <div class="form-group">
             <label for="scannedContent">Scanned Content</label>
             <textarea class="form-control" id="scannedContent" name="scannedContent" rows="5" required 
+                spellcheck="false"
                 placeholder="Scanned content will appear here..."
                 data-intro="Step 16: The scanned text will appear here. Review and edit if needed."
                 data-step="16"></textarea>
@@ -935,7 +936,8 @@ function captureImage(retake = false) {
                     scannedContentArray.join("\n\n"),
                     scannedType
                 );
-
+                // ✅ Spell check after appending
+                runSpellCheck();
                 // Display cleaned text in textarea
                 document.getElementById('scannedContent').value = cleaned;
 
@@ -1114,7 +1116,8 @@ document.getElementById('scanButton').addEventListener('click', function() {
                 // Insert cleaned text into textarea
                 document.getElementById('scannedContent').value = cleanedText;
                 scannedContentArray.push(cleanedText);
-
+                // 🔹 Run spell checker immediately after inserting cleaned text
+                runSpellCheck();
             } else {
                 console.log("No extracted text found in the response.");
             }
@@ -1935,6 +1938,136 @@ function cleanUniversalOCR(text, type = "TOC") {
         return text.trim();
     }
 }
+
+// ================= SPELL CHECKER FOR SCANNED CONTENT ================= //
+const scannedContentBox = document.getElementById('scannedContent');
+let spellPopup = null;
+
+function runSpellCheck() {
+  const text = scannedContentBox.value;
+  if (!text.trim()) return;
+
+  fetch('/check-spelling/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+    },
+    body: JSON.stringify({ text })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const errors = data.errors || {};
+    const newHtml = text
+      .replace(/\b([A-Za-z']+)\b/g, (match) => {
+        const clean = match.replace(/[^a-zA-Z]/g, '');
+        return errors[clean]
+          ? `<span class="misspelled" data-word="${clean}" title="Click for suggestions">${match}</span>`
+          : match;
+      })
+      .replace(/\n/g, '<br>');
+
+    let editable = document.getElementById('scannedContentEditable');
+    if (!editable) {
+      const parent = scannedContentBox.parentNode;
+      editable = document.createElement('div');
+      editable.id = 'scannedContentEditable';
+      editable.contentEditable = true;
+      editable.spellcheck = false;
+      editable.className = 'form-control';
+      editable.style.whiteSpace = 'pre-wrap';
+      editable.style.overflowY = 'auto';
+      editable.style.minHeight = getComputedStyle(scannedContentBox).minHeight || '150px';
+      editable.style.height = getComputedStyle(scannedContentBox).height;
+      editable.style.padding = getComputedStyle(scannedContentBox).padding;
+      editable.style.border = getComputedStyle(scannedContentBox).border;
+      editable.style.boxSizing = 'border-box';
+      scannedContentBox.style.display = 'none';
+      parent.appendChild(editable);
+
+      editable.addEventListener('input', () => {
+        scannedContentBox.value = editable.innerText.replace(/\n/g, '\r\n');
+      });
+    }
+
+    if (editable.innerHTML !== newHtml) {
+      editable.innerHTML = newHtml;
+    }
+  })
+  .catch(err => console.error('Spellcheck error:', err));
+}
+
+
+function showSuggestions(wordElement, suggestions) {
+  if (spellPopup) spellPopup.remove();
+
+  spellPopup = document.createElement('div');
+  spellPopup.className = 'spell-popup';
+
+  const scrollContainer = document.createElement('div');
+  scrollContainer.className = 'suggestions-container';
+
+  suggestions.forEach(sug => {
+    const opt = document.createElement('div');
+    opt.className = 'suggestion-item';
+    opt.textContent = sug;
+    opt.onclick = () => {
+      wordElement.outerHTML = sug;
+      spellPopup.remove();
+    };
+    scrollContainer.appendChild(opt);
+  });
+
+  spellPopup.appendChild(scrollContainer);
+
+  const ignore = document.createElement('div');
+  ignore.className = 'ignore-item';
+  ignore.textContent = 'Ignore';
+  ignore.onclick = () => {
+    const wordText = wordElement.textContent;
+    wordElement.outerHTML = wordText;
+    spellPopup.remove();
+  };
+  spellPopup.appendChild(ignore);
+
+  const rect = wordElement.getBoundingClientRect();
+  spellPopup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+  spellPopup.style.left = `${rect.left + window.scrollX}px`;
+
+  document.body.appendChild(spellPopup);
+
+  document.addEventListener('click', e => {
+    if (!spellPopup.contains(e.target)) spellPopup.remove();
+  }, { once: true });
+}
+
+// Attach click event to misspelled words
+document.addEventListener('click', function (e) {
+  if (e.target.classList.contains('misspelled')) {
+    const word = e.target.getAttribute('data-word');
+
+    fetch('/check-spelling/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      },
+      body: JSON.stringify({ text: word })
+    })
+    .then(res => res.json())
+    .then(data => {
+      const suggestions = data.errors[word];
+      if (suggestions && suggestions.length > 0) {
+        showSuggestions(e.target, suggestions);
+      } else {
+        const text = e.target.textContent;
+        e.target.outerHTML = text;
+      }
+    })
+    .catch(err => console.error('Error fetching suggestions:', err));
+  }
+});
+
 
 
 
