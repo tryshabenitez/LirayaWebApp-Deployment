@@ -3099,13 +3099,27 @@ def librarian_view_details(request, book_id):
 
 
 
+
 @login_checker
 @role_required('LIBRARIAN')
 def librarian_addbook(request):
     account_id = request.session.get('account_id')
     user_info = get_user_info(account_id)
 
-    categories = Books.objects.values('shelf_category').distinct()
+    # Define fixed categories for 'DEPARTMENT' role
+    department_categories = [
+        'DEPARTMENT OF ENGINEERING (DOE)',
+        'DEPARTMENT OF INDUSTRIAL EDUCATION (DED)',
+        'DEPARTMENT OF INDUSTRIAL TECHNOLOGY (DIT)',
+        'OFFICE OF STUDENT AFFAIRS (OSA)'
+    ]
+
+    # Fetch all categories for LIBRARIAN or restrict for DEPARTMENT
+    if user_info['role'] == 'DEPARTMENT':
+        categories = department_categories  # Use predefined categories for DEPARTMENT users
+    else:
+        categories = Books.objects.values('shelf_category').distinct()  # Get all categories for LIBRARIAN
+    
     publishers = Books.objects.values('publisher').distinct()
 
     # Handle AJAX request for title check / OCR
@@ -3218,6 +3232,12 @@ def librarian_addbook(request):
         if category_name:
             if not Books.objects.filter(shelf_category=category_name).exists():
                 pass
+        
+        # If the user is a DEPARTMENT, ensure they select from the predefined categories
+        if user_info['role'] == 'DEPARTMENT' and category_name not in department_categories:
+            messages.error(request, "You can only choose from the predefined categories.")
+            return redirect('librarian_addbook')
+
 
         publisher_name = request.POST.get('publisher')
         if publisher_name:
@@ -3270,6 +3290,7 @@ def librarian_addbook(request):
         'categories': categories,
         'publishers': publishers, 
         'user_info': user_info,
+        'department_categories': department_categories, 
     })
     
 @login_checker
