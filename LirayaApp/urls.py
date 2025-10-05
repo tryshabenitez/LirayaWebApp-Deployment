@@ -39,6 +39,10 @@ urlpatterns = [
     path('login/forgot_password/verification/resend/', views.resend_otp_view, name='resend_otp'),
     path('cancel-otp/', views.cancel_otp_view, name='cancel_otp'),
 
+    #### Spell Checker ######
+
+    path('check-spelling/', views.check_spelling, name='check_spelling'),
+
 ########################### ADMIN ###########################
     path('adminhomepage/', views.admin_homepage, name='admin_homepage'),
     path('admin_suggestions/', views.admin_suggestions, name='admin_suggestions'),
