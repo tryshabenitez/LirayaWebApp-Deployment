@@ -3356,7 +3356,7 @@ def librarian_profile(request):
         try:
             # Get the account information based on account_id
             account = AccountInformation.objects.get(account_id=account_id)
-
+            user_info = get_user_info(account_id)
             # Get the corresponding user account information (role)
             user_account = UserAccounts.objects.get(account=account)  # This gets the role of the user
             
@@ -3619,7 +3619,8 @@ def librarian_profile(request):
             context = {
                 'account': account,  # Pass the account data to the template
                 'role': user_account.role,  # Pass the role data to the template
-                'formatted_birthdate': formatted_birthdate  # Pass the formatted birthdate
+                'formatted_birthdate': formatted_birthdate,  # Pass the formatted birthdate
+                'user_info': user_info,
             }
             return render(request, 'librarian_profile.html', context)
         except AccountInformation.DoesNotExist:
