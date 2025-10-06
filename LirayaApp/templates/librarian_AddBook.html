@@ -108,17 +108,18 @@
         </div>
 
         <!-- Title Crop Modal -->
-        <div id="titleCropModal" class = modal style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-            <div style="background:#fff; padding:12px; border-radius:8px; width:100%; max-width:520px">
-                <div style="text-align:center;">
-                    <img id="titleCropImage" style="max-width:100%;"/>
+        <div id="titleCropModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+            <div class="modal-content">
+                <div class="image-container">
+                    <img id="titleCropImage" alt="Title Crop Image" />
                 </div>
-                <div style="margin-top:10px; display:flex; gap:8px; justify-content:center;">
+                <div class="modal-actions">
                     <button type="button" id="extractTitleBtn" class="scan-button">Extract Title</button>
                     <button type="button" id="cancelCropBtn" class="scan-button">Cancel</button>
                 </div>
             </div>
         </div>
+
 
 
         <!-- Book Cover Button Section -->
