@@ -19,8 +19,20 @@
     <!-- HEADER -->
 <div class="admin-header">
     <div class="admin-title">
-        <h1>Librarian Addbook</h1>
-        <p>Welcome, {{ user_info.full_name }}!</p>
+        <h1>
+            {% if user_info.role == 'DEPARTMENT' %}
+                Department User Addbook
+            {% else %}
+                Librarian Addbook
+            {% endif %}
+        </h1>
+        <p>Welcome, 
+            {% if user_info.role == 'DEPARTMENT' %}
+                {{ user_info.full_name }} (Department)
+            {% else %}
+                {{ user_info.full_name }} (Librarian)
+            {% endif %}
+        </p>
          <!-- Tutorial Link -->
         <a href="javascript:void(0);" onclick="startTutorial()" class="text-info mr-3" style="text-decoration: underline; cursor: pointer;">
             Show Tutorial
