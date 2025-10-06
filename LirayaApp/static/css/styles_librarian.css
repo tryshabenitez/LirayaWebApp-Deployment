@@ -260,7 +260,7 @@ header h1 {
 .total-uploaded .book-grid-horizontal {
     display: grid; /* Switch to grid layout */
     grid-template-columns: repeat(5, 1fr); /* 5 books per row */
-    gap: 25px; /* Space between the books */
+    gap: 10px; /* Space between the books */
     padding: 10px;
     width: 100%;
     max-height: none; /* No internal height limitation */
@@ -1108,6 +1108,30 @@ header h1 {
     /* You can also reset other hover styles here, if needed */
 }
 
+#lockButton{
+    position: relative; /* Needed for tooltip positioning */
+}
+
+#lockButton::after {
+    content: attr(data-tooltip); /* Pulls from custom attribute */
+    position: absolute;
+    bottom: 120%; /* above the button */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+#lockButton:hover::after {
+    opacity: 1;
+}
 /* Tooltip container - specific only for capture, crop, scan */
 #captureButton, 
 #cropButton, 
