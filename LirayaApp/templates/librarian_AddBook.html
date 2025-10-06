@@ -384,14 +384,16 @@
                 data-step="16"></textarea>
         </div>
 
-        <!-- Lock button aligned to the left -->
-        <div class="scan-actions" style="margin-bottom: 15px; text-align: left;">
+        <div style="text-align: right; margin-bottom: 15px;">
             <button type="button" id="lockButton" class="scan-button"
                 data-intro="Step 17: When satisfied, click Lock to confirm the scanned content. An alert will ask for confirmation. Once locked, you cannot edit it."
-                data-step="17">
-                LOCK
+                data-step="17"
+                data-tooltip="Lock">
+                <img src="{% static 'images/lockpage.png' %}" alt="Lock" class="btn-img">
             </button>
         </div>
+
+
 
         <div class="form-group">
             <label for="bookKeyword">Keyword</label>
@@ -402,17 +404,9 @@
 
         <div class="scan-actions-section">
             <div class="scan-actions">
-                <button type="button" id="editButton" class="scan-button"
-                    data-intro="Step 19: If needed, use Edit to make manual changes to scanned content before locking."
-                    data-step="19">
-                    EDIT
-                </button>
-            </div>
-
-            <div class="scan-actions">
                 <button type="button" id="generateKeywordsButton" class="scan-button" disabled
-                    data-intro="Step 20: Once locked, click here to generate keywords from the scanned content."
-                    data-step="20">
+                    data-intro="Step 19: Once locked, click here to generate keywords from the scanned content."
+                    data-step="19">
                     Generate Keywords
                 </button>
             </div>
@@ -421,8 +415,8 @@
     </div>
 
     <button type="submit" id="addBookButton" class="add-book-button"
-        data-intro="Step 21: Finally, click Add Book to save all details and finish the process."
-        data-step="21">
+        data-intro="Step 20: Finally, click Add Book to save all details and finish the process."
+        data-step="20">
         Add Book
     </button>
 
@@ -1301,21 +1295,7 @@ document.getElementById('lockButton').addEventListener('click', function(event) 
     }
 });
 
-// Edit Button - Allows the user to edit the content if locked
-document.getElementById('editButton').addEventListener('click', function(event) {
-    event.preventDefault();  // Prevent form submission
 
-    // Only enable edit if the content is locked
-    if (scanningFinished) {
-        document.getElementById('scannedContent').removeAttribute('readonly'); // Make editable
-        document.getElementById('scannedContent').style.backgroundColor = "#fff"; // Make editable background
-
-        document.getElementById('lockButton').textContent = "Lock"; // Change lock button text
-        scanningFinished = false; // Unlock scanning process
-
-        document.getElementById('generateKeywordsButton').disabled = true;
-    }
-});
 
 // 🔹 Keep only THIS handler for #generateKeywordsButton
 function normalizeTechKeywords(keywords) {
