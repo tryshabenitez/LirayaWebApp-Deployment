@@ -76,9 +76,17 @@
             <label for="bookShelfCategory">Shelf Category</label>
             <select id="bookShelfCategory" class="form-control" {% if not is_editing %}disabled{% endif %}>
                 <option value="{{ book.shelf_category }}" selected>{{ book.shelf_category }}</option>
-                {% for category in categories %}
-                <option value="{{ category.shelf_category }}" {% if category.shelf_category == book.shelf_category %}selected{% endif %}>{{ category.shelf_category }}</option>
-                {% endfor %}
+                  {% if user_info.role == 'DEPARTMENT' %}
+                      <!-- Predefined categories for DEPARTMENT role -->
+                      {% for category in department_categories %}
+                          <option value="{{ category }}" {% if category == book.shelf_category %}selected{% endif %}>{{ category }}</option>
+                      {% endfor %}
+                  {% else %}
+                      <!-- Categories fetched for LIBRARIAN role, excluding predefined categories -->
+                      {% for category in categories %}
+                          <option value="{{ category.shelf_category }}" {% if category.shelf_category == book.shelf_category %}selected{% endif %}>{{ category.shelf_category }}</option>
+                      {% endfor %}
+                  {% endif %}
             </select>
             </div>
 
@@ -115,7 +123,7 @@
             <!-- Actions -->
             <div class="view-action-buttons">
                 <button id="editButton" class="scan-button">Edit</button>
-                <button id="archiveButton" class="scan-button" type="button" {% if book.is_archived %}disabled{% endif %}>Delete</button>
+                <button id="archiveButton" class="scan-button" type="button" {% if book.is_archived %}disabled{% endif %} {% if is_editing %}style="display:none;"{% endif %}>Delete</button>
                 <button id="saveButton" class="scan-button" style="display:none;" type="button">Save</button>
                 <button id="cancelButton" class="scan-button" style="display:none;" type="button">Cancel</button>
             </div>
@@ -182,6 +190,9 @@ function setEditMode(isEditing){
   document.getElementById('saveButton').style.display   = isEditing ? 'inline-block' : 'none';
   document.getElementById('cancelButton').style.display = isEditing ? 'inline-block' : 'none';
   document.getElementById('editButton').style.display   = isEditing ? 'none' : 'inline-block';
+
+  // Hide/Delete button when in edit mode
+  document.getElementById('archiveButton').style.display = isEditing ? 'none' : 'inline-block';
 }
 
 // init
