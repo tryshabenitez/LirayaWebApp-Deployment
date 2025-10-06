@@ -9,8 +9,20 @@
 <!-- HEADER -->
 <div class="admin-header">
     <div class="admin-title">
-        <h1>Librarian Homepage</h1>
-        <p>Welcome, {{ user_info.full_name }}!</p>
+        <h1>
+            {% if user_info.role == 'DEPARTMENT' %}
+                Department User Homepage
+            {% else %}
+                Librarian Homepage
+            {% endif %}
+        </h1>
+        <p>Welcome, 
+            {% if user_info.role == 'DEPARTMENT' %}
+                {{ user_info.full_name }} (Department)
+            {% else %}
+                {{ user_info.full_name }} (Librarian)
+            {% endif %}
+        </p>
     </div>
     <button class="profile-image-button" onclick="window.location.href='{% url 'librarian_profile' %}'">
         <div class="profile-image-container">
