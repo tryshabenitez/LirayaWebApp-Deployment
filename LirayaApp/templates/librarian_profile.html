@@ -8,8 +8,20 @@
         <!-- HEADER (as per your request) -->
         <div class="admin-header">
             <div class="admin-title">
-                <h1>Librarian Profile</h1>
-                <p>Welcome, Librarian!</p>
+                <h1>
+                    {% if user_info.role == 'DEPARTMENT' %}
+                        Department User Profile
+                    {% else %}
+                        Librarian Profile
+                    {% endif %}
+                </h1>
+                <p>Welcome, 
+                    {% if user_info.role == 'DEPARTMENT' %}
+                        {{ user_info.full_name }} (Department)
+                    {% else %}
+                        {{ user_info.full_name }} (Librarian)
+                    {% endif %}
+                </p>
             </div>
             <img src="{% static 'images/liraya_icon.png' %}" alt="Book Cover" class="admin-icon">
         </div>
