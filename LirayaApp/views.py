@@ -3033,8 +3033,20 @@ def librarian_view_details(request, book_id):
     except Books.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Book not found.'}, status=404)
 
-    # Fetch unique categories for the book's shelf category
-    categories = Books.objects.values('shelf_category').distinct()
+    # Define fixed categories for 'DEPARTMENT' role
+    department_categories = [
+        'DEPARTMENT OF ENGINEERING (DOE)',
+        'DEPARTMENT OF INDUSTRIAL EDUCATION (DED)',
+        'DEPARTMENT OF INDUSTRIAL TECHNOLOGY (DIT)',
+        'OFFICE OF STUDENT AFFAIRS (OSA)'
+    ]
+
+    # Fetch categories for the librarian (excluding department categories)
+    if user_info['role'] == 'DEPARTMENT':
+        categories = department_categories  # Use predefined categories for DEPARTMENT users
+    else:
+        categories = Books.objects.exclude(shelf_category__in=department_categories).values('shelf_category').distinct()  # Get dynamic categories for LIBRARIAN
+
 
     # Handle archiving action (toggle the book's archived status)
     if 'archive' in request.GET:  
@@ -3099,7 +3111,8 @@ def librarian_view_details(request, book_id):
     context = {
         'book': book,
         'user_info': user_info,
-        'categories': categories 
+        'categories': categories,
+        'department_categories': department_categories, 
     }
     return render(request, 'librarian_ViewDetails.html', context)
 
@@ -3172,7 +3185,8 @@ def librarian_addbook(request):
     if user_info['role'] == 'DEPARTMENT':
         categories = department_categories  # Use predefined categories for DEPARTMENT users
     else:
-        categories = Books.objects.values('shelf_category').distinct()  # Get all categories for LIBRARIAN
+        categories = Books.objects.exclude(shelf_category__in=department_categories).values('shelf_category').distinct()
+
     
     publishers = Books.objects.values('publisher').distinct()
 
