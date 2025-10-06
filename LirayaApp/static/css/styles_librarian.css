@@ -260,7 +260,8 @@ header h1 {
 .total-uploaded .book-grid-horizontal {
     display: grid; /* Switch to grid layout */
     grid-template-columns: repeat(5, 1fr); /* 5 books per row */
-    gap: 10px; /* Space between the books */
+    grid-column-gap: 10px; /* Horizontal gap */
+    grid-row-gap: 20px; /* Vertical gap (adjust this value) */
     padding: 10px;
     width: 100%;
     max-height: none; /* No internal height limitation */
