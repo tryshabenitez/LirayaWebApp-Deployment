@@ -516,19 +516,34 @@ header h1 {
 
 /* Book Cover Box (Container for Image) */
 .book-cover-box {
+    width: 230px;
+    height: 330px;
+    background-color: #f0f0f0;
+    border: 2px solid #555;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;  /* Ensure the width is 100% of the parent */
-    height: 300px; /* Adjust height for the image container */
-    background-color: #f0f0f0; /* Light gray background for image box */
-    border-radius: 10px; /* Rounded corners for the image container */
-    border: 2px solid #555; /* Border for the image container */
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Light shadow */
-    overflow: hidden; /* Ensure the image fits the container */
-    box-sizing: border-box; /* Ensure the border is included in the width */
+    overflow: hidden;
+    padding: 10px;
+    -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+    -moz-user-drag: none; /* Firefox-specific */
+    user-drag: none; /* Standard rule to prevent dragging */
+    -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
+    -moz-user-select: none; /* Firefox-specific */
+    -ms-user-select: none; /* Internet Explorer-specific */
+    user-select: none; /* Prevent text selection in other browsers */
+    pointer-events: none; /* Prevent interaction with the image (including dragging) */
 }
 
+/* Ensure the book cover image fits inside the container */
+#coverPreview {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* This will make sure the image scales properly inside the box */
+    display: block
+}
 
 /* Book Cover Image Styling */
 .book-cover-left img {
@@ -585,6 +600,47 @@ header h1 {
 .takepicture-button:hover {
     background-color: #5a2a2f; /* Darker shade on hover */
     color: white; /* White text on hover */
+}
+
+/* Title Crop Modal Styles */
+.modal-content {
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 520px; /* Maximum width of the modal */
+    max-height: 690px; /* Reduced height of the modal */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Prevent overflow */
+    aspect-ratio: 2 / 3; /* Set a 2:3 aspect ratio (width:height) for a book cover look */
+}
+
+/* Image Container */
+.image-container {
+    width: 100%;
+    height: 100%; /* Ensures container height follows the aspect ratio */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Hide overflow */
+}
+
+/* Ensures the image fits inside the modal */
+#titleCropImage {
+    width: 100%;
+    height: 100%; /* Ensure the image fills the container */
+    object-fit: contain; /* Makes sure the image fits within its container without distortion */
+}
+
+/* Modal Action Buttons */
+.modal-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 100px;
+    justify-content: center;
 }
 
 /* Book Cover Right Section (where buttons are located) */
@@ -644,14 +700,6 @@ header h1 {
 /* Adjust form groups in the new section */
 .scanning-section .form-group {
     margin-bottom: 20px;
-}
-
-/* Adjust buttons in the scanning section */
-.scan-actions-section {
-    display: flex;
-    flex-wrap: wrap; /* Ensure buttons wrap to the next line if necessary */
-    gap: 15px;
-    justify-content: flex-start;
 }
 
 
@@ -1059,6 +1107,7 @@ header h1 {
 
 
 /*******************************************END NG LINE BY LINE EXTRACTIONS **********************************/
+
 /* Scan Action Buttons Section */
 .scan-actions-section {
     display: flex;
@@ -1133,17 +1182,18 @@ header h1 {
 #lockButton:hover::after {
     opacity: 1;
 }
+
 /* Tooltip container - specific only for capture, crop, scan */
 #captureButton, 
 #cropButton, 
-#scanButton {
+#scanButton{
     position: relative; /* Needed for tooltip positioning */
 }
 
 /* Tooltip text */
 #captureButton::after,
 #cropButton::after,
-#scanButton::after {
+#scanButton::after{
     content: attr(data-tooltip); /* Pulls from custom attribute */
     position: absolute;
     bottom: 120%; /* above the button */
@@ -1210,11 +1260,6 @@ header h1 {
     justify-content: center;
     overflow: auto;
     margin-top: 10px;
-}
-
-#coverPreview {
-    max-width: 100%;
-    height: auto;
 }
 
 /* Form Input Fields */
@@ -1626,7 +1671,6 @@ h2 {
 }
 
 
-
 @media (max-width: 1024px) {
   header {
     height: 70px; /* Height for 1024px width screens */
@@ -1659,7 +1703,7 @@ h2 {
 
   /* Adjust book grid layout for tablets and small laptops */
   .total-uploaded .book-grid-horizontal {
-      grid-template-columns: repeat(4, 1fr); /* 4 books per row */
+      grid-template-columns: repeat(5, 1fr); /* 4 books per row */
   }
 
   /* Adjust book container and image size */
@@ -1794,7 +1838,7 @@ h2 {
 
   /* Adjust book grid layout for smaller devices */
   .total-uploaded .book-grid-horizontal {
-    grid-template-columns: repeat(3, 1fr); /* 3 books per row */
+    grid-template-columns: repeat(5, 1fr); /* 3 books per row */
   }
 
   .book-section h2 {
@@ -1940,7 +1984,7 @@ h2 {
 
   /* Adjust book grid layout for mobile devices */
   .total-uploaded .book-grid-horizontal {
-    grid-template-columns: repeat(2, 1fr); /* 2 books per row */
+    grid-template-columns: repeat(5, 1fr); /* 2 books per row */
   }
 
   .book-section h2 {
