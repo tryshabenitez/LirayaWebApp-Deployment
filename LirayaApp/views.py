@@ -967,9 +967,9 @@ def admin_createaccount(request):
         # Safely get form values
         role = request.POST.get('role')
         email = request.POST.get('email')
-        first_name = request.POST.get('first_name', '').strip()
-        middle_name = request.POST.get('middle_name', '').strip()
-        last_name = request.POST.get('last_name', '').strip()
+        first_name = request.POST.get('first_name', '').strip().capitalize()
+        middle_name = request.POST.get('middle_name', '').strip().capitalize()
+        last_name = request.POST.get('last_name', '').strip().capitalize()
         
         errors = {}
 
