@@ -1326,20 +1326,26 @@ document.getElementById('generateKeywordsButton').addEventListener('click', func
   const baseStop = [
     'a','an','and','are','as','at','be','by','but','for','have','how',
     'i','if','in','it','is','me','more','my','not','of','on','or',
-    'that','the','this','to','was','we','will','with','you','your','can','gave', 'its', 'can'
+    'that','the','this','to','was','we','will','with','you','your','can','gave', 'its', 'can','which','includes',
+    'use','able','all','well'
   ];
 
   // shared noise (optional; add/remove to taste)
   const sharedExtra = []; // e.g. ['see','also','figure'] if you want them gone in all modes
 
-  const figureExtra = ['purpose','study','abstract','entitled','entiteled','can','researchers','research','includes','include','researchers','develop','allow','each','some','only','using','gave'];
+  const abstractExtra = [
+    'abstract','purpose','study','entitled','entiteled','research','researchers',
+    'includes','include','develop','each','some','only','using','gave',
+    'method','methods','result','results','conclusion','findings','recommendation',
+    'project','aims','objective','allows','paper','using'
+  ];
   const tocExtra    = ['chapter','lesson','page','pages','toc','glossary','index'];
   const indexExtra  = ['see','also','figure','chapter','lesson'];
 
   let stopSet;
   switch (typeKey) {
-    case 'figure':
-      stopSet = new Set([...baseStop, ...sharedExtra, ...figureExtra]);
+    case 'abstract': // new case for Abstract dropdown
+      stopSet = new Set([...baseStop, ...sharedExtra, ...abstractExtra]);
       break;
     case 'index':
       stopSet = new Set([...baseStop, ...sharedExtra, ...indexExtra]);
@@ -1349,6 +1355,9 @@ document.getElementById('generateKeywordsButton').addEventListener('click', func
       stopSet = new Set([...baseStop, ...sharedExtra, ...tocExtra]);
       break;
   }
+
+  // Normalize all stopwords to lowercase
+  stopSet = new Set([...stopSet].map(w => w.toLowerCase()));
 
   // --- tokenize & filter ---
   const tokens = (text.toLowerCase().match(/\b[a-z0-9][a-z0-9+\-]*\b/g) || [])
