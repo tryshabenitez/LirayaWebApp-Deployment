@@ -1470,6 +1470,23 @@ document.getElementById('openCoverCamera').addEventListener('click', function ()
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const modal = document.getElementById('coverCamModal');
         const video = document.getElementById('coverCamPreview');
+        const modalBody = modal.querySelector('.modal-body');
+        const captureButton = document.getElementById('coverCamSnap');
+        const zoomButton = document.getElementById('cropBookCoverButton');
+
+        // Defensive reset: ensure modal always starts in video/capture state
+        try {
+            if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+        } catch (e) { console.warn('error destroying coverCropper', e); }
+        if (coverCapturedImageModal) {
+            try { modalBody.removeChild(coverCapturedImageModal); } catch (e) { /* ignore */ }
+            coverCapturedImageModal = null;
+        }
+        // show capture, hide extract button, show video
+        if (captureButton) captureButton.style.display = 'block';
+        if (zoomButton) zoomButton.style.display = 'none';
+        coverImageShowing = false;
+        video.style.display = 'block';
 
         navigator.mediaDevices.getUserMedia({
             video: {
@@ -1527,6 +1544,7 @@ document.getElementById('coverCamSnap').addEventListener('click', function () {
         video.style.display = 'block';
         coverImageShowing = false;
         zoomButton.style.display = 'none';
+        if (captureButton) captureButton.style.display = 'block';
         return;
     }
 
@@ -1568,6 +1586,9 @@ document.getElementById('coverCamSnap').addEventListener('click', function () {
     video.style.display = 'none';
     coverImageShowing = true;
     zoomButton.style.display = 'block'; // Show extract title button
+
+    // hide the capture button since image is shown
+    if (captureButton) captureButton.style.display = 'none';
 
     // Initialize Cropper.js
     coverCropper = new Cropper(coverCapturedImageModal, {
@@ -1626,7 +1647,7 @@ document.getElementById('coverCamCancel').addEventListener('click', function () 
     const video = document.getElementById('coverCamPreview');
     const modalBody = modal.querySelector('.modal-body');
     const zoomButton = document.getElementById('cropBookCoverButton');
-    
+    const captureButton = document.getElementById('coverCamSnap');
 
     // Destroy cropper and remove image if present
     if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
@@ -1637,6 +1658,7 @@ document.getElementById('coverCamCancel').addEventListener('click', function () 
     video.style.display = 'block';
     coverImageShowing = false;
     zoomButton.style.display = 'none';
+    if (captureButton) captureButton.style.display = 'block';
 
     // Stop camera and close modal
     stopCoverStream();
@@ -1768,7 +1790,6 @@ document.getElementById('cancelCropBtn').addEventListener('click', function() {
 // ---------------------------------- FOR BOOK TITLE EXTRACTION -------------------------//
 // Handle both file upload and camera capture for book title extraction
 document.getElementById('bookCoverUpload').addEventListener('change', handleImageExtraction);
-document.getElementById('openCoverCamera').addEventListener('click', handleCameraCapture);
 
 let capturedImageData = null;  // To store the image data after capturing
 
