@@ -1230,14 +1230,43 @@ document.getElementById('retryButton').addEventListener('click', function() {
     capturedImage.src = '';  // Reset the image source
     capturedImage.style.display = 'none';  // Hide the image
   
+    const scannedContent = document.getElementById('scannedContent');
+
     if (scannedContentArray.length > 1) {
         // Remove the last element (most recent scan)
-        scannedContentArray.pop(); 
+        scannedContentArray.pop();
 
-        // Update the scannedContent with the remaining content
-        const scannedContent = document.getElementById('scannedContent');
-        scannedContent.value = scannedContentArray.join("\n\n"); // Join remaining content with new lines
+        // Update the textarea value
+        const newVal = scannedContentArray.join("\n\n");
+        scannedContent.value = newVal;
 
+        // If the editable preview exists (created by runSpellCheck), keep it in sync
+        const editable = document.getElementById('scannedContentEditable');
+        if (editable) {
+            if (newVal.trim()) {
+                // update editable with plain text (no highlights)
+                editable.innerText = newVal.replace(/\r\n/g, '\n');
+            } else {
+                // nothing left — remove editable and show textarea again
+                editable.remove();
+                scannedContent.style.display = 'block';
+            }
+        }
+
+        // Refresh spellcheck highlights (optional) after a short delay
+        setTimeout(() => {
+            if (typeof runSpellCheck === 'function' && scannedContent.value.trim()) runSpellCheck();
+        }, 200);
+
+    } else if (scannedContentArray.length === 1) {
+        // If there is exactly one remaining page, remove it and clear everything
+        scannedContentArray.pop();
+        scannedContent.value = '';
+        const editable = document.getElementById('scannedContentEditable');
+        if (editable) {
+            editable.remove();
+            scannedContent.style.display = 'block';
+        }
     } else {
         console.log("No previous scan to retry.");
     }
@@ -1260,6 +1289,13 @@ document.getElementById('resetButton').addEventListener('click', function() {
     // Hide the captureNextButton and show the scanButton
     document.getElementById('captureNextButton').style.display = 'none';
     document.getElementById('scanButton').style.display = 'block';
+
+    // If an editable preview (spellcheck UI) exists, remove it and restore the textarea
+    const editable = document.getElementById('scannedContentEditable');
+    if (editable) {
+        editable.remove();
+        scannedContent.style.display = 'block';
+    }
 });
 
 // Flag to track if the scanning is finished (locked)
