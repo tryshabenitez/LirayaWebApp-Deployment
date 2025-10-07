@@ -57,17 +57,15 @@ img.admin-icon {
 }
 
 .admin-footer {
-  position: fixed;            /* Fix footer to the viewport bottom */
-  bottom: 0;                  /* Stick to bottom */
-  left: 0;                    /* Align to left edge */
-  right: 0;                   /* Align to right edge */
-  z-index: 999;               /* Sit above other content */
-  padding: 12px 16px;         /* Vertical + horizontal padding */
-  background-color: #fff;     /* Background color */
-  text-align: center;         /* Center the text */
-  font-size: 14px;            /* Font size */
-  color: #000;                /* Text color */
-  box-shadow: 0 -1px 6px rgba(0,0,0,0.05); /* subtle top shadow */
+  position: relative;          /* Make footer position relative to content */
+  padding: 10px 0;             /* Vertical padding for spacing */
+  background-color: #fff;      /* Background color */
+  text-align: center;          /* Center the text */
+  font-size: 14px;             /* Font size */
+  color: #000;                 /* Text color */
+  margin-top: 40px;            /* Space above the footer */
+  width: 100%;                 /* Footer spans the full width */
+  clear: both;                 /* Ensure no content overlaps the footer */
 }
 
 /* Make sure the footer stays at the bottom of the page */
@@ -776,7 +774,6 @@ footer {
   padding: 20px; /* Center in viewport: use min-height and center content */
   width: 100%;
   box-sizing: border-box;
-  min-height: calc(100vh - 120px); /* leave space for header + fixed footer */
 }
 
 /* If you want to center the form within its parent exactly in the middle */
