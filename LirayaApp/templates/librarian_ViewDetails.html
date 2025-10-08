@@ -54,12 +54,12 @@
 
             <div class="form-row">
                 <label for="bookAuthor">Author</label>
-                <input type="text" class="form-control" id="bookAuthor" value="{{ book.author }}" readonly>
+                <textarea class="form-control" id="bookAuthor" style="min-height: 100px; max-height: 300px; overflow-y: auto; resize: none;" readonly>{{ book.author|safe }}</textarea>
             </div>
 
             <div class="form-row">
                 <label for="bookCoAuthor">Co-Author</label>
-                <input type="text" class="form-control" id="bookCoAuthor" value="{{ book.co_author }}" readonly>
+                <textarea class="form-control" id="bookCoAuthor" style="min-height: 100px; max-height: 300px; overflow-y: auto; resize: none;" readonly>{{ book.co_author|safe }}</textarea>
             </div>
 
             <div class="form-row">
