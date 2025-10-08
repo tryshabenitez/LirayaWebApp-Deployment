@@ -21,15 +21,17 @@
 <div class="book-details">
   <!-- Left: Cover -->
   <div class="admin-book-cover-section">
-    <div class="admin-book-cover-box"> 
+    <div class="admin-book-cover-box">
         {% if book.book_cover %}
             <img id="coverPreview"
                  src="{{ book.book_cover }}"
                  alt="Cover Preview"
+                 style="max-width:220px; height:auto;">
         {% else %}
             <img id="coverPreview"
                  src="{% static 'images/book_placeholder.png' %}"
                  alt="Default Cover Preview"
+                 style="max-width:220px; height:auto;">
         {% endif %}
     </div>
 
