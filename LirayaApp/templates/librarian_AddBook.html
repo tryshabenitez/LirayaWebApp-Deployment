@@ -1996,7 +1996,10 @@ function cleanUniversalOCR(text, type = "TOC") {
 
     } else if (type === "Abstract") {
         // Simply return the raw OCR text, untouched
-        return text.trim();
+        text = text.replace(/\s+/g, ' ').trim();  
+        // Preserve paragraph breaks (double newlines)
+        text = text.replace(/\n{2,}/g, '\n\n');
+        return text;
 
     }  else {
         // 🔹 TOC-specific cleaning rules
