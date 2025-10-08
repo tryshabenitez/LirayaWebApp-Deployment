@@ -3277,7 +3277,7 @@ def librarian_addbook(request):
                 author_first_name = ''
             author_list.append(f"{author_last_name}, {author_first_name}")
         author = ", ".join(author_list)
-        author = author[:100]
+    
 
         # Co-Authors
         co_authors = request.POST.getlist('coAuthor[]')
@@ -3292,7 +3292,6 @@ def librarian_addbook(request):
                 co_author_first_name = ''
             co_author_list.append(f"{co_author_last_name}, {co_author_first_name}")
         co_author = ", ".join(co_author_list) if co_authors else None
-        co_author = co_author[:100] if co_author else None  
 
         year_of_publication = request.POST.get('YearofPublication')
         if year_of_publication == "N/A":
