@@ -1992,9 +1992,6 @@ function cleanUniversalOCR(text, type = "TOC") {
         text = text.replace(/\n{2,}/g, "\n");
         return text.trim();
 
-    } else if (type === "Abstract") {
-        // Simply return the raw OCR text, untouched
-        return text;
 
     }  else if (type === "TOC") {
         // 🔹 TOC-specific cleaning rules
