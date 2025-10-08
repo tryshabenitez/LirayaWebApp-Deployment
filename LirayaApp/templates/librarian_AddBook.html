@@ -1996,7 +1996,7 @@ function cleanUniversalOCR(text, type = "TOC") {
         // Simply return the raw OCR text, untouched
         return text;
 
-    } else {
+    }  else if (type === "TOC") {
         // 🔹 TOC-specific cleaning rules
         text = text.replace(/[^a-zA-Z0-9\s.,\/()-]/g, " ");  // Remove unwanted symbols but preserve commas
         text = text.replace(/\s+/g, " ");                    // Normalize spaces
@@ -2031,6 +2031,10 @@ function cleanUniversalOCR(text, type = "TOC") {
         );
 
         return text.trim();
+
+      } else {
+        // Simply return the raw OCR text, untouched
+        return text;
     }
 }
 
