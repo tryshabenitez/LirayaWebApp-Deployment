@@ -1374,12 +1374,23 @@ document.getElementById('generateKeywordsButton').addEventListener('click', func
 
   // --- stop words ---
   const baseStop = [
-    'a','an','and','are','as','at','be','by','but','for','have','how',
-    'i','if','in','it','is','me','more','my','not','of','on','or',
-    'that','the','this','to','was','we','will','with','you','your','can','gave', 'its', 'can','which','includes',
-    'use','able','all','well', 'has', 'like','were', 'from', 'their','provide', 'without','see','also','such','then','they',
-    'very','while','would','tho', 'use','where','within'
-  ];
+  'a','able','about','along','almost','all','although','also','an','and','any','are','as','at',
+  'be','been','below','but','by',
+  'can','doesn\'t', 'doesn',
+  'for','from',
+  'gave','has','have','how',
+  'i','if','in','includes','is','it','its',
+  'just',
+  'like','me','more','most','my',
+  'not','now',
+  'of','on','or','other','over',
+  'provide',
+  'see','still','such',
+  'that','their','them','then','there','these','they','tho','those','throughout','this','to',
+  'use','used','very',
+  'was','we','well','were','what','when','where','which','while','why','will','with','within','without','who','why','would','your'
+];
+
 
   // shared noise (optional; add/remove to taste)
   const sharedExtra = []; // e.g. ['see','also','figure'] if you want them gone in all modes
