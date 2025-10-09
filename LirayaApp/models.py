@@ -83,18 +83,18 @@ class ResetPassword(models.Model):
 class Books(models.Model):
     book_id = models.AutoField(primary_key=True)
     account = models.ForeignKey(AccountInformation, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
+    title = models.TextField()  # Changed to TextField
     author = models.TextField()
     co_author = models.TextField(null=True, blank=True)
     date_uploaded = models.DateField(auto_now_add=True)
     year_of_publication = models.IntegerField(null=True, blank=True)
-    publisher = models.CharField(max_length=255, null=True, blank=True) 
+    publisher = models.TextField(null=True, blank=True)  # Changed to TextField
     primary_keyword = models.TextField()  # renamed from 'keyword'
     book_cover = models.ImageField(upload_to='book_covers/', null=True, blank=True)
-    book_type = models.CharField(max_length=50)
-    scanned_type = models.CharField(max_length=50)
+    book_type = models.TextField()  # Changed to TextField
+    scanned_type = models.TextField()  # Changed to TextField
     scanned_content = models.TextField()
-    shelf_category = models.CharField(max_length=50, default="Uncategorized")  # Or any default value you prefer
+    shelf_category = models.TextField(default="Uncategorized")  # Changed to TextField
     is_archived = models.BooleanField(default=False)  
 
     
