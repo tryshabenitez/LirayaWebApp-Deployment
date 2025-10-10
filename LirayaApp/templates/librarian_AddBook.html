@@ -171,26 +171,18 @@
         <div class="form-columns">
             <div class="form-group">
                 <label for="YearofPublication">Publication Year</label>
-                <div class="input-group">
-                    <!-- Predefined dropdown for years -->
-                    <select class="form-control" id="YearofPublication" name="YearofPublication" required 
-                        data-intro="Step 6: Select the year of publication. If not available, choose N/A." 
-                        data-step="6">
-                        <option value="">-- Select Year --</option>
-                        <option value="N/A">N/A</option> <!-- Added N/A option -->
-                        <!-- Predefined years from 1900 to 2025 -->
-                    </select>
-
-                    <!-- Button to allow typing a custom year -->
-                    <button type="button" class="btn btn-outline-secondary add-year">▼</button>
-                </div>
-
-                <!-- Input field for custom year -->
-                <div id="customYearInput" style="display:none; margin-top: 10px;">
-                    <input type="text" id="customYearText" class="form-control" placeholder="Enter custom year (e.g., 0000-000)">
-                    <button type="button" id="saveCustomYear" class="btn btn-primary" style="margin-top: 5px;">Add Year</button>
-                </div>
+                <select 
+                    class="form-control" 
+                    id="YearofPublication" 
+                    name="YearofPublication" 
+                    required
+                    data-intro="Step 6: Select the year of publication. If not available, choose N/A." 
+                    data-step="6">
+                    <option value="">-- Select Year --</option>
+                    <option value="N/A">N/A</option> <!-- Added N/A option -->
+                </select>
             </div>
+
 
 
             <div class="form-group">
@@ -542,7 +534,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let startYear = 1900;
     let endYear = 2025;
 
-    // Add the year options (1900 to 2025)
+    // Add the year options
     for (let year = endYear; year >= startYear; year--) {
         let option = document.createElement("option");
         option.value = year;
@@ -555,45 +547,8 @@ document.addEventListener("DOMContentLoaded", function () {
     naOption.value = "N/A";
     naOption.text = "N/A";
     select.appendChild(naOption);
-
-    // Add custom input functionality for publication year
-    const addYearButton = document.querySelector('.add-year'); // Button for showing custom input
-    const customYearInputDiv = document.getElementById('customYearInput'); // Custom input div
-    const customYearInputField = document.getElementById('customYearText'); // Custom input field
-    const saveCustomYearButton = document.getElementById('saveCustomYear'); // Save custom year button
-
-    // Show/hide custom input field when button is clicked
-    addYearButton.addEventListener('click', function () {
-        customYearInputDiv.style.display = customYearInputDiv.style.display === 'none' ? 'block' : 'none';
-    });
-
-    // Save custom year when clicked
-    saveCustomYearButton.addEventListener('click', function () {
-        const customYear = customYearInputField.value.trim();
-
-        // Validate custom year format (allow formats like 2013-2014, 2013/2014, 2013&2014)
-        const yearPattern = /^\d{4}([\-&,/])\d{4}$/;
-
-        if (yearPattern.test(customYear)) {
-            // Create a new option element for the custom year
-            const newOption = document.createElement('option');
-            newOption.value = customYear;
-            newOption.textContent = customYear;
-
-            // Append the new option to the select dropdown
-            select.appendChild(newOption);
-
-            // Set the newly added custom year as the selected value
-            select.value = customYear;
-
-            // Hide the custom year input field and reset the input field
-            customYearInputDiv.style.display = 'none';
-            customYearInputField.value = '';
-        } else {
-            alert("Please enter a valid year format (e.g., 2013-2014).");
-        }
-    });
 });
+
 
 
 
