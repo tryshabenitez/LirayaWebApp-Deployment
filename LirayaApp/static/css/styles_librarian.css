@@ -464,31 +464,42 @@ header h1 {
 
 /* Action Buttons */
 .view-action-buttons {
-    margin-top: 20px;
+    position: fixed; /* Make the buttons float */
+    bottom: 20px; /* Position the buttons 20px from the bottom */
+    right: 20px; /* Position the buttons 20px from the right */
     display: flex;
-    gap: 20px;
+    gap: 10px; /* Adjust gap between buttons */
+    flex-direction: row; /* Stack buttons side by side */
     justify-content: flex-start;
+    z-index: 1000; /* Ensure the buttons are above other content */
 }
-
 
 /* Styling for buttons */
 .view-action-buttons button {
-    padding: 12px 30px; /* Adjust padding for a uniform look */
-    font-size: 16px; /* Adjust font size */
+    padding: 10px 20px; /* Adjust padding for a more compact look */
+    font-size: 14px; /* Reduce font size for better alignment */
     border-radius: 5px; /* Rounded corners */
     background-color: #3e151a; /* Brown background */
     color: white;
     border: none;
     flex: 1; /* Ensures buttons grow equally */
-    min-width: 120px; /* Minimum width to ensure button size */
+    min-width: 100px; /* Reduce minimum width for more compact buttons */
     cursor: pointer;
-    height: 50px; /* Fixed height for consistency */
+    height: 45px; /* Reduced height for consistency */
+    transition: background-color 0.3s ease; /* Smooth transition effect */
 }
 
 /* Button hover effect */
 .view-action-buttons button:hover {
     background-color: #551f2f; /* Darker brown when hovering */
 }
+
+/* Optional: Styling for active or disabled buttons */
+.view-action-buttons button:disabled {
+    background-color: #aaa; /* Gray out disabled buttons */
+    cursor: not-allowed; /* Indicate that the button is inactive */
+}
+
 
 /* Book Cover Section Layout */
 .book-cover-section {
