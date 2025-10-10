@@ -3302,26 +3302,12 @@ def librarian_addbook(request):
         if co_author and len(co_author) > 500:
             co_author = co_author[:500]  # Trim to 500 characters
 
-
-       # Handle Publication Year (new addition)
         year_of_publication = request.POST.get('YearofPublication')
-        
-        # Check if the custom year already exists in the database
-        if year_of_publication and Books.objects.filter(year_of_publication=year_of_publication).exists():
-            messages.error(request, f"The year {year_of_publication} is already added.")
-            return redirect('librarian_addbook')
-
         if year_of_publication == "N/A":
             year_of_publication = None
 
-        # If year is custom, validate and save it
-        if year_of_publication:
-            # Here, we allow formats like '2013-2014', '2013/2014', '2013&2014'
-            custom_year_pattern = r"^\d{4}([\-&,/])\d{4}$"
-            if not re.match(custom_year_pattern, year_of_publication):
-                messages.error(request, "Invalid year format. Please use a valid year range (e.g., 2013-2014).")
-                return redirect('librarian_addbook')
 
+       
         category_name = request.POST.get('bookShelfCategory')
         if category_name:
             if not Books.objects.filter(shelf_category=category_name).exists():
