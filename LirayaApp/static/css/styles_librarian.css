@@ -508,7 +508,7 @@ header h1 {
     flex-direction: column; /* Stack the image and buttons vertically */
     justify-content: center;
     align-items: center;
-    width: 240px;  /* Adjust width of the book cover container */
+    width: 360px;  /* Adjust width of the book cover container */
     height: auto; /* Adjust height to fit content */
     background-color: white; /* Changed to white for the buttons section below */
     overflow: hidden; /* Ensure the image fits the container */
