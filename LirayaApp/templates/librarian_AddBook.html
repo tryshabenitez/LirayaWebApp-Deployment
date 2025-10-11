@@ -244,7 +244,7 @@
                         {% else %}
                             <!-- Categories fetched for LIBRARIAN role -->
                             {% for category in categories %}
-                                <option value="{{ category.shelf_category }}">{{ category.shelf_category }}</option>
+                                <option value="{{ category }}">{{ category }}</option>
                             {% endfor %}
                         {% endif %}
                     </select>
