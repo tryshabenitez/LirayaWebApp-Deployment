@@ -3190,6 +3190,7 @@ def librarian_addbook(request):
         categories = department_categories  # Use predefined categories for DEPARTMENT users
     else:
         categories = Books.objects.exclude(shelf_category__in=department_categories).values('shelf_category').distinct()
+        categories = sorted([category['shelf_category'] for category in categories])  # Sort categories alphabetically (A-Z)
 
     
     publishers = Books.objects.values('publisher').distinct()
