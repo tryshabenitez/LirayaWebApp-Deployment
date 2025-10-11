@@ -349,13 +349,18 @@ document.getElementById("confirmEdit").addEventListener("click", async function(
       body: formData
     });
     const data = await resp.json();
+    // Check if the response indicates success
     if (data && data.success) {
-      setEditMode(false);  // Exit edit mode after saving
-      hideEditConfirmationPopup(); // Close the confirmation popup
+        setEditMode(false);  // Exit edit mode after saving
+        hideEditConfirmationPopup(); // Close the confirmation popup
+    } else {
+        // If the response does not indicate success, show an error message
+        console.error('Failed to update the book:', data.message);
+        alert('An error occurred while updating the book.');
     }
   } catch (err) {
-    console.error(err);
-    alert('An error occurred while updating.');
+    console.error('Network or fetch error:', err);
+    alert('An error occurred while updating the book.');
   }
 });
 </script>
