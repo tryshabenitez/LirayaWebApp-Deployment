@@ -3053,7 +3053,11 @@ def librarian_view_details(request, book_id):
         book.is_archived = not book.is_archived  # Toggle the archived status
         book.save()
 
-        return JsonResponse({'success': True, 'message': 'Book archived successfully!'})
+         # Use Django's messages framework to add a success message
+        messages.success(request, 'Book successfully deleted!')
+
+        # Return a JSON response indicating success
+        return JsonResponse({'success': True})
 
     # --- Update book details ---
     if request.method == 'POST':
