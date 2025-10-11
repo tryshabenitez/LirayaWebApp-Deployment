@@ -4,6 +4,17 @@
 {% block title %}View Book Details{% endblock %}
 
 {% block content %}
+
+
+{% if messages %}
+  <div class="alert alert-success">
+    {% for message in messages %}
+      <p>{{ message }}</p>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
 <div class="admin-header">
   <div class="admin-title">
     <h1>View Book Details</h1>
@@ -136,6 +147,30 @@
               <button id="saveButton" class="scan-button" style="display:none;" type="button">Save</button>
               <button id="cancelButton" class="scan-button" style="display:none;" type="button">Cancel</button>
           </div>
+
+          <!-- Add the Delete Confirmation Modal for Deleting Books -->
+          <div id="deletePopup" class="logout-popup-modal">
+            <div class="logout-popup-content">
+              <h3>Are you sure you want to delete this book?</h3>
+              <div class="popup-buttons">
+                <button id="confirmDelete" class="popup-button delete-button">Delete</button>
+                <button onclick="hideDeletePopup()" class="popup-button cancel-button">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add the Edit Confirmation Modal for Saving Changes -->
+          <div id="editConfirmationPopup" class="logout-popup-modal">
+            <div class="logout-popup-content">
+              <h3>Are you sure you want to save these changes?</h3>
+              <div class="popup-buttons">
+                <button id="confirmEdit" class="popup-button save-button">Save Changes</button>
+                <button onclick="hideEditConfirmationPopup()" class="popup-button cancel-button">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+
     </form>
   </div>
 </div>
@@ -143,10 +178,28 @@
 
 {% block script %}
 <script>
-// Handle the archive button click event
+// Handle the archive button click event (but we'll call it delete in the message)
 document.getElementById('archiveButton').addEventListener('click', function(event) {
     event.preventDefault();  // Prevent default form submission behavior
 
+    // Show the delete confirmation popup
+    showDeletePopup();
+});
+
+// Show the delete confirmation popup
+function showDeletePopup() {
+    document.getElementById("deletePopup").style.display = "flex";
+    document.body.classList.add("modal-open"); // Disable scrolling
+}
+
+// Hide the delete confirmation popup
+function hideDeletePopup() {
+    document.getElementById("deletePopup").style.display = "none";
+    document.body.classList.remove("modal-open"); // Enable scrolling
+}
+
+// If "Delete" is clicked, send the delete request
+document.getElementById("confirmDelete").addEventListener("click", function() {
     const bookId = "{{ book.book_id }}";  // Get the current book ID
     const csrftoken = getCookie('csrftoken');
 
@@ -157,16 +210,25 @@ document.getElementById('archiveButton').addEventListener('click', function(even
             'X-CSRFToken': csrftoken
         }
     })
-    .then(response => {
-        if (response.ok) {
-            alert('Book archived successfully!');
-            window.location.href = "/librarian/homepage/";  // Refresh the homepage after archiving
+    .then(response => response.json()) // Parse as JSON to read the success flag or message
+    .then(data => {
+        // Check if response is successful
+        if (data.success) {
+            // Redirect to homepage after successful deletion
+            window.location.href = "/librarian/homepage/"; // Redirect to homepage
         } else {
-            alert('Failed to archive book.');
+            // Handle errors by showing a message
+            document.getElementById("errorMessage").style.display = "block";
+            document.getElementById("errorMessage").textContent = "Failed to delete the book.";
         }
     })
-    .catch(err => console.error('Error:', err));
+    .catch(err => {
+        console.error('Error:', err);
+        document.getElementById("errorMessage").style.display = "block";
+        document.getElementById("errorMessage").textContent = "An error occurred while deleting the book.";
+    });
 });
+
 
 // Helper function to get CSRF token from cookies
 function getCookie(name) {
@@ -175,6 +237,7 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
 }
+
 
 const editableInputs = ['bookTitle', 'bookAuthor', 'bookCoAuthor', 'yearOfPublication', 'publisher'];
 const editableSelects = ['bookShelfCategory'];
@@ -245,8 +308,26 @@ document.getElementById('editButton').addEventListener('click', e => {
 // Cancel button click: reload the page to cancel changes
 document.getElementById('cancelButton').addEventListener('click', () => window.location.reload());
 
+// Show the edit confirmation popup
+function showEditConfirmationPopup() {
+  document.getElementById("editConfirmationPopup").style.display = "flex";
+  document.body.classList.add("modal-open"); // Disable scrolling
+}
+
+// Hide the edit confirmation popup
+function hideEditConfirmationPopup() {
+  document.getElementById("editConfirmationPopup").style.display = "none";
+  document.body.classList.remove("modal-open"); // Enable scrolling
+}
+
+// Save button click: show the confirmation popup instead of saving directly
+document.getElementById('saveButton').addEventListener('click', (e) => {
+  e.preventDefault(); // Prevent the default form submission
+  showEditConfirmationPopup(); // Show the confirmation popup
+});
+
 // Save button click: save the book changes
-document.getElementById('saveButton').addEventListener('click', async () => {
+document.getElementById("confirmEdit").addEventListener("click", async function() {
   const formData = new FormData();
   formData.append('title', document.getElementById('bookTitle').value);
   formData.append('author', document.getElementById('bookAuthor').value);
@@ -269,10 +350,8 @@ document.getElementById('saveButton').addEventListener('click', async () => {
     });
     const data = await resp.json();
     if (data && data.success) {
-      alert('Book updated successfully!');
       setEditMode(false);  // Exit edit mode after saving
-    } else {
-      alert(data?.message || 'Failed to update book.');
+      hideEditConfirmationPopup(); // Close the confirmation popup
     }
   } catch (err) {
     console.error(err);
