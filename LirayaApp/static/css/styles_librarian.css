@@ -1517,6 +1517,7 @@ h2 {
     display: grid;
     grid-template-columns: repeat(3, 1fr); /* 2 columns */
     gap: 20px; /* space between columns */
+    width: 100%; /* Ensure the grid takes up the full width */
 }
 
 .form-columns .form-group {
