@@ -553,7 +553,7 @@ header h1 {
     width: 100%;
     height: 100%;
     object-fit: cover; /* This will make sure the image scales properly inside the box */
-    display: block
+    display: block;
 }
 
 /* Book Cover Image Styling */
