@@ -189,7 +189,7 @@ def user_aboutus(request):
 def user_search(request):
 
     # Base queryset
-    books = Books.objects.all()
+    books = Books.objects.filter(is_archived=False)
 
     # ---------- Read query params ----------
     q = (request.GET.get('q') or "").strip()
@@ -558,7 +558,7 @@ def user_suggestions(request):
     if not tokens:
         return JsonResponse({'results': []})
 
-    base_qs = Books.objects.all()
+    base_qs = Books.objects.filter(is_archived=False)
     results = []
 
     # Helper to AND-filter tokens on one field
