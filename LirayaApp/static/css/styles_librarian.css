@@ -527,33 +527,33 @@ header h1 {
 
 /* Book Cover Box (Container for Image) */
 .book-cover-box {
-    width: 200px;
-    height: 300px;
-    background-color: #f0f0f0;
-    border: 2px solid #555;
-    border-radius: 10px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    padding: 10px;
-    -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
-    -moz-user-drag: none; /* Firefox-specific */
-    user-drag: none; /* Standard rule to prevent dragging */
-    -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
-    -moz-user-select: none; /* Firefox-specific */
-    -ms-user-select: none; /* Internet Explorer-specific */
-    user-select: none; /* Prevent text selection in other browsers */
-    pointer-events: none; /* Prevent interaction with the image (including dragging) */
+  width: 250px;
+  height: 350px;
+  background-color: #f0f0f0;
+  border: 2px solid #555;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 0px;
+  -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
+  -moz-user-drag: none; /* Firefox-specific */
+  user-drag: none; /* Standard rule to prevent dragging */
+  -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
+  -moz-user-select: none; /* Firefox-specific */
+  -ms-user-select: none; /* Internet Explorer-specific */
+  user-select: none; /* Prevent text selection in other browsers */
+  pointer-events: none; /* Prevent interaction with the image (including dragging) */
 }
 
 /* Ensure the book cover image fits inside the container */
 #coverPreview {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* This will make sure the image scales properly inside the box */
-    display: block
+    object-fit: cover; /* This will make sure the image scales properly inside the box */
+    display: none;
 }
 
 /* Book Cover Image Styling */
