@@ -195,79 +195,68 @@
                     <option value="Thesis">Thesis</option>
                 </select>
             </div>
-
-            <!-- Publisher Field with Dropdown + Input Combination -->
-            <div class="form-group">
-                <label for="publisher">Publisher</label>
-                <div class="input-group">
-                    <!-- Publisher input field (typable by default) -->
-                    <input type="text" id="publisher" class="form-control" name="publisher" 
-                        placeholder="Enter Publisher or select from list" required
-                        data-intro="Step 8: Enter the publisher name or select from the dropdown." 
-                        data-step="8">
-                    
-                    <!-- Button to show dropdown for selecting from existing publishers -->
-                    <button type="button" class="btn btn-outline-secondary add-publisher">▼</button>
-                </div>
+        </div>
+        <!-- Publisher Field with Dropdown + Input Combination -->
+        <div class="form-group">
+            <label for="publisher">Publisher</label>
+            <div class="input-group">
+                <!-- Publisher input field (typable by default) -->
+                <input type="text" id="publisher" class="form-control" name="publisher" 
+                    placeholder="Enter Publisher or select from list" required
+                    data-intro="Step 8: Enter the publisher name or select from the dropdown." 
+                    data-step="8">
                 
-                <!-- Dropdown to show when user wants to select an existing publisher -->
-                <div id="publisherDropdown" style="display:none; margin-top: 10px;">
-                    <select class="form-control" id="publisherSelect" name="publisherSelect">
-                        <option value="" selected disabled>Select Publisher</option>
-                        {% for publisher in publishers %}
-                            <option value="{{ publisher.publisher }}">{{ publisher.publisher }}</option> <!-- Use .publisher here -->
-                        {% endfor %}
-                    </select>
-                </div>
+                <!-- Button to show dropdown for selecting from existing publishers -->
+                <button type="button" class="btn btn-outline-secondary add-publisher">▼</button>
             </div>
-
-
-
-
-            <div class="form-group">
-                <label for="bookShelfCategory">Shelf Category</label>
-                <div class="input-group">
-                    <select class="form-control" id="bookShelfCategory" name="bookShelfCategory" required
-                            data-intro="Step 9: Select the shelf category or add a new one with the + button." 
-                            data-step="9">
-                        <option value="" selected disabled>Select Shelf Category</option>
-                        {% if user_info.role == 'DEPARTMENT' %}
-                            <!-- Predefined categories for DEPARTMENT role -->
-                            {% for category in department_categories %}
-                                <option value="{{ category }}">{{ category }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <!-- Categories fetched for LIBRARIAN role -->
-                            {% for category in categories %}
-                                <option value="{{ category }}">{{ category }}</option>
-                            {% endfor %}
-                        {% endif %}
-                    </select>
-                    {% if user_info.role == 'DEPARTMENT' %}
-                        <!-- Hide the add button for DEPARTMENT role -->
-                        <button type="button" class="btn btn-outline-secondary add-category" style="display:none;">+</button>
-                    {% else %}
-                        <button type="button" class="btn btn-outline-secondary add-category">+</button>
-                    {% endif %}
-                </div>
-                <div id="newCategoryInput" style="display:none; margin-top: 10px;">
-                    <input type="text" id="newCategoryText" class="form-control" placeholder="Enter new category" />
-                    <button type="button" id="saveNewCategory" class="btn btn-primary" style="margin-top: 5px;">Add Category</button>
-                </div>
-                {% if user_info.role != 'DEPARTMENT' %}
-                    <!-- Only show this message if the role is LIBRARIAN (can add categories) -->
-                    <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
-                {% endif %}
-            </div>
-
-          
-            <div class="form-group">
-                <label for="dateUploaded">Upload Date</label>
-                <input type="date" class="form-control" id="dateUploaded" name="dateUploaded" required readonly>
+            
+            <!-- Dropdown to show when user wants to select an existing publisher -->
+            <div id="publisherDropdown" style="display:none; margin-top: 10px;">
+                <select class="form-control" id="publisherSelect" name="publisherSelect">
+                    <option value="" selected disabled>Select Publisher</option>
+                    {% for publisher in publishers %}
+                        <option value="{{ publisher.publisher }}">{{ publisher.publisher }}</option> <!-- Use .publisher here -->
+                    {% endfor %}
+                </select>
             </div>
         </div>
 
 
+        <div class="form-group">
+            <label for="bookShelfCategory">Shelf Category</label>
+            <div class="input-group">
+                <select class="form-control" id="bookShelfCategory" name="bookShelfCategory" required
+                        data-intro="Step 9: Select the shelf category or add a new one with the + button." 
+                        data-step="9">
+                    <option value="" selected disabled>Select Shelf Category</option>
+                    {% if user_info.role == 'DEPARTMENT' %}
+                        <!-- Predefined categories for DEPARTMENT role -->
+                        {% for category in department_categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Categories fetched for LIBRARIAN role -->
+                        {% for category in categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                {% if user_info.role == 'DEPARTMENT' %}
+                    <!-- Hide the add button for DEPARTMENT role -->
+                    <button type="button" class="btn btn-outline-secondary add-category" style="display:none;">+</button>
+                {% else %}
+                    <button type="button" class="btn btn-outline-secondary add-category">+</button>
+                {% endif %}
+            </div>
+            <div id="newCategoryInput" style="display:none; margin-top: 10px;">
+                <input type="text" id="newCategoryText" class="form-control" placeholder="Enter new category" />
+                <button type="button" id="saveNewCategory" class="btn btn-primary" style="margin-top: 5px;">Add Category</button>
+            </div>
+            {% if user_info.role != 'DEPARTMENT' %}
+                <!-- Only show this message if the role is LIBRARIAN (can add categories) -->
+                <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
+            {% endif %}
+        </div>
         </div>
 
         <!-- Fallback input that can trigger native camera on mobile if getUserMedia isn't available -->
