@@ -61,7 +61,7 @@
             
             <!-- Preview container -->
             <div class="book-cover-box" id="coverPreviewContainer"
-                data-intro="Step 3: The uploaded or captured book cover will appear here as a preview." 
+                data-intro="Step 2: The uploaded or captured book cover will appear here as a preview." 
                 data-step="3">
                 <img id="coverPreview" src="#" alt="Cover Preview" style="display: none; width: 100%; height: auto;">
             </div>
@@ -129,7 +129,7 @@
                 <label for="bookTitle">Title</label>
                 <input type="text" class="form-control" id="bookTitle" name="bookTitle" 
                     placeholder="Enter Title Here" required
-                    data-intro="Step 4: The extracted title will appear here automatically. You may retype or edit it if needed."
+                    data-intro="Step 3: The extracted title will appear here automatically. You may retype or edit it if needed."
                     data-step="4">
             </div>
 
@@ -143,7 +143,7 @@
                 <label for="bookAuthor">Author</label>
                 <div class="input-group">
                     <input type="text" class="form-control" id="bookAuthor" name="author[]" placeholder="Enter Author's full name (Last Name, First Name)" required 
-                        data-intro="Step 5: Enter the author’s full name. You can add co-authors with the + button." 
+                        data-intro="Step 4: Enter the author’s full name. You can add co-authors with the + button." 
                         data-step="5">
                     <button type="button" class="btn btn-outline-secondary add-coauthor">+</button>
                 </div>
@@ -176,7 +176,7 @@
                     id="YearofPublication" 
                     name="YearofPublication" 
                     required
-                    data-intro="Step 6: Select the year of publication. If not available, choose N/A." 
+                    data-intro="Step 5: Select the year of publication. If not available, choose N/A." 
                     data-step="6">
                     <option value="">-- Select Year --</option>
                     <option value="N/A">N/A</option> <!-- Added N/A option -->
@@ -188,7 +188,7 @@
             <div class="form-group">
                 <label for="bookType">Book Type</label>
                 <select class="form-control" id="bookType" name="bookType" required
-                    data-intro="Step 7: Choose the type of book (Academic or Thesis)." 
+                    data-intro="Step 6: Choose the type of book (Academic or Thesis)." 
                     data-step="7">
                     <option value="" selected disabled>Select Content Type</option>
                     <option value="Academic">Academic</option>
@@ -203,7 +203,7 @@
                     <!-- Publisher input field (typable by default) -->
                     <input type="text" id="publisher" class="form-control" name="publisher" 
                         placeholder="Enter Publisher or select from list" required
-                        data-intro="Step 8: Enter the publisher name or select from the dropdown." 
+                        data-intro="Step 7: Enter the publisher name or select from the dropdown." 
                         data-step="8">
                     
                     <!-- Button to show dropdown for selecting from existing publishers -->
@@ -226,7 +226,7 @@
                 <label for="bookShelfCategory">Shelf Category</label>
                 <div class="input-group">
                     <select class="form-control" id="bookShelfCategory" name="bookShelfCategory" required
-                            data-intro="Step 9: Select the shelf category or add a new one with the + button." 
+                            data-intro="Step 8: Select the shelf category or add a new one with the + button." 
                             data-step="9">
                         <option value="" selected disabled>Select Shelf Category</option>
                         {% if user_info.role == 'DEPARTMENT' %}
@@ -279,7 +279,7 @@
         <div class="form-group">
             <label for="scannedContentType">Select Content Type to Scan:</label>
             <select class="form-control" id="scannedContentType" name="scanned_type" required
-                data-intro="Step 10: Choose what content to scan, Table of Contents or Index." 
+                data-intro="Step 9: Choose what content to scan, Table of Contents or Index." 
                 data-step="10">
                 <option value="" selected disabled>Select Content Type</option>
                 <option value="TOC">Table of Contents (TOC)</option>
@@ -314,7 +314,7 @@
                 <!-- Scan Book Button -->
                 <div class="scan-actions">
                     <button type="button" id="captureButton" class="scan-button" 
-                            data-intro="Step 11: Capture a page for scanning." 
+                            data-intro="Step 10: Capture a page for scanning." 
                             data-step="11"
                             data-tooltip="Capture">
                         <img src="{% static 'images/capture.png' %}" alt="Capture" class="btn-img">
@@ -323,7 +323,7 @@
 
                 <div class="scan-actions">
                     <button type="button" id="cropButton" class="scan-button" 
-                        data-intro="Step 12: Once captured, crop the desired part to scan." 
+                        data-intro="Step 11: Once captured, crop the desired part to scan." 
                         data-step="12"
                         data-tooltip="Crop">
                         <img src="{% static 'images/crop.png' %}" alt="Crop" class="btn-img">
@@ -332,7 +332,7 @@
 
                 <div class="scan-actions">
                     <button type="button" id="scanButton" class="scan-button" 
-                        data-intro="Step 13: After cropping you can now scan." 
+                        data-intro="Step 12: After cropping you can now scan." 
                         data-step="13"
                         data-tooltip="Scan" disabled>
                         <img src="{% static 'images/scan.png' %}" alt="Scan" class="btn-img">
@@ -348,7 +348,7 @@
 
                 <div class="scan-actions">
                     <button type="button" id="retryButton" class="scan-button"
-                        data-intro="Step 14: If you are not satisfied with the current capture, click Retry to take it again."
+                        data-intro="Step 13: If you are not satisfied with the current capture, click Retry to take it again."
                         data-step="14">
                         Retry
                     </button>
@@ -356,7 +356,7 @@
                 
                 <div class="scan-actions">
                     <button type="button" id="resetButton" class="scan-button"
-                        data-intro="Step 15: Use Reset if you want to clear everything and start scanning again from scratch."
+                        data-intro="Step 14: Use Reset if you want to clear everything and start scanning again from scratch."
                         data-step="15">
                         Reset
                     </button>
@@ -373,13 +373,13 @@
             <textarea class="form-control" id="scannedContent" name="scannedContent" rows="5" required 
                 spellcheck="false"
                 placeholder="Scanned content will appear here..."
-                data-intro="Step 16: The scanned text will appear here. Review and edit if needed."
+                data-intro="Step 15: The scanned text will appear here. Review and edit if needed."
                 data-step="16"></textarea>
         </div>
 
         <div style="text-align: right; margin-bottom: 15px;">
             <button type="button" id="lockButton" class="scan-button"
-                data-intro="Step 17: When satisfied, click Lock to confirm the scanned content. An alert will ask for confirmation. Once locked, you cannot edit it."
+                data-intro="Step 16: When satisfied, click Lock to confirm the scanned content. An alert will ask for confirmation. Once locked, you cannot edit it."
                 data-step="17"
                 data-tooltip="Lock">
                 <img src="{% static 'images/lockpage.png' %}" alt="Lock" class="btn-img">
@@ -391,14 +391,14 @@
         <div class="form-group">
             <label for="bookKeyword">Keyword</label>
             <textarea class="form-control" id="bookKeyword" name="bookKeyword" rows="5" required readonly
-                data-intro="Step 18: After locking, click Generate Keywords to automatically extract keywords from the scanned content."
+                data-intro="Step 17: After locking, click Generate Keywords to automatically extract keywords from the scanned content."
                 data-step="18"></textarea>
         </div>
 
         <div class="scan-actions-section">
             <div class="scan-actions">
                 <button type="button" id="generateKeywordsButton" class="scan-button" disabled
-                    data-intro="Step 19: Once locked, click here to generate keywords from the scanned content."
+                    data-intro="Step 18: Once locked, click here to generate keywords from the scanned content."
                     data-step="19">
                     Generate Keywords
                 </button>
@@ -408,7 +408,7 @@
     </div>
 
     <button type="submit" id="addBookButton" class="add-book-button"
-        data-intro="Step 20: Finally, click Add Book to save all details and finish the process."
+        data-intro="Step 19: Finally, click Add Book to save all details and finish the process."
         data-step="20">
         Add Book
     </button>
