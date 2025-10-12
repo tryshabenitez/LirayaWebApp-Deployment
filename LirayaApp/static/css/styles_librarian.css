@@ -527,8 +527,8 @@ header h1 {
 
 /* Book Cover Box (Container for Image) */
 .book-cover-box {
-  width: 250px;
-  height: 350px;
+  width: 230px;
+  height: 330px;
   background-color: #f0f0f0;
   border: 2px solid #555;
   border-radius: 10px;
