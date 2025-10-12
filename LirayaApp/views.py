@@ -703,7 +703,7 @@ def admin_homepage(request):
         books = books.order_by('title')
 
     # ---------- Total book count (should remain unchanged) ----------
-    total_books = Books.objects.filter(is_archived=False).count() 
+    total_books = books.count() 
 
     # ---------- Pagination ----------
     paginator = Paginator(books, 10)  # Show 10 books per page
@@ -741,7 +741,7 @@ def admin_suggestions(request):
     if not tokens:
         return JsonResponse({'results': []})
 
-    base_qs = Books.objects.all()
+    base_qs = Books.objects.filter(is_archived=False)
     results = []
 
     # Helper to AND-filter tokens on one field
@@ -812,7 +812,7 @@ def admin_bookdetails(request):
     user_info = get_user_info(account_id)
     try:
         # Fetch the specific book details from the database
-        book = Books.objects.get(book_id=book_id)
+        book = Books.objects.get(book_id=book_id, is_archived=False)
         
         
         context = {
@@ -1491,7 +1491,7 @@ def admin_records(request):
     for index, user_account in enumerate(page_obj.object_list, start=page_obj.start_index()):
         librarian = user_account.account
         full_name = f"{librarian.first_name} {librarian.middle_name[0] if librarian.middle_name else ''} {librarian.last_name}".strip()
-        books_uploaded = Books.objects.filter(account=librarian).count()
+        books_uploaded = Books.objects.filter(account=librarian, is_archived=False).count()
         records.append({
             'index': index,
             'full_name': full_name,
@@ -1526,7 +1526,7 @@ def admin_records_view(request, account_id):
     role = librarian_account.role
 
     # Get all books uploaded by the librarian
-    books = Books.objects.filter(account=librarian_account.account)
+    books = Books.objects.filter(account=librarian_account.account, is_archived=False)
 
     # Handle search query
     search_query = request.GET.get('search', '')
@@ -2948,7 +2948,7 @@ def librarian_suggestions(request):
     if not tokens:
         return JsonResponse({'results': []})
 
-    base_qs = Books.objects.all()
+    base_qs = Books.objects.filter(is_archived=False)
     results = []
 
     # Helper to AND-filter tokens on one field
