@@ -908,11 +908,11 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
 # account information 
 def _style_sheet():
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="SmallBlack", fontSize=9, textColor=colors.black, leading=12))
+    styles.add(ParagraphStyle(name="SmallBlack", fontSize=10, textColor=colors.black, leading=13))
     styles.add(ParagraphStyle(name="SmallGray", fontSize=9, textColor=colors.gray, leading=12))
     styles.add(ParagraphStyle(name="BannerTitle", fontSize=16, leading=18, alignment=1))  # centered
     styles.add(ParagraphStyle(name="BannerSub", fontSize=10, leading=12, alignment=1, textColor=colors.gray))
-    styles.add(ParagraphStyle(name="SectionTitle", fontSize=12, leading=14, spaceBefore=8, spaceAfter=6, fontName="Helvetica-Bold" ))
+    styles.add(ParagraphStyle(name="SectionTitle", fontSize=15, leading=14, spaceBefore=9, spaceAfter=9, fontName="Helvetica-Bold" ))
     styles.add(ParagraphStyle(name="Cell", fontSize=10, leading=12, wordWrap='CJK'))  # wraps long values like address
     styles.add(ParagraphStyle(name="CellLabel", fontSize=10, textColor=colors.gray, leading=12))
     styles.add(ParagraphStyle(name="Strong", fontSize=10, leading=12))
@@ -1289,7 +1289,106 @@ def _admin_kpi_table(acct, styles, context):
 
 
     return tbl, remark
+    
+def _department_kpi_table(acct, styles, context):
+    """KPI table and remarks for Department role — same logic as Librarian but with department-specific remarks."""
+    bio = acct.get("bio", {}) or {}
+    perf = acct.get("performance", {}) or {}
 
+    status = (bio.get("status") or "—").upper()
+    created_when = bio.get("created_on")
+    age_days = bio.get("days_old")  # same as librarian logic
+    uploads_in_range = perf.get("uploads_in_window", 0)
+
+    # Account age display (copied from librarian logic)
+    if age_days in (None, "—"):
+        age_display = "—"
+    else:
+        if status == "NEW":
+            age_display = f"Created {age_days} day(s) ago"
+        elif status == "ACTIVE":
+            age_display = f"Active for {age_days} day(s)"
+        else:
+            age_display = f"{age_days} day(s)"
+
+    # --- KPI Table ---
+    rows = [
+        ["Evaluation Criteria", "Metrics"],
+        ["Account Status", status],
+        ["Date Created", _format_date_words(created_when)],
+        ["Account Age", age_display],
+        ["Books/Thesis Upload", str(uploads_in_range)],
+    ]
+
+    tbl = Table(rows, colWidths=[1.5*inch, 1.7*inch])
+    tbl.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.6, MAROON),
+        ('BOX', (0,0), (-1,-1), 0.9, MAROON),
+        ('BACKGROUND', (0,0), (-1,0), MAROON),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONT', (0,0), (-1,0), 'Helvetica-Bold', 10),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, ROSE]),
+        ('FONT', (0,1), (-1,-1), 'Helvetica', 10),
+    ]))
+
+    # --- Remark logic (same thresholds as librarian) ---
+    range_label = (context.get("meta", {}) or {}).get("range_label", "the selected range").lower()
+    if "week" in range_label:
+        threshold = 3
+        scope_text = f"this {context.get('meta', {}).get('range_label')}"
+    elif "month" in range_label:
+        threshold = 7
+        scope_text = f"this {context.get('meta', {}).get('range_label')}"
+    elif "year" in range_label:
+        threshold = 20
+        scope_text = f"this {context.get('meta', {}).get('range_label')}"
+    elif "all time" in range_label:
+        threshold = 50
+        scope_text = "for the whole period of using the system"
+    else:
+        threshold = 5
+        scope_text = f"during {context.get('meta', {}).get('range_label')}"
+
+    # --- Department-specific remarks (paraphrased for non-library departments) ---
+    if status == "NEW":
+        if age_days not in (None, "—") and int(age_days) >= 5 and uploads_in_range == 0:
+            remark = (
+                f"This department account was created {age_days} day(s) ago, but has <b>not uploaded any materials yet.</b> "
+                f"Departments with their own collections are encouraged to start scanning and uploading resources "
+                f"to keep their mini-library updated."
+            )
+        else:
+            remark = (
+                f"<b>New department account</b>: Created {age_days} day(s) ago. "
+                f"Monitor its initial use to ensure staff begin uploading or updating their departmental materials."
+            )
+
+    elif status == "DEACTIVATED":
+        remark = (
+            f"<b>Deactivated account</b>: This department is currently inactive in the system. "
+            f"Reactivation may be considered if this department account plans to continue maintaining digital collections."
+        )
+
+    elif uploads_in_range < threshold:
+        remark = (
+            f"<b>Low activity</b>: Only {uploads_in_range} upload(s) {scope_text}. "
+            f"Encourage this department account to digitize and upload more materials from their mini-library "
+            f"to increase visibility and access."
+        )
+
+    elif uploads_in_range == threshold:
+        remark = (
+            f"<b>Steady activity</b>: {uploads_in_range} upload(s) {scope_text}. "
+            f"This department account is maintaining an acceptable level of contribution to the Liraya System."
+        )
+
+    else:
+        remark = (
+            f"<b>High activity</b>: {uploads_in_range} upload(s) {scope_text}. "
+            f"This department account demonstrates steady engagement in managing and sharing academic materials."
+        )
+
+    return tbl, remark
 
 
 
@@ -1318,6 +1417,8 @@ def _account_card_block(acct, styles, context):
         kpi_tbl, remark_text = _librarian_kpi_table(acct, styles, context.get("meta", {}).get("range_label", ""))
     elif role == "ADMIN":
         kpi_tbl, remark_text = _admin_kpi_table(acct, styles, context)
+    elif role == "DEPARTMENT":
+        kpi_tbl, remark_text = _department_kpi_table(acct, styles, context)
     else:
         kpi_tbl, remark_text = Table([["No KPI defined", "—"]]), ""
 
@@ -1465,6 +1566,11 @@ def _deactivation_recommendations(context):
         uploads_7d             = perf.get("uploads_7d")
         created_in_window      = perf.get("created_in_window")
         days_since_last_upload = perf.get("days_since_last_upload")
+
+        # Fallback if not provided in performance data
+        if days_since_last_upload is None and created_date is not None:
+            days_since_last_upload = max((end_d - created_date).days, 1)
+            
         days_in_status = (
             perf.get("days_in_status")
             or perf.get("days_since_created")
@@ -1472,23 +1578,26 @@ def _deactivation_recommendations(context):
         )
 
         reason = None
-        # Rule 1
-        no_recent_activity = (
-            (uploads_7d is not None and uploads_7d == 0) and
-            (created_in_window is not None and created_in_window == 0)
-        ) or (days_since_last_upload is not None and days_since_last_upload > 7)
-        if status == "ACTIVE" and role in ("ADMIN", "LIBRARIAN") and no_recent_activity:
-            reason = "Active but no uploads/creates in the last 7+ days"
 
-        # Rule 2
+        # Rule 1: Active accounts with low or no recent activity
+        no_recent_activity = (
+            (uploads_7d is not None and uploads_7d == 0)
+            and (created_in_window is not None and created_in_window == 0)
+        ) or (days_since_last_upload is not None and days_since_last_upload > 7)
+
+        if status == "ACTIVE" and role in ("ADMIN", "LIBRARIAN", "DEPARTMENT") and no_recent_activity:
+            days_text = f"{days_since_last_upload} days"
+            reason = f"Active but no uploads/creates in the last {days_text}"
+
+        # Rule 2: New accounts inactive for a while
         if reason is None and status == "NEW" and (days_in_status is not None and days_in_status >= 7):
-            reason = "New for 7+ days with no activity"
+            reason = f"New for {days_in_status} days with no activity"
+
 
         if reason:
             recs.append([name, status, created, reason])
 
     return recs
-
 
 def _reco_table(context, styles):
     """Maroon header, zebra rows, wrapped text."""
@@ -1719,26 +1828,24 @@ def generate_account_information(output_stream, context):
     flow.extend(_center_banner(context.get("meta", {}), styles))
 
     # Individual cards (one per page)
-    if context.get("meta", {}).get("mode") == "with_biodata":
+    mode = context.get("meta", {}).get("mode", "")
+
+    if mode == "with_biodata":
         first = True
         for acct in context.get("accounts", []):
             if not first:
                 flow.append(PageBreak())
             first = False
             flow.append(_account_card_block(acct, styles, context))
-        flow.append(PageBreak())  # start overall summary on a new page
+        flow.append(PageBreak())  # only for full biodata runs
+    elif mode == "summary_only":
+        flow.append(Spacer(1, 10))  # small gap, no page break
+    
 
     # ---- Overall Summary ----
     flow.append(_section_title("Overall Summary", styles))
-
-    # Intro (same font as the recommendation notes)
-    flow.append(Paragraph(
-        "This section presents a comprehensive overview of user accounts and "
-        "activity levels within the Liraya system.",
-        styles["SmallBlack"]  # matches the note style under recommendations
-    ))
     flow.append(Spacer(1, 6))
-
+    
     totals  = (context.get("summary") or {}).get("totals") or {}
     roles   = totals.get("roles", {}) or {}
     status  = totals.get("status", {}) or {}
@@ -1763,8 +1870,9 @@ def generate_account_information(output_stream, context):
     data = [
         ["Category", "Count"],
         ["Total Accounts", str(totals.get("accounts", 0))],
-        ["Admin",         str(roles.get("ADMIN", 0))],
-        ["Librarian",     str(roles.get("LIBRARIAN", 0))],
+        ["Admin Account(s)",         str(roles.get("ADMIN", 0))],
+        ["Librarian Account(s)",     str(roles.get("LIBRARIAN", 0))],
+        ["Department Account(s)",    str(roles.get("DEPARTMENT", 0))],
         ["NEW",           str(status.get("NEW", 0))],
         ["ACTIVE",        str(status.get("ACTIVE", 0))],
         ["DEACTIVATED",   str(status.get("DEACTIVATED", 0))],
@@ -1795,7 +1903,7 @@ def generate_account_information(output_stream, context):
         ('ALIGN', (1,1), (1,-1), 'CENTER'),
     ]))
     flow.append(tbl)
-    flow.append(Spacer(1, 10))
+    flow.append(Spacer(1, 4))
 
 
     # Pie charts (two side-by-side)
@@ -1814,36 +1922,98 @@ def generate_account_information(output_stream, context):
     # --- Dynamic Pie Chart Summary ---
     role_admin     = roles.get("ADMIN", 0)
     role_librarian = roles.get("LIBRARIAN", 0)
+    role_department = roles.get("DEPARTMENT", 0)
     status_new     = status.get("NEW", 0)
     status_active  = status.get("ACTIVE", 0)
     status_deact   = status.get("DEACTIVATED", 0)
 
     remarks = []
 
-    # Condition 1: Few librarians/admins
+    # --- Paragraph 1: Librarian, Admin, and Department Summary ---
     if role_librarian <= 5 or role_admin <= 3:
         parts = []
         if role_librarian <= 5:
             parts.append(f"<b>{role_librarian}</b> librarian(s)")
         if role_admin <= 3:
             parts.append(f"<b>{role_admin}</b> administrator(s)")
-
         staff_text = " and ".join(parts)
-        remarks.append(
+        para1 = (
             f"The report shows that there are only {staff_text}. Having too few staff may "
-            f"affect how well the system is monitored, supported, and managed. Adding more "
-            f"staff account is recommended to improve system efficiency and "
-            f"share responsibilities more effectively."
+            f"affect how well the system is monitored, supported, and managed. "
+            f"Adding more staff accounts is recommended to improve system efficiency."
         )
     else:
-        remarks.append(
-            f"The report shows that staffing levels are healthy, with "
+        para1 = (
+            f"The report shows that staffing levels are stable, with "
             f"<b>{role_librarian}</b> librarian(s) and <b>{role_admin}</b> administrator(s). "
-            f"This indicates that the system is adequately supported and managed."
+            f"This indicates that the system is properly supported and managed."
         )
 
+    # --- Department Logic (Integrated in same paragraph) ---
+    dept_uploads = sum(
+        acct.get("performance", {}).get("uploads_in_window", 0)
+        for acct in context.get("accounts", [])
+        if (acct.get("bio", {}).get("role") or "").upper() == "DEPARTMENT"
+    )
 
-    # Condition 2: New + Deactivated vs Active
+    range_label = (context.get("meta", {}) or {}).get("range_label", "").lower()
+    if "week" in range_label:
+        threshold = 3
+        scope_text = f"this {context.get('meta', {}).get('range_label')}"
+    elif "month" in range_label:
+        threshold = 7
+        scope_text = f"this {context.get('meta', {}).get('range_label')}"
+    elif "year" in range_label:
+        threshold = 20
+        scope_text = f"this {context.get('meta', {}).get('range_label')}"
+    elif "all time" in range_label:
+        threshold = 50
+        scope_text = "for the whole period of using the system"
+    else:
+        threshold = 5
+        scope_text = f"during {context.get('meta', {}).get('range_label')}"
+
+    # Now generate Department summary text (same structure as Librarian KPI)
+    if role_department > 0:
+        if dept_uploads == 0:
+            dept_text = (
+                f" Meanwhile, there are <b>{role_department}</b> department account(s), "
+                f"but none have uploaded materials yet. Encouraging each department to begin "
+                f"uploading thesis or academic books will help expand the digital collection "
+                f"that students can search and borrow."
+            )
+        elif dept_uploads < threshold:
+            dept_text = (
+                f" Additionally, there are <b>{role_department}</b> department account(s) "
+                f"with a total of <b>{dept_uploads}</b> upload(s) {scope_text}. "
+                f"This indicates low participation; department accounts are encouraged to upload more "
+                f"academic materials to enhance access for student researchers."
+            )
+        elif dept_uploads == threshold:
+            dept_text = (
+                f" Moreover, there are <b>{role_department}</b> department account(s) contributing "
+                f"<b>{dept_uploads}</b> upload(s) {scope_text}. "
+                f"This reflects consistent departmental engagement in maintaining mini-libraries "
+                f"and supporting academic access."
+            )
+        else:
+            dept_text = (
+                f" Furthermore, <b>{role_department}</b> department account(s) have collectively "
+                f"uploaded <b>{dept_uploads}</b> materials {scope_text}. "
+                f"This shows active participation in preserving and sharing theses or academic books "
+                f"that students can search and borrow."
+            )
+    else:
+        dept_text = (
+            " Currently, no department accounts are registered in the system. "
+            "Departments are encouraged to create accounts and upload theses or academic books "
+            "to expand the searchable and borrowable collection available to students."
+        )
+
+    # Combine both sections into a unified summary paragraph
+    remarks.append(para1 + dept_text)
+
+    # --- Paragraph 2: Account Activity Summary (existing logic) ---
     total_inactive_like = status_new + status_deact
     total_new_and_active = status_new + status_active
 
@@ -1867,16 +2037,17 @@ def generate_account_information(output_stream, context):
             f"strong user engagement."
         )
 
-
-
-
     # Final summary paragraph
     summary_text = " ".join(remarks)
     flow.append(Paragraph(summary_text, styles["SmallBlack"]))
 
 
     # space before recommendations section
-    flow.append(PageBreak())
+    mode = context.get("meta", {}).get("mode", "")
+    if mode == "with_biodata":
+        flow.append(PageBreak())
+    else:
+        flow.append(Spacer(1, 16))  # small space before next section
 
     # Recommendations (BELOW the pies)
     flow.append(_section_title_center("Accounts Recommended for Deactivation", styles))
