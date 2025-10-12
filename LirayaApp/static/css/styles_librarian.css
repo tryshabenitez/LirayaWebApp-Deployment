@@ -424,11 +424,12 @@ header h1 {
 /****************************** LIBRARIAN VIEW DETAILS TAB  *****************************************/
 
 /* Main container to align image and form side by side */
-.book-details-container {
+.book-details {
     display: flex;
     gap: 30px;  /* Adds space between the image and the form */
     align-items: flex-start;  /* Aligns the items to the top */
     flex-wrap: wrap;
+    justify-content: center;
 }
 
 
