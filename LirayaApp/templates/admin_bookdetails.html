@@ -25,7 +25,7 @@
       <!-- Left Section -->
       <div class="admin-book-cover-section">
         <div class="admin-book-cover-box">
-          <img src="{% if book.book_cover. %}{{ book.book_cover }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}" alt="Book Cover">
+          <img src="{% if book.book_cover %}{{ book.book_cover }}{% else %}{% static 'images/book_placeholder.png' %}{% endif %}" alt="Book Cover">
         </div>
       </div>
       
