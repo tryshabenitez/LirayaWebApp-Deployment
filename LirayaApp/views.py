@@ -3120,56 +3120,76 @@ def librarian_view_details(request, book_id):
     }
     return render(request, 'librarian_ViewDetails.html', context)
 
+
 @csrf_exempt
 def check_spelling(request):
     print("DEBUG:", request.method, request.body)
 
-    if request.method == 'POST':
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        text = data.get('text', '').strip()
+        print("DEBUG: Text length =", len(text))
+
+        if not text:
+            return JsonResponse({'errors': {}}, status=200)
+
+        # --- Step 1: Light cleaning to reduce OCR noise ---
+        import re
+        clean_text = re.sub(r'[^A-Za-z0-9\s.,;:!?\'"-]', '', text)
+        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+
+        # --- Step 2: Language detection (prefer English) ---
+        if any(ch in clean_text for ch in 'ñáéíóú'):
+            language = 'tl'
+        else:
+            language = 'en-US'
+
+        print("DEBUG: Language selected =", language)
+
+        # --- Step 3: Try spell-check with LanguageTool ---
         try:
-            data = json.loads(request.body.decode('utf-8'))
-            text = data.get('text', '').strip()
-            print("DEBUG: Text length =", len(text))
-
-            if not text:
-                return JsonResponse({'errors': {}}, status=200)
-
-            # 🔹 Detect language
-            language = 'tl' if any(ch in text for ch in 'ñáéíóú') else 'en-US'
-
-            # 🔹 Send request to LanguageTool API using settings value
             response = requests.post(
-                settings.LANGUAGETOOL_URL,  # ✅ use from settings
-                data={
-                    'text': text,
-                    'language': language
-                },
+                LANGUAGETOOL_URL,
+                data={'text': clean_text, 'language': language},
                 timeout=10
             )
+        except requests.RequestException as req_err:
+            print("DEBUG: RequestException ->", req_err)
+            return JsonResponse({'error': 'LanguageTool server unreachable'}, status=502)
 
-            if response.status_code != 200:
-                print("DEBUG: LanguageTool API error", response.status_code, response.text)
-                return JsonResponse({'error': 'LanguageTool API error'}, status=500)
+        if response.status_code != 200:
+            # --- Step 4: Handle known LanguageTool errors gracefully ---
+            if "too many errors" in response.text.lower():
+                print("DEBUG: Too many errors detected, skipping check.")
+                return JsonResponse({
+                    'error': 'Spell-check skipped: text contains too many OCR errors. Please re-scan or clean the text.'
+                }, status=200)
+            print("DEBUG: LanguageTool API error", response.status_code, response.text)
+            return JsonResponse({'error': 'LanguageTool API error'}, status=500)
 
-            lt_result = response.json()
-            print("DEBUG: Matches found =", len(lt_result.get('matches', [])))
+        lt_result = response.json()
+        print("DEBUG: Matches found =", len(lt_result.get('matches', [])))
 
-            errors = {}
-            for match in lt_result.get('matches', []):
-                word = text[match['offset']: match['offset'] + match['length']]
-                suggestions = [s['value'] for s in match.get('replacements', [])]
-                if suggestions:
-                    errors[word] = suggestions[:8]  # limit to top 8
+        # --- Step 5: Extract suggestions ---
+        errors = {}
+        for match in lt_result.get('matches', []):
+            offset = match.get('offset', 0)
+            length = match.get('length', 0)
+            word = clean_text[offset: offset + length]
+            suggestions = [s['value'] for s in match.get('replacements', [])]
+            if suggestions:
+                errors[word] = suggestions[:8]  # limit to 8
 
-            return JsonResponse({'errors': errors})
+        return JsonResponse({'errors': errors}, status=200)
 
-        except Exception as e:
-            print("DEBUG ERROR:", e)
-            traceback.print_exc()
-            return JsonResponse({'error': str(e)}, status=400)
-
-    return JsonResponse({'error': 'Invalid request'}, status=400)
-
-
+    except Exception as e:
+        print("DEBUG ERROR:", e)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=400)
 
 @login_checker
 @role_required('LIBRARIAN')
