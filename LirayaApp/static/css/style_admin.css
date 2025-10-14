@@ -5,7 +5,6 @@
   font-family: Arial, sans-serif; /* Apply Arial font to all elements */
 }
 
-
 .admin-header {
   display: flex;
   justify-content: space-between; /* Space out title and icon */
