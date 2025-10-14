@@ -777,6 +777,7 @@ footer {
   padding: 20px; /* Center in viewport: use min-height and center content */
   width: 100%;
   box-sizing: border-box;
+  height: 60vh;
 }
 
 /* If you want to center the form within its parent exactly in the middle */
