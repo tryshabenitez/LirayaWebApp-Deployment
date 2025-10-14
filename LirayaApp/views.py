@@ -3152,10 +3152,11 @@ def check_spelling(request):
         # --- Step 3: Try spell-check with LanguageTool ---
         try:
             response = requests.post(
-                LANGUAGETOOL_URL,
+                settings.LANGUAGETOOL_URL,
                 data={'text': clean_text, 'language': language},
                 timeout=10
             )
+
         except requests.RequestException as req_err:
             print("DEBUG: RequestException ->", req_err)
             return JsonResponse({'error': 'LanguageTool server unreachable'}, status=502)
