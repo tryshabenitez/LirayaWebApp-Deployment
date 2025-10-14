@@ -792,6 +792,11 @@ footer {
   box-sizing: border-box;
 }
 
+.manage-account {
+  max-width: 2500px; /* Set maximum width for the container */
+  margin: 0 auto;
+}
+
 /* If you want to center the form within its parent exactly in the middle */
 .main-content .create-account {
   display: flex;
