@@ -2892,9 +2892,6 @@ def librarian_homepage(request):
                 )
 
         # ---------- Sorting ----------
-        if sort_by == 'all':
-            books = books.order_by('book_id')
-        
         sort_by = request.GET.get('sort', 'all')  # Sorting option (e.g., recently uploaded)
         if sort_by == 'oldest_to_newest':
             books = books.order_by('date_uploaded')
@@ -2908,6 +2905,8 @@ def librarian_homepage(request):
             books = books.order_by('book_type')
         elif sort_by == 'title':
             books = books.order_by('title')
+        elif sort_by == 'all':
+            books = books.order_by('book_id')
 
         # ---------- Pagination: Show 10 books per page ----------
         paginator = Paginator(books, 10)  # Show 10 books per page
