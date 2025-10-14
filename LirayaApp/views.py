@@ -689,6 +689,9 @@ def admin_homepage(request):
 
 
     # ---------- Sorting ----------
+    if sort_by == 'all':
+        books = books.order_by('book_id')
+        
     if sort_by == 'oldest_to_newest':
         books = books.order_by('date_uploaded')
     elif sort_by == 'newest_to_oldest':
@@ -2889,6 +2892,9 @@ def librarian_homepage(request):
                 )
 
         # ---------- Sorting ----------
+        if sort_by == 'all':
+            books = books.order_by('book_id')
+        
         sort_by = request.GET.get('sort', 'all')  # Sorting option (e.g., recently uploaded)
         if sort_by == 'oldest_to_newest':
             books = books.order_by('date_uploaded')
