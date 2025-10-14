@@ -780,6 +780,18 @@ footer {
   height: 60vh;
 }
 
+.profile-container {
+  display: flex;
+  flex-direction: column; /* Stack the fields vertically */
+  align-items: center; /* Center the content horizontally */
+  justify-content: center; /* Center the content vertically */
+  max-width: 1600px; /* Limit the width of the form for better centering */
+  margin: 0 auto; /* Center the form horizontally */
+  padding: 20px; /* Center in viewport: use min-height and center content */
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* If you want to center the form within its parent exactly in the middle */
 .main-content .create-account {
   display: flex;
