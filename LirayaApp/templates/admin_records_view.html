@@ -60,7 +60,7 @@
                 <p><span class="word-emphasis">Uploaded by:</span></p> 
                 <h1>{{ full_name }}</h1>
                 <p><span class="word-emphasis">Role: {{ role }}</span></p>  <!-- Librarian role -->
-                <p><span class="word-emphasis">Total Books Uploaded</span>: <span class="number_emphasis">{{ total_books_uploaded }}</span></p>
+                <p><span class="word-emphasis">Total Books Uploaded</span>: <span class="number_emphasis" {% if total_books_uploaded == 0 %}style="color: red;"{% endif %}>{{ total_books_uploaded }}</span></p>
             </div>
         </div>
 
