@@ -1537,7 +1537,9 @@ def admin_records_view(request, account_id):
 
     # Handle sort query
     sort_by = request.GET.get('sort', 'all')
-    if sort_by == 'oldest_to_newest':
+    if sort_by == 'all':
+        books = books.order_by('book_id')
+    elif sort_by == 'oldest_to_newest':
         books = books.order_by('year_of_publication')
     elif sort_by == 'newest_to_oldest':
         books = books.order_by('-year_of_publication')
