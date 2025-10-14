@@ -57,15 +57,17 @@ img.admin-icon {
 }
 
 .admin-footer {
-  position: relative;          /* Make footer position relative to content */
-  padding: 10px 0;             /* Vertical padding for spacing */
-  background-color: #fff;      /* Background color */
-  text-align: center;          /* Center the text */
-  font-size: 14px;             /* Font size */
-  color: #000;                 /* Text color */
-  margin-top: 40px;            /* Space above the footer */
-  width: 100%;                 /* Footer spans the full width */
-  clear: both;                 /* Ensure no content overlaps the footer */
+  padding: 10px 0; /* Vertical padding for spacing */
+  background-color: #fff;
+  text-align: center;
+  font-size: 14px;
+  color: #000;
+  width: 100%;
+  margin-top: auto; /* Ensures it sticks to the bottom when content is not enough */
+  height: 80px; /* Footer height */
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
 }
 
 /* Make sure the footer stays at the bottom of the page */
