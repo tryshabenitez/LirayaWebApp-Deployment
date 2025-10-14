@@ -32,7 +32,7 @@
 
 
         <!-- Profile Form -->
-        <div class="create-account">
+        <div class="profile-container">
             <div class="profile-header">
                 <div class="profile-left">
                     <div class="profile-image-container">
@@ -141,16 +141,16 @@
                 </div>
 
                 <!-- Email and Username -->
-                <div class="form-row-inline">
-                    <div class="form-col">
+                <div class="name-inputs">
+                    <div class="name-col">
                         <label for="email">Email</label>
                         <input type="email" class="admin-input-field" id="email" name="email" placeholder="Email" value="{{ account.email }}" readonly required>
                     </div>
-                    <div class="form-col">
+                    <div class="name-col">
                         <label for="email">Contact Number</label>
                         <input type="tel" class="admin-input-field" id="contact-number" name="contact_num" placeholder="Contact Number" value="{{ account.contact_num }}" readonly required pattern="^09\d{9}$" maxlength="11" title="Contact number must start with '09' and have exactly 11 digits" inputmode="numeric">
                     </div>
-                    <div class="form-col">
+                    <div class="name-col">
                         <label for="username">Username</label>
                         <input type="text" class="admin-input-field" id="username" name="username" placeholder="Username" value="{{ account.username }}" readonly Required>
                     </div>
