@@ -14,7 +14,7 @@
       <button class="profile-image-button" onclick="window.location.href='{% url 'admin_profile' %}'" title="Profile">
         <div class="profile-image-container">
             <div class="profile-image-preview-homepage">
-                <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
+                <img id="profile-preview" src="{% if user_info.profile_picture.url %}{{ user_info.profile_picture.url }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
             </div>
         </div>
       </button>
@@ -28,21 +28,32 @@
       <div class="admin-search-section">
           <input type="text" name="search" placeholder="Search" value="{{ search_query }}">
           <button type="submit">Search</button>
-        </div>
+      </div>
     
-    
-      <!-- SORT BY -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; text-align: left;">
         <div style="display: flex; gap: 20px; align-items: center; justify-content: flex-end; flex: 2;">
-          <label for="sort_by" style="font-weight: bold;">Sort By:</label>
-          <div class="admin-dropdown-section">
-            <select id="sort_by" name="sort" onchange="this.form.submit()">
-              <option value="all" {% if sort_by == 'all' %}selected{% endif %}>All</option>
-              <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
-              <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
-              <option value="books_asc" {% if sort_by == 'books_asc' %}selected{% endif %}>Books (Low to High)</option>
-              <option value="books_desc" {% if sort_by == 'books_desc' %}selected{% endif %}>Books (High to Low)</option>
-            </select>
+          <div style="display: flex; gap: 20px; align-items: center;">
+            <label for="role_filter" style="font-weight: bold;">Filter:</label>
+            <div class="admin-dropdown-section">
+              <select id="role_filter" name="role" onchange="this.form.submit()">
+                <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
+                <option value="LIBRARIAN" {% if role_filter == 'LIBRARIAN' %}selected{% endif %}>Librarian</option>
+                <option value="DEPARTMENT" {% if role_filter == 'DEPARTMENT' %}selected{% endif %}>Department</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 20px; align-items: center;">
+            <label for="sort_by" style="font-weight: bold;">Sort By:</label>
+            <div class="admin-dropdown-section">
+              <select id="sort_by" name="sort" onchange="this.form.submit()">
+                <option value="all" {% if sort_by == 'all' %}selected{% endif %}>All</option>
+                <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+                <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                <option value="books_asc" {% if sort_by == 'books_asc' %}selected{% endif %}>Books (Low to High)</option>
+                <option value="books_desc" {% if sort_by == 'books_desc' %}selected{% endif %}>Books (High to Low)</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -52,7 +63,11 @@
 
     <h2 class='admin_normal_bold'>
         Librarians: 
-        <span class="number_emphasis">{{ total_librarians }}</span>
+        <span class="number_emphasis" {% if total_librarian == 0 %}style="color: red;"{% endif %}>{{ total_librarian }}</span>
+        Departments: 
+        <span class="number_emphasis" {% if total_department == 0 %}style="color: red;"{% endif %}>{{ total_department }}</span>
+        Total Accounts: 
+        <span class="number_emphasis" {% if total_accounts == 0 %}style="color: red;"{% endif %}>{{ total_accounts }}</span>
     </h2>
     
     <!-- MAIN  CONTENTS-->
@@ -92,20 +107,50 @@
         </tbody>
       </table>
 
-    <!-- PAGINATION -->
+    <!-- Pagination Section -->
     <div class="pagination">
       {% if page_obj.has_previous %}
-        <a href="?page=1&search={{ search_query }}&sort={{ sort_by }}">First</a>
-        <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Previous</a>
+        <a href="?page=1&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}">< Previous</a>
       {% endif %}
 
-      {% for i in page_obj.paginator.page_range %}
-        <a href="?page={{ i }}&search={{ search_query }}&sort={{ sort_by }}" class="{% if page_obj.number == i %}active{% endif %}">{{ i }}</a>
-      {% endfor %}
+      {% with current_page=page_obj.number total_pages=page_obj.paginator.num_pages %}
+        {% if total_pages <= 10 %}
+          {% for page_num in page_obj.paginator.page_range %}
+            {% if page_num <= total_pages %}
+              <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}"
+                {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          {% if current_page <= 6 %}
+            {% for page_num in page_obj.paginator.page_range %}
+              {% if page_num <= 10 %}
+                <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}"
+                  {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+              {% endif %}
+            {% endfor %}
+          {% elif current_page >= total_pages|add:"-5" %}
+            {% for page_num in page_obj.paginator.page_range %}
+              {% if page_num > total_pages|add:"-10" and page_num <= total_pages %}
+                <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}"
+                  {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            {% for page_num in page_obj.paginator.page_range %}
+              {% if page_num >= current_page|add:"-5" and page_num <= current_page|add:"4" %}
+                <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}"
+                  {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endif %}
+      {% endwith %}
 
       {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Next</a>
-        <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&sort={{ sort_by }}">Last</a>
+        <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}">Next ></a>
+        <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&role={{ role_filter }}&sort={{ sort_by }}">Last</a>
       {% endif %}
     </div>
 
@@ -163,8 +208,6 @@
     </div>
   </div>
 </div>
-
-
 <style>
   :root {
     --brand: #4b0e0e;      /* maroon */
