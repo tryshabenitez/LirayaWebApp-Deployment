@@ -196,15 +196,45 @@
       <div class="pagination">
           {% if accounts.has_previous %}
               <a href="?page=1&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">First</a>
-              <a href="?page={{ accounts.previous_page_number }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">Previous</a>
+              <a href="?page={{ accounts.previous_page_number }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">< Previous</a>
           {% endif %}
-          
-          {% for i in accounts.paginator.page_range %}
-              <a href="?page={{ i }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}" class="{% if accounts.number == i %}active{% endif %}">{{ i }}</a>
-          {% endfor %}
-          
+
+          {% with current_page=accounts.number total_pages=accounts.paginator.num_pages %}
+            {% if total_pages <= 10 %}
+              {% for page_num in accounts.paginator.page_range %}
+                {% if page_num <= total_pages %}
+                  <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}"
+                    {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              {% if current_page <= 6 %}
+                {% for page_num in accounts.paginator.page_range %}
+                  {% if page_num <= 10 %}
+                    <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}"
+                      {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                  {% endif %}
+                {% endfor %}
+              {% elif current_page >= total_pages|add:"-5" %}
+                {% for page_num in accounts.paginator.page_range %}
+                  {% if page_num > total_pages|add:"-10" and page_num <= total_pages %}
+                    <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}"
+                      {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                {% for page_num in accounts.paginator.page_range %}
+                  {% if page_num >= current_page|add:"-5" and page_num <= current_page|add:"4" %}
+                    <a href="?page={{ page_num }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}"
+                      {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endif %}
+          {% endwith %}
+
           {% if accounts.has_next %}
-              <a href="?page={{ accounts.next_page_number }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">Next</a>
+              <a href="?page={{ accounts.next_page_number }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">Next ></a>
               <a href="?page={{ accounts.paginator.num_pages }}&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort }}">Last</a>
           {% endif %}
       </div>
