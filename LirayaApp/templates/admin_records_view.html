@@ -96,19 +96,49 @@
             {% endif %}
         {% endfor %}
 
-        <!-- Pagination -->
+        <!-- Pagination Section -->
         <div class="pagination">
             {% if page_obj.has_previous %}
                 <a href="?page=1&search={{ search_query }}&sort={{ sort_by }}">First</a>
-                <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Previous</a>
+                <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&sort={{ sort_by }}">< Previous</a>
             {% endif %}
 
-            {% for i in page_obj.paginator.page_range %}
-                <a href="?page={{ i }}&search={{ search_query }}&sort={{ sort_by }}" class="{% if page_obj.number == i %}active{% endif %}">{{ i }}</a>
-            {% endfor %}
+            {% with current_page=page_obj.number total_pages=page_obj.paginator.num_pages %}
+                {% if total_pages <= 10 %}
+                    {% for page_num in page_obj.paginator.page_range %}
+                        {% if page_num <= total_pages %}
+                            <a href="?page={{ page_num }}&search={{ search_query }}&sort={{ sort_by }}"
+                                {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    {% if current_page <= 6 %}
+                        {% for page_num in page_obj.paginator.page_range %}
+                            {% if page_num <= 10 %}
+                                <a href="?page={{ page_num }}&search={{ search_query }}&sort={{ sort_by }}"
+                                    {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    {% elif current_page >= total_pages|add:"-5" %}
+                        {% for page_num in page_obj.paginator.page_range %}
+                            {% if page_num > total_pages|add:"-10" and page_num <= total_pages %}
+                                <a href="?page={{ page_num }}&search={{ search_query }}&sort={{ sort_by }}"
+                                    {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% for page_num in page_obj.paginator.page_range %}
+                            {% if page_num >= current_page|add:"-5" and page_num <= current_page|add:"4" %}
+                                <a href="?page={{ page_num }}&search={{ search_query }}&sort={{ sort_by }}"
+                                    {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            {% endwith %}
 
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Next</a>
+                <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Next ></a>
                 <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&sort={{ sort_by }}">Last</a>
             {% endif %}
         </div>
