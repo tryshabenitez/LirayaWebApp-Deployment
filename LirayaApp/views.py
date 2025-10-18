@@ -1449,19 +1449,29 @@ def admin_profile(request):
 @login_checker
 @role_required('ADMIN')
 def admin_records(request):
-    
     account_id = request.session.get('account_id') 
     user_info = get_user_info(account_id)
-    
     search_query = request.GET.get('search', '')
     sort_by = request.GET.get('sort', 'all')  # Default sorting set to 'all'
     page_number = request.GET.get('page', 1)  # Current page
 
+    # Get role filter parameter, default to 'all'
+    role_filter = request.GET.get('role', 'all')
 
+    # Initialize queryset with librarian and department accounts
+    librarian_accounts = UserAccounts.objects.filter(
+        role__in=['LIBRARIAN', 'DEPARTMENT']
+    ).order_by('account__account_id')
 
-    # Filter librarians based on the search query
-    librarian_accounts = UserAccounts.objects.filter(role='LIBRARIAN').order_by('account__account_id')
+    # Get separate counts for librarians and departments
+    total_librarian = UserAccounts.objects.filter(role='LIBRARIAN').count()
+    total_department = UserAccounts.objects.filter(role='DEPARTMENT').count()
 
+    # Apply role filter if specified
+    if role_filter != 'all':
+        librarian_accounts = librarian_accounts.filter(role=role_filter)
+
+    # Apply search query filter
     if search_query:
         librarian_accounts = librarian_accounts.filter(
             Q(account__first_name__icontains=search_query) |
@@ -1469,8 +1479,8 @@ def admin_records(request):
             Q(account__last_name__icontains=search_query)
         )
     
-    
-    total_librarians = librarian_accounts.count()
+    # Count of currently filtered accounts
+    total_accounts = librarian_accounts.count()
     
     # Sorting logic
     if sort_by == 'name_asc':
@@ -1506,7 +1516,10 @@ def admin_records(request):
         'page_obj': page_obj,
         'search_query': search_query,
         'sort_by': sort_by,
-        'total_librarians': total_librarians,
+        'role_filter': role_filter,     # Add role_filter to the template context
+        'total_librarian': total_librarian,    # Total librarian accounts
+        'total_department': total_department,   # Total department accounts
+        'total_accounts': total_accounts,       # Combined total of both roles
         'user_info': user_info,
     })
 
