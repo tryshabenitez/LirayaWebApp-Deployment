@@ -3239,6 +3239,29 @@ def librarian_addbook(request):
     if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         data = json.loads(request.body.decode('utf-8'))
 
+        # Category Deletion Request
+        if 'deleteCategory' in data:
+            category_name = data.get('categoryName', '').strip()
+            if category_name:
+                # Find books with this category and update the shelf category to None
+                books_with_category = Books.objects.filter(shelf_category=category_name)
+
+                if books_with_category.exists():
+                    # Remove the category from the books (set shelf_category to None)
+                    books_with_category.update(shelf_category="Uncategorized")
+
+                    # Optionally, you can remove the category from the dropdown list as well
+                    # If you want to delete the category from the system entirely, you could do that here too
+
+                    return JsonResponse({'success': True, 'message': 'Category removed from books successfully!'})
+
+                return JsonResponse({'success': False, 'message': 'No books found with the specified category.'})
+
+
+    # Handle AJAX request for title check / OCR
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        data = json.loads(request.body.decode('utf-8'))
+
         # --- 1) Duplicate title check (case-insensitive) ---
         if 'checkTitle' in data:
             title = (data.get('bookTitle') or '').strip()
