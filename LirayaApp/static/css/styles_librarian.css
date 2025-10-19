@@ -919,6 +919,118 @@ header h1 {
 }
 
 
+/****************************** DELETE CATEGORY MODAL ******************************/
+/* Modal Background */
+#deleteCategoryModal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+    z-index: 1000;
+    overflow: hidden; /* Disable scrolling on the body when modal is open */
+}
+
+/* Modal Content - Disable Scroll on Modal Background */
+.delete-category-content {
+    max-height: 80vh; /* Limit content height */
+    overflow-y: auto; /* Enable scrolling inside the modal if needed */
+    width: 100%;
+    max-width: 600px;
+    background-color: white; /* White background for the modal content */
+    padding: 20px;
+    border-radius: 8px; /* Optional: rounded corners for the modal */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal Heading (Delete Category) */
+.delete-category-heading {
+    font-weight: bold;  /* Make the title bold */
+    text-align: center; /* Center the title */
+    font-size: 24px;    /* Adjust the font size */
+}
+
+/* Instructions (Explanation about the action) */
+.delete-category-instructions {
+    text-align: left; /* Align the instructions text to the left */
+    padding: 10px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* Container for category list */
+#categoryListContainer {
+    padding: 20px;
+    margin-top: 20px;
+    max-height: 300px; /* Limit the height */
+    overflow-y: auto;  /* Enable scrolling if content overflows */
+}
+
+/* Category Table */
+.category-table {
+    width: 100%;        /* Full width for the table */
+    max-width: 600px;   /* Limit table max width */
+    margin: 0 auto;     /* Center the table within the modal */
+    border-collapse: collapse;
+    background-color: #fff;
+    border: 1px solid #ddd;
+}
+
+/* Category Table Heading */
+.category-table th {
+    text-align: left;   /* Align header text to the left */
+    padding: 12px;      /* Add padding for spacing */
+    background-color: #f8f8f89b; /* Light background for the header */
+    font-weight: bold;  /* Make header text bold */
+    border-bottom: 1px solid #ddd;
+}
+
+/* Category Table Cells */
+.category-table td {
+    padding: 10px;      /* Add padding for cell content */
+    text-align: left;   /* Align text to the left */
+    border-bottom: 1px solid #ddd; /* Add border to separate rows */
+}
+
+/* Category Row Styling */
+.category-row {
+    cursor: pointer;  /* Indicate that it's clickable */
+    padding: 8px;
+}
+
+.category-row:hover {
+    background-color: #f0f0f0;  /* Highlight row on hover */
+    cursor: pointer;  /* Keep pointer cursor on hover */
+}
+
+/* When selected, show the default arrow cursor */
+.category-row.selected {
+    background-color: #d0e7ff; /* Light blue background for selected row */
+    cursor: default;  /* Change to default arrow cursor when selected */
+}
+
+/* Category List Container (Modal Width) */
+#categoryListContainer {
+    padding: 20px;
+    margin-top: 20px;
+    max-height: 300px;
+    width: 100%;
+    overflow-y: auto;
+}
+
+
+/* Modal Buttons */
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    align-items: flex-start;  /* Align the buttons to the top */
+    justify-content: flex-start; /* Align buttons to the left */
+}
+
+/****************************** END OF DELETE CATEGORY MODAL ******************************/
+
 /* Styling for the Select Content Type Dropdown */
 #scannedContentType {
     width: 100%;
