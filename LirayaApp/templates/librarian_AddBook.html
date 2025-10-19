@@ -195,121 +195,120 @@
                     <option value="Thesis">Thesis</option>
                 </select>
             </div>
-           </div>
+          </div>
           
-
-            <!-- Publisher Field with Dropdown + Input Combination -->
-            <div class="form-group">
-                <label for="publisher">Publisher</label>
-                <div class="input-group">
-                    <!-- Publisher input field (typable by default) -->
-                    <input type="text" id="publisher" class="form-control" name="publisher" 
-                        placeholder="Enter Publisher or select from list" required
-                        data-intro="Step 7: Enter the publisher name or select from the dropdown." 
-                        data-step="8">
-                    
-                    <!-- Button to show dropdown for selecting from existing publishers -->
-                    <button type="button" class="btn btn-outline-secondary add-publisher">▼</button>
-                </div>
+        <!-- Publisher Field with Dropdown + Input Combination -->
+        <div class="form-group">
+            <label for="publisher">Publisher</label>
+            <div class="input-group">
+                <!-- Publisher input field (typable by default) -->
+                <input type="text" id="publisher" class="form-control" name="publisher" 
+                    placeholder="Enter Publisher or select from list" required
+                    data-intro="Step 7: Enter the publisher name or select from the dropdown." 
+                    data-step="8">
                 
-                <!-- Dropdown to show when user wants to select an existing publisher -->
-                <div id="publisherDropdown" style="display:none; margin-top: 10px;">
-                    <select class="form-control" id="publisherSelect" name="publisherSelect">
-                        <option value="" selected disabled>Select Publisher</option>
-                        {% for publisher in publishers %}
-                            <option value="{{ publisher.publisher }}">{{ publisher.publisher }}</option> <!-- Use .publisher here -->
-                        {% endfor %}
-                    </select>
-                </div>
+                <!-- Button to show dropdown for selecting from existing publishers -->
+                <button type="button" class="btn btn-outline-secondary add-publisher">▼</button>
             </div>
+            
+            <!-- Dropdown to show when user wants to select an existing publisher -->
+            <div id="publisherDropdown" style="display:none; margin-top: 10px;">
+                <select class="form-control" id="publisherSelect" name="publisherSelect">
+                    <option value="" selected disabled>Select Publisher</option>
+                    {% for publisher in publishers %}
+                        <option value="{{ publisher.publisher }}">{{ publisher.publisher }}</option> <!-- Use .publisher here -->
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
 
 
-            <div class="form-group">
-                <label for="bookShelfCategory">Shelf Category</label>
-                <div class="input-group">
-                    <select class="form-control" id="bookShelfCategory" name="bookShelfCategory" required
-                            data-intro="Step 8: Select the shelf category or add a new one with the + button." 
-                            data-step="9">
-                        <option value="" selected disabled>Select Shelf Category</option>
-                        {% if user_info.role == 'DEPARTMENT' %}
-                            <!-- Predefined categories for DEPARTMENT role -->
-                            {% for category in department_categories %}
-                                <option value="{{ category }}">{{ category }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <!-- Categories fetched for LIBRARIAN role -->
-                            {% for category in categories %}
-                                <option value="{{ category }}">{{ category }}</option>
-                            {% endfor %}
-                        {% endif %}
-                    </select>
+        <div class="form-group">
+            <label for="bookShelfCategory">Shelf Category</label>
+            <div class="input-group">
+                <select class="form-control" id="bookShelfCategory" name="bookShelfCategory" required
+                        data-intro="Step 8: Select the shelf category or add a new one with the + button." 
+                        data-step="9">
+                    <option value="" selected disabled>Select Shelf Category</option>
                     {% if user_info.role == 'DEPARTMENT' %}
-                        <!-- Hide the add button for DEPARTMENT role -->
-                        <button type="button" class="btn btn-outline-secondary add-category" style="display:none;">+</button>
+                        <!-- Predefined categories for DEPARTMENT role -->
+                        {% for category in department_categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
                     {% else %}
-                        <button type="button" class="btn btn-outline-secondary add-category">+</button>
-                        <button type="button" class="btn btn-outline-danger delete-category" id="deleteCategoryButton" onclick="openDeleteCategoryModal()">X</button> 
+                        <!-- Categories fetched for LIBRARIAN role -->
+                        {% for category in categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
                     {% endif %}
-                </div>
-                <div id="newCategoryInput" style="display:none; margin-top: 10px;">
-                    <input type="text" id="newCategoryText" class="form-control" placeholder="Enter new category" />
-                    <button type="button" id="saveNewCategory" class="btn btn-primary" style="margin-top: 5px;">Add Category</button>
-                </div>
-                {% if user_info.role != 'DEPARTMENT' %}
-                    <!-- Only show this message if the role is LIBRARIAN (can add categories) -->
-                    <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
+                </select>
+                {% if user_info.role == 'DEPARTMENT' %}
+                    <!-- Hide the add button for DEPARTMENT role -->
+                    <button type="button" class="btn btn-outline-secondary add-category" style="display:none;">+</button>
+                {% else %}
+                    <button type="button" class="btn btn-outline-secondary add-category">+</button>
+                    <button type="button" class="btn btn-outline-danger delete-category" id="deleteCategoryButton" onclick="openDeleteCategoryModal()">X</button> 
                 {% endif %}
             </div>
-
-            <!-- Modal for Deleting a Shelf Category -->
-            <div id="deleteCategoryModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
-                <div class="modal-content">
-                    <!-- Modal Heading -->
-                    <h3 class="delete-category-heading">Delete Category</h3>
-    
-                    <!-- Instructions (Explanation about the action) -->
-                    <p class="delete-category-instructions">
-                        Deleting a category is a permanent action. This will remove the category from the system, and any books associated with it may need to be reclassified. Please be sure that you no longer need this category before proceeding.
-                    </p>
-    
-    
-                    <!-- Table for categories -->
-                    <div id="categoryListContainer">
-                        <table class="category-table">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for category in categories %}
-                                    <tr class="category-row" data-category="{{ category }}">
-                                        <td>{{ category }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-    
-                    <!-- Confirmation buttons -->
-                    <div class="modal-actions">
-                        <button type="button" id="confirmDelete" class="scan-button" style="width: 120px;" disabled>Delete</button>
-                        <button type="button" id="cancelDelete" class="scan-button" style="width: 120px;">Cancel</button>
-                    </div>
-                </div>
+            <div id="newCategoryInput" style="display:none; margin-top: 10px;">
+                <input type="text" id="newCategoryText" class="form-control" placeholder="Enter new category" />
+                <button type="button" id="saveNewCategory" class="btn btn-primary" style="margin-top: 5px;">Add Category</button>
             </div>
-    
-            <!-- Add the Delete Category Confirmation Popup -->
-            <div id="deleteCategoryPopup" class="logout-popup-modal">
-                <div class="logout-popup-content">
-                    <h3>Are you sure you want to delete this category?</h3>
-                    <div class="popup-buttons">
-                        <button id="confirmDeleteCategory" class="popup-button delete-button">Delete</button>
-                        <button onclick="hideDeleteCategoryPopup()" class="popup-button cancel-button">Cancel</button>
-                    </div>
+            {% if user_info.role != 'DEPARTMENT' %}
+                <!-- Only show this message if the role is LIBRARIAN (can add categories) -->
+                <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
+            {% endif %}
+        </div>
+
+        <!-- Modal for Deleting a Shelf Category -->
+        <div id="deleteCategoryModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+            <div class="modal-content">
+                <!-- Modal Heading -->
+                <h3 class="delete-category-heading">Delete Category</h3>
+
+                <!-- Instructions (Explanation about the action) -->
+                <p class="delete-category-instructions">
+                    Deleting a category is a permanent action. This will remove the category from the system, and any books associated with it may need to be reclassified. Please be sure that you no longer need this category before proceeding.
+                </p>
+
+
+                <!-- Table for categories -->
+                <div id="categoryListContainer">
+                    <table class="category-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                                <tr class="category-row" data-category="{{ category }}">
+                                    <td>{{ category }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Confirmation buttons -->
+                <div class="modal-actions">
+                    <button type="button" id="confirmDelete" class="scan-button" style="width: 120px;" disabled>Delete</button>
+                    <button type="button" id="cancelDelete" class="scan-button" style="width: 120px;">Cancel</button>
                 </div>
             </div>
         </div>
+  
+        <!-- Add the Delete Category Confirmation Popup -->
+        <div id="deleteCategoryPopup" class="logout-popup-modal">
+            <div class="logout-popup-content">
+                <h3>Are you sure you want to delete this category?</h3>
+                <div class="popup-buttons">
+                    <button id="confirmDeleteCategory" class="popup-button delete-button">Delete</button>
+                    <button onclick="hideDeleteCategoryPopup()" class="popup-button cancel-button">Cancel</button>
+                </div>
+            </div>
+        </div>
+          
         </div>
 
         <!-- Fallback input that can trigger native camera on mobile if getUserMedia isn't available -->
@@ -317,11 +316,6 @@
 
         <!-- Hidden input for captured images from getUserMedia -->
         <input type="file" id="hiddenCameraInput" style="display:none;">
-
-
-
-        <!-- Simple camera modal (shown only when using getUserMedia) -->
-        
 
     </div>
 
