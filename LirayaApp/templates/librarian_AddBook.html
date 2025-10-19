@@ -246,6 +246,7 @@
                         <button type="button" class="btn btn-outline-secondary add-category" style="display:none;">+</button>
                     {% else %}
                         <button type="button" class="btn btn-outline-secondary add-category">+</button>
+                        <button type="button" class="btn btn-outline-danger delete-category" id="deleteCategoryButton" onclick="openDeleteCategoryModal()">X</button> 
                     {% endif %}
                 </div>
                 <div id="newCategoryInput" style="display:none; margin-top: 10px;">
@@ -256,6 +257,55 @@
                     <!-- Only show this message if the role is LIBRARIAN (can add categories) -->
                     <small class="form-text text-muted">Add new categories directly to the dropdown.</small>
                 {% endif %}
+            </div>
+
+            <!-- Modal for Deleting a Shelf Category -->
+            <div id="deleteCategoryModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+                <div class="modal-content">
+                    <!-- Modal Heading -->
+                    <h3 class="delete-category-heading">Delete Category</h3>
+    
+                    <!-- Instructions (Explanation about the action) -->
+                    <p class="delete-category-instructions">
+                        Deleting a category is a permanent action. This will remove the category from the system, and any books associated with it may need to be reclassified. Please be sure that you no longer need this category before proceeding.
+                    </p>
+    
+    
+                    <!-- Table for categories -->
+                    <div id="categoryListContainer">
+                        <table class="category-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in categories %}
+                                    <tr class="category-row" data-category="{{ category }}">
+                                        <td>{{ category }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+    
+                    <!-- Confirmation buttons -->
+                    <div class="modal-actions">
+                        <button type="button" id="confirmDelete" class="scan-button" style="width: 120px;" disabled>Delete</button>
+                        <button type="button" id="cancelDelete" class="scan-button" style="width: 120px;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Add the Delete Category Confirmation Popup -->
+            <div id="deleteCategoryPopup" class="logout-popup-modal">
+                <div class="logout-popup-content">
+                    <h3>Are you sure you want to delete this category?</h3>
+                    <div class="popup-buttons">
+                        <button id="confirmDeleteCategory" class="popup-button delete-button">Delete</button>
+                        <button onclick="hideDeleteCategoryPopup()" class="popup-button cancel-button">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
         </div>
@@ -693,6 +743,100 @@ document.getElementById('saveNewCategory').addEventListener('click', function ()
     } else {
         alert("Please enter a valid category.");
     }
+});
+
+
+
+// Open the Delete Category Modal
+function openDeleteCategoryModal() {
+    document.getElementById('deleteCategoryModal').style.display = 'flex';
+}
+
+// Close the Delete Category Modal
+function closeDeleteCategoryModal() {
+    document.getElementById('deleteCategoryModal').style.display = 'none';
+}
+
+// Open the Delete Category Confirmation Popup
+function openDeleteCategoryPopup() {
+    document.getElementById('deleteCategoryPopup').style.display = 'flex';
+}
+
+// Close the Delete Category Confirmation Popup
+function hideDeleteCategoryPopup() {
+    document.getElementById('deleteCategoryPopup').style.display = 'none';
+}
+
+// Handle Category Selection (highlight the selected category)
+document.querySelectorAll('.category-row').forEach(item => {
+    item.addEventListener('click', function() {
+        // Highlight the selected category
+        document.querySelectorAll('.category-row').forEach(option => {
+            option.style.backgroundColor = '';  // Remove background from all other options
+        });
+        this.style.backgroundColor = '#f0f0f0';  // Add background to selected option
+
+        // Enable the Delete button when a category is selected
+        document.getElementById('confirmDelete').disabled = false;
+        document.getElementById('confirmDelete').setAttribute('data-category', this.getAttribute('data-category'));
+    });
+});
+
+// Handle Category Deletion
+document.getElementById('confirmDelete').addEventListener('click', function() {
+    const categoryToDelete = this.getAttribute('data-category');
+
+    if (categoryToDelete) {
+        // Show the confirmation popup before proceeding with deletion
+        openDeleteCategoryPopup();
+
+        // Handle deletion when confirmed (inside the popup)
+        document.getElementById('confirmDeleteCategory').addEventListener('click', function () {
+            // Send the delete request to the backend using AJAX
+            fetch('{% url "librarian_addbook" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'  // Ensures this is an AJAX request
+                },
+                body: JSON.stringify({
+                    'deleteCategory': true,
+                    'categoryName': categoryToDelete
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);  // Show success message
+                    closeDeleteCategoryModal();  // Close the modal after successful deletion
+                    location.reload();  // Reload the page to reflect the changes
+                } else {
+                    alert(data.message);  // Show failure message
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('An error occurred while deleting the category.');
+            });
+
+            // Close the confirmation popup after the deletion process
+            hideDeleteCategoryPopup();
+        });
+
+        // Cancel Delete Action (close the confirmation popup)
+        document.getElementById('cancelDeleteCategory').addEventListener('click', function() {
+            hideDeleteCategoryPopup();  // Close the confirmation popup
+        });
+    } else {
+        alert('Please select a category to delete.');
+    }
+});
+
+
+// Cancel Delete Action (close the modal without confirming)
+document.getElementById('cancelDelete').addEventListener('click', function() {
+    closeDeleteCategoryModal();
 });
 
 
