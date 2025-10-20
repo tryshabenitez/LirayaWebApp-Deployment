@@ -55,6 +55,7 @@ urlpatterns = [
     path('adminrecordsview/<int:account_id>/', views.admin_records_view, name='admin_records_view'),
     path('admininheritance/', views.admin_templateinheritance, name='admin_templateinheritance'),
     path('generate-pdf/<str:report_type>/', views.generate_pdf, name='generate_pdf'),
+    path('check-username/', views.check_username, name='check_username'),
     path('deactivate_account/', views.deactivate_account, name='deactivate_account'),
     path('logout/', views.admin_logout, name='logout'),  
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
