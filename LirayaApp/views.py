@@ -1612,6 +1612,11 @@ def admin_logout(request):
     return response
 
 
+def check_username(request):
+    username = request.GET.get('username')
+    exists = AccountInformation.objects.filter(username=username).exists()
+    return JsonResponse({'exists': exists})
+    
 def deactivate_account(request):
     account_id = request.session.get('account_id')
 
