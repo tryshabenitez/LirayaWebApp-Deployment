@@ -28,7 +28,6 @@ document.getElementById('profile-picture-upload').addEventListener('change', fun
                 }
             });
 
-            // Handle save crop action
             document.getElementById('crop-save').addEventListener('click', function() {
                 // Get the cropped image data
                 const croppedCanvas = cropper.getCroppedCanvas();
@@ -41,25 +40,11 @@ document.getElementById('profile-picture-upload').addEventListener('change', fun
 
                 // Update the profile preview with the cropped image
                 const previewImage = document.getElementById('profile-preview');
-                if (previewImage) {
-                    previewImage.src = croppedImageUrl;
-                }
+                previewImage.src = croppedImageUrl;
 
-                // Add a submit event listener to perform hard reload after form submission
-                const form = document.querySelector('form[enctype="multipart/form-data"]');
-                form.addEventListener('submit', function() {
-                    // Adding a small delay to ensure the form is submitted before reload
-                    setTimeout(function() {
-                        window.location.reload(true); // Force a hard reload from the server
-                    }, 100);
-                });
-                
-                // For immediate submission without user clicking submit
-                form.submit();
-                
                 // Close the modal
                 document.getElementById('cropper-modal').style.display = 'none';
-                
+
                 // Destroy cropper to release resources
                 cropper.destroy();
             });
@@ -116,3 +101,4 @@ document.getElementById("deactivate-button").addEventListener("click", function(
         window.location.href = "/deactivate_account/";
     };
 });
+
