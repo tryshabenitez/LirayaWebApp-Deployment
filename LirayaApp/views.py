@@ -76,6 +76,7 @@ import pandas as pd
 from django.db import models
 from cloudinary import uploader
 from cloudinary.uploader import upload, destroy
+import pytz
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -1765,14 +1766,16 @@ def generate_pdf(request, report_type):
     first_name, middle_name, last_name, role = account_details
     date_range = request.GET.get('date_range', 'all_time')
 
-    # Define user info here
+    # Define user info here - using Philippines timezone (Asia/Manila)
+    philippines_timezone = pytz.timezone('Asia/Manila')
+    philippines_now = timezone.now().astimezone(philippines_timezone)
+
     user_info = {
         'full_name': f"{first_name} {middle_name} {last_name}".strip(),
         'role': role,
-        'time_generated': datetime.now().strftime("%H:%M:%S"),
-        'date_generated': datetime.now().strftime("%B %d, %Y"),
+        'time_generated': philippines_now.strftime("%I:%M:%S %p"),  # 12-hour format with AM/PM
+        'date_generated': philippines_now.strftime("%B %d, %Y"),
     }
-
     
     pdf_buffer = BytesIO()
 
