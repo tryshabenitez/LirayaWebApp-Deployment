@@ -207,6 +207,13 @@ function clearFields() {
 
 //// FORM VALIDATION FOR PROFILE EDITING ////
 function initFormValidation() {
+    // Check if we're on a view-only page - if so, skip validation
+    const form = document.querySelector('form[data-view-only="true"]');
+    if (form) {
+        console.log('Skipping validation for view-only form');
+        return; // Exit early - no validation needed for view-only forms
+    }
+    
     // Helper to show error
     function showError(inputId, message) {
         let errorDiv = document.getElementById(inputId + '_error');
@@ -214,7 +221,10 @@ function initFormValidation() {
             errorDiv = document.createElement('div');
             errorDiv.className = 'field-error';
             errorDiv.id = inputId + '_error';
-            document.getElementById(inputId).insertAdjacentElement('afterend', errorDiv);
+            const inputElement = document.getElementById(inputId);
+            if (inputElement) {
+                inputElement.insertAdjacentElement('afterend', errorDiv);
+            }
         }
         errorDiv.textContent = message;
         updateSaveButtonState(); // Update save button state when showing error
@@ -487,21 +497,31 @@ function initFormValidation() {
             validateNotEmpty(field.id, field.label);
         }
     });
-    // Attach special validation
-    document.getElementById('zipcode').addEventListener('input', validateZipcode);
-    document.getElementById('contact-number').addEventListener('input', validateContactNumber);
-    document.getElementById('email').addEventListener('input', validateEmail);
-    document.getElementById('state').addEventListener('input', validateState);
-    document.getElementById('birthdate').addEventListener('input', validateBirthdate);
-    document.getElementById('gender').addEventListener('change', validateGender);
-    // Initial check for special fields
-    validateZipcode();
-    validateContactNumber();
-    validateEmail();
-    validateState();
-    validateBirthdate();
-    validateGender();
-    validateUsername();
+    // Attach special validation - only if elements exist
+    const zipcodeEl = document.getElementById('zipcode');
+    const contactEl = document.getElementById('contact-number');
+    const emailEl = document.getElementById('email');
+    const stateEl = document.getElementById('state');
+    const birthdateEl = document.getElementById('birthdate');
+    const genderEl = document.getElementById('gender');
+    const usernameEl = document.getElementById('username');
+    
+    // Only add listeners if elements exist and form is not view-only
+    if (zipcodeEl) zipcodeEl.addEventListener('input', validateZipcode);
+    if (contactEl) contactEl.addEventListener('input', validateContactNumber);
+    if (emailEl) emailEl.addEventListener('input', validateEmail);
+    if (stateEl) stateEl.addEventListener('input', validateState);
+    if (birthdateEl) birthdateEl.addEventListener('input', validateBirthdate);
+    if (genderEl) genderEl.addEventListener('change', validateGender);
+    
+    // Initial check for special fields - only if elements exist
+    if (zipcodeEl) validateZipcode();
+    if (contactEl) validateContactNumber();
+    if (emailEl) validateEmail();
+    if (stateEl) validateState();
+    if (birthdateEl) validateBirthdate();
+    if (genderEl) validateGender();
+    if (usernameEl) validateUsername();
     
     // Initial update of save button state
     updateSaveButtonState();
