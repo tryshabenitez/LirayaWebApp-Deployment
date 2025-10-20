@@ -1,8 +1,26 @@
 {% extends 'admin_inheritance.html' %}
 {% load static %}
-{% block title %}Admin Profile{% endblock %}
+{% block title %}Admin: View Profile{% endblock %}
 
 {% block content %}
+<style>
+    /* Hide validation error messages for view profile page */
+    .field-error {
+        display: none !important;
+    }
+    
+    /* Ensure inputs stay clean looking with no validation styling */
+    .admin-input-field:invalid {
+        border-color: #3e151a !important;
+        box-shadow: none !important;
+    }
+    
+    /* Prevent any validation styling from browsers */
+    input:focus:invalid, select:focus:invalid {
+        outline: none !important;
+        border-color: #3e151a !important;
+    }
+</style>
     <div class="admin-main-content">
 
         <!-- HEADER -->
@@ -167,12 +185,48 @@
 
     </div>
 
-   
+
 <script>
     // JavaScript function to handle the "Back" button click
     function goBack() {
         window.history.back();  // This will take the user to the previous page
     }
+    
+    // Disable all validation for view-only profile
+    document.addEventListener('DOMContentLoaded', function() {
+        // Remove all validation error divs that might have been created
+        const errorDivs = document.querySelectorAll('.field-error');
+        errorDivs.forEach(function(div) {
+            div.remove();
+        });
+        
+        // Add data attribute to mark this as a view-only form
+        document.querySelector('form').setAttribute('data-view-only', 'true');
+        
+        // Remove all validation listeners from input fields
+        const inputFields = document.querySelectorAll('.admin-input-field');
+        inputFields.forEach(function(field) {
+            // Clone the node to remove all event listeners
+            const clone = field.cloneNode(true);
+            field.parentNode.replaceChild(clone, field);
+        });
+        
+        // Prevent form from validating on submission
+        const form = document.querySelector('form');
+        form.setAttribute('novalidate', 'novalidate');
+        
+        // Override any global validation functions for this page
+        if (window.initFormValidation) {
+            // Store the original function for other pages
+            window._originalInitFormValidation = window.initFormValidation;
+            
+            // Replace it with an empty function for this page
+            window.initFormValidation = function() {
+                console.log('Validation disabled for view-only profile');
+                return;
+            };
+        }
+    });
 </script>
 {% endblock %}
 
