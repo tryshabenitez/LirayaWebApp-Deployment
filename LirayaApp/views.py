@@ -1354,9 +1354,6 @@ def admin_profile(request):
                         logger.error(traceback.format_exc())
                         messages.error(request, "An unexpected error occurred. Please try again later.")
             
-
-
-                
                 elif form_type == 'image_upload':
                     cropped_image_data = request.POST.get('cropped_image')
                 
@@ -1366,17 +1363,29 @@ def admin_profile(request):
                             format, imgstr = cropped_image_data.split(';base64,')  # Split the header and the data part
                             ext = format.split('/')[-1]  # Get the file extension (e.g., jpeg, png)
                 
+                            # Get the role for naming consistency
+                            user_account_role = user_account.role
+                            
+                            # Create a consistent file name for both upload and deletion
+                            file_name = f"{account.account_id}-{account.first_name}-{account.last_name}-{user_account_role}"
+                
                             # Decode the base64 image
                             img_data = base64.b64decode(imgstr)
-                            img_file = ContentFile(img_data, name=f"{account.account_id}-{account.first_name}-{account.last_name}.{ext}")
+                            img_file = ContentFile(img_data, name=f"{file_name}.{ext}")
                 
                             # Check and remove the old image from Cloudinary if exists
                             if account.profile_picture:
-                                public_id = account.profile_picture.name.split('/')[-1].split('.')[0]
-                                uploader.destroy(public_id)
+                                # Try to extract the public_id from the URL
+                                try:
+                                    # Extract just the filename without extension from the URL
+                                    url_parts = account.profile_picture.split('/')
+                                    public_id = url_parts[-1].split('.')[0]
+                                    uploader.destroy(public_id)
+                                except Exception as del_error:
+                                    logger.warning(f"Could not delete old image: {del_error}")
                 
-                            # Upload the new image to Cloudinary
-                            cloudinary_response = uploader.upload(img_file)
+                            # Upload the new image to Cloudinary with the consistent file name as public_id
+                            cloudinary_response = uploader.upload(img_file, public_id=file_name)
                 
                             # Save the Cloudinary URL (secure_url) to the model and save the account
                             account.profile_picture = cloudinary_response['secure_url']  # Save the full URL
@@ -3242,6 +3251,7 @@ def librarian_addbook(request):
 
     
     publishers = Books.objects.values('publisher').distinct()
+    publishers = sorted([publisher['publisher'] for publisher in publishers])  # Sorting publishers
 
     # Handle AJAX request for title check / OCR
     if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -3651,17 +3661,29 @@ def librarian_profile(request):
                             format, imgstr = cropped_image_data.split(';base64,')  # Split the header and the data part
                             ext = format.split('/')[-1]  # Get the file extension (e.g., jpeg, png)
                 
+                            # Get the role for naming consistency
+                            user_account_role = user_account.role
+                            
+                            # Create a consistent file name for both upload and deletion
+                            file_name = f"{account.account_id}-{account.first_name}-{account.last_name}-{user_account_role}"
+                
                             # Decode the base64 image
                             img_data = base64.b64decode(imgstr)
-                            img_file = ContentFile(img_data, name=f"{account.account_id}-{account.first_name}-{account.last_name}.{ext}")
+                            img_file = ContentFile(img_data, name=f"{file_name}.{ext}")
                 
                             # Check and remove the old image from Cloudinary if exists
                             if account.profile_picture:
-                                public_id = account.profile_picture.name.split('/')[-1].split('.')[0]
-                                uploader.destroy(public_id)
+                                # Try to extract the public_id from the URL
+                                try:
+                                    # Extract just the filename without extension from the URL
+                                    url_parts = account.profile_picture.split('/')
+                                    public_id = url_parts[-1].split('.')[0]
+                                    uploader.destroy(public_id)
+                                except Exception as del_error:
+                                    logger.warning(f"Could not delete old image: {del_error}")
                 
-                            # Upload the new image to Cloudinary
-                            cloudinary_response = uploader.upload(img_file)
+                            # Upload the new image to Cloudinary with the consistent file name as public_id
+                            cloudinary_response = uploader.upload(img_file, public_id=file_name)
                 
                             # Save the Cloudinary URL (secure_url) to the model and save the account
                             account.profile_picture = cloudinary_response['secure_url']  # Save the full URL
@@ -3676,6 +3698,7 @@ def librarian_profile(request):
                     else:
                         messages.error(request, "No image data provided.")
                         return redirect('librarian_profile')
+                        
                                     
                 elif form_type == 'password_change':
                     try:
