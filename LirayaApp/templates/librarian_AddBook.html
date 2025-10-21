@@ -216,7 +216,7 @@
                 <select class="form-control" id="publisherSelect" name="publisherSelect">
                     <option value="" selected disabled>Select Publisher</option>
                     {% for publisher in publishers %}
-                        <option value="{{ publisher.publisher }}">{{ publisher.publisher }}</option> <!-- Use .publisher here -->
+                        <option value="{{ publisher }}">{{ publisher }}</option> <!-- Use .publisher here -->
                     {% endfor %}
                 </select>
             </div>
