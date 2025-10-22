@@ -186,33 +186,11 @@ def user_homepage(request):
 def user_aboutus(request):
     return render(request, 'user_aboutus.html')
 
-# views.py
-from django.db.models import CharField
-from django.db import connection
-
-from django.core.cache import cache  # NEW
-
-try:
-    from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
-    from django.contrib.postgres.search import TrigramSimilarity
-    _PG_SEARCH_OK = True
-except Exception:
-    _PG_SEARCH_OK = False
-
 
 def user_search(request):
 
-    # ---------- Feature detection (safe) ----------  # NEW
-    db_is_postgres = connection.vendor == "postgresql"
-    pg_search_enabled = db_is_postgres and _PG_SEARCH_OK
-
-    # Base queryset (project fewer columns early)  # NEW: only() reduces row payload
-    books = (
-        Books.objects
-        .filter(is_archived=False)
-        .only('id', 'title', 'author', 'primary_keyword',
-              'year_of_publication', 'shelf_category', 'book_type')  # NEW
-    )
+    # Base queryset
+    books = Books.objects.filter(is_archived=False)
 
     # ---------- Read query params ----------
     q = (request.GET.get('q') or "").strip()
@@ -232,7 +210,7 @@ def user_search(request):
     }
 
     # --- helper: append a timestamp to search_times atomically ---
-    SEP = "\n"
+    SEP = "\n"  # change to ", " if you want comma-separated
     def _append_time(pk):
         now = timezone.now()
         ts_str = now.strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -243,14 +221,15 @@ def user_search(request):
                 default=Concat('search_times', Value(SEP), Value(ts_str)),
                 output_field=CharField(),
             ),
-            updated_at=now,
+            updated_at=now,  # queryset.update() bypasses auto_now, so set explicitly
         )
 
     # --- Log user search terms (only when there is real input) ---
     if q and q.strip():
-        terms_for_log = _normalize_terms_for_logging(q, STOPWORDS)
+        terms_for_log = _normalize_terms_for_logging(q, STOPWORDS)  # your existing helper
         for term in terms_for_log:
             obj, _ = KeywordLog.objects.get_or_create(user_keyword_search=term)
+            # atomic increment + append time (+ touch updated_at)
             KeywordLog.objects.filter(pk=obj.pk).update(
                 user_search_count=F('user_search_count') + 1,
                 updated_at=timezone.now(),
@@ -261,7 +240,7 @@ def user_search(request):
     try:
         terms_for_log = _normalize_terms_for_logging(q, STOPWORDS)
         if terms_for_log and len(terms_for_log) > 1:
-            joined = ', '.join(terms_for_log)
+            joined = ', '.join(terms_for_log)  # e.g. "computer, engineering, technology"
             with transaction.atomic():
                 rec, _created = KeywordLog.objects.get_or_create(
                     user_keyword_search=joined,
@@ -273,13 +252,16 @@ def user_search(request):
                 )
                 _append_time(rec.pk)
     except Exception:
+        # Never block search if logging fails
         pass
 
     # ---------- Token helpers ----------
     def split_words(s):
+        # split by whitespace, drop stopwords
         return [w for w in (s or '').replace(',', ' ').split() if w and w.lower() not in STOPWORDS]
 
     def split_keywords(s):
+        # primary_keyword is comma separated; also split inner spaces into single-word tokens
         out = []
         for chunk in (s or '').split(','):
             chunk = chunk.strip()
@@ -292,9 +274,10 @@ def user_search(request):
         return out
 
     def title_tokens(s):
+        # pull alpha chunks from title, drop stopwords, normalize lower, len>=3
         return [t.lower() for t in _re.findall(r"[A-Za-z]+", s or "") if len(t) >= 3 and t.lower() not in STOPWORDS]
 
-    # ---------- Fuzzy helpers ----------
+    # ---------- Fuzzy helpers (robust to heavy OCR noise) ----------
     def _trigrams(s):
         s = f" {s.lower()} "
         return {s[i:i+3] for i in range(len(s)-2)} if len(s) >= 3 else {s}
@@ -334,35 +317,22 @@ def user_search(request):
             return 0.0
         return max(_dice(a, b), _lev_ratio(a, b), _skeleton_ratio(a, b))
 
-    # ---------- Build a reference vocab + counts from ENTIRE DB (CACHED) ----------  # NEW
-    def _compute_vocab_counts():
-        vc = {}
-        for pk, ti in Books.objects.values_list('primary_keyword', 'title'):
-            for t in split_keywords(pk or ''):
-                tl = t.lower()
-                vc[tl] = vc.get(tl, 0) + 1
-            for t in title_tokens(ti or ''):
-                vc[t] = vc.get(t, 0) + 1
-        return vc
-
-    vocab_key = "search:vocab_counts:v1"  # bump suffix if schema changes  # NEW
-    vocab_counts = cache.get(vocab_key)
-    if vocab_counts is None:
-        vocab_counts = _compute_vocab_counts()
-        cache.set(vocab_key, vocab_counts, 60 * 60)  # 1 hour TTL  # NEW
+    # ---------- Build a reference vocab + counts from ENTIRE DB ----------
+    vocab_counts = {}
+    for pk, ti in Books.objects.values_list('primary_keyword', 'title'):
+        for t in split_keywords(pk or ''):
+            tl = t.lower()
+            vocab_counts[tl] = vocab_counts.get(tl, 0) + 1
+        for t in title_tokens(ti or ''):
+            vocab_counts[t] = vocab_counts.get(t, 0) + 1
 
     vocab = set(vocab_counts.keys())
 
-    # bucket by first letter to reduce comparisons (CACHED)  # NEW
-    buckets_key = "search:vocab_buckets:v1"
-    buckets = cache.get(buckets_key)
-    if buckets is None:
-        b = {}
-        for t in vocab:
-            key = (t[:1] or '#')
-            b.setdefault(key, set()).add(t)
-        buckets = {k: set(v) for k, v in b.items()}
-        cache.set(buckets_key, buckets, 60 * 60)
+    # bucket by first letter to reduce comparisons
+    buckets = {}
+    for t in vocab:
+        key = (t[:1] or '#')
+        buckets.setdefault(key, set()).add(t)
 
     def _bucket_candidates(tok):
         if not tok:
@@ -374,6 +344,10 @@ def user_search(request):
         return cand or vocab
 
     def normalize_token(tok, cutoff=0.72):
+        """
+        Map a noisy token to the most frequent close token from the corpus.
+        Keep original if no good match.
+        """
         t = (tok or '').lower()
         if not t or len(t) <= 2:
             return t
@@ -390,6 +364,7 @@ def user_search(request):
         return best if best_s >= cutoff else t
 
     def fuzzy_variants(term, cutoff=0.72, limit=10):
+        """Up to 'limit' close variants from vocab for filtering."""
         t = (term or '').lower()
         if not t:
             return {t}
@@ -403,72 +378,49 @@ def user_search(request):
         top = [c for _, _, c in scored[:limit]]
         return set(top) or {t}
 
-    # ---------- Apply SEARCH filter first (fast PG path, then fallback) ----------
+    # ---------- Apply SEARCH filter first (now fuzzy) ----------
     if q:
-        if pg_search_enabled and field in {'title', 'author', 'keywords', 'allFields'}:
-            # PostgreSQL full-text / trigram fast-path  # NEW
-            # Build a SearchVector across relevant fields
-            vector = SearchVector('title', weight='A') + SearchVector('author', weight='B') + SearchVector('primary_keyword', weight='B')
-            query = SearchQuery(q)
+        if field == 'author':
+            tokens = split_words(q)
+            for t in tokens:
+                books = books.filter(author__icontains=t)
 
-            # Start from full-text
-            books = books.annotate(search=vector, rank=SearchRank(vector, query)).filter(search=query)
+        elif field == 'title':
+            tokens = split_words(q)
+            for t in tokens:
+                vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=8))
+                q_or = Q()
+                for v in vars_:
+                    q_or |= Q(title__icontains=v)
+                books = books.filter(q_or)
 
-            # If very short queries or OCR noise, add trigram similarity to title/author  # NEW
-            try:
-                # Similarity threshold tuned cautiously; adjust if needed
-                books = books.annotate(
-                    sim_title=TrigramSimilarity('title', q),
-                    sim_author=TrigramSimilarity('author', q)
-                ).filter(Q(sim_title__gt=0.1) | Q(sim_author__gt=0.1) | Q(rank__gt=0.0)
-                ).order_by('-rank', '-sim_title', '-sim_author')
-            except Exception:
-                # Trigram not available (extension not installed): keep rank ordering
-                books = books.order_by('-rank')
+        elif field == 'keywords':
+            tokens = split_keywords(q)
+            for t in tokens:
+                vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=12))
+                inner = '|'.join(_re.escape(v) for v in vars_)
+                pattern = rf'(^|[,\s])(?:{inner})([,\s]|$)'
+                books = books.filter(primary_keyword__iregex=pattern)
 
-        else:
-            # Existing fallback logic (your original) – unchanged
-            if field == 'author':
-                tokens = split_words(q)
-                for t in tokens:
-                    books = books.filter(author__icontains=t)
+        else:  # allFields
+            tokens = split_words(q)
+            extra_kw = split_keywords(q)
+            token_set, seen = [], set()
+            for t in tokens + extra_kw:
+                tl = t.lower()
+                if tl not in seen:
+                    token_set.append(t)
+                    seen.add(tl)
 
-            elif field == 'title':
-                tokens = split_words(q)
-                for t in tokens:
-                    vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=8))
-                    q_or = Q()
-                    for v in vars_:
-                        q_or |= Q(title__icontains=v)
-                    books = books.filter(q_or)
-
-            elif field == 'keywords':
-                tokens = split_keywords(q)
-                for t in tokens:
-                    vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=12))
-                    inner = '|'.join(_re.escape(v) for v in vars_)
-                    pattern = rf'(^|[,\s])(?:{inner})([,\s]|$)'
-                    books = books.filter(primary_keyword__iregex=pattern)
-
-            else:  # allFields
-                tokens = split_words(q)
-                extra_kw = split_keywords(q)
-                token_set, seen = [], set()
-                for t in tokens + extra_kw:
-                    tl = t.lower()
-                    if tl not in seen:
-                        token_set.append(t)
-                        seen.add(tl)
-
-                for t in token_set:
-                    vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=10))
-                    q_or = Q()
-                    for v in vars_:
-                        q_or |= Q(title__icontains=v) | Q(author__icontains=v)
-                    inner = '|'.join(_re.escape(v) for v in vars_)
-                    pattern = rf'(^|[,\s])(?:{inner})([,\s]|$)'
-                    q_or |= Q(primary_keyword__iregex=pattern)
-                    books = books.filter(q_or)
+            for t in token_set:
+                vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=10))
+                q_or = Q()
+                for v in vars_:
+                    q_or |= Q(title__icontains=v) | Q(author__icontains=v)
+                inner = '|'.join(_re.escape(v) for v in vars_)
+                pattern = rf'(^|[,\s])(?:{inner})([,\s]|$)'
+                q_or |= Q(primary_keyword__iregex=pattern)
+                books = books.filter(q_or)
 
     # ---------- Apply YEAR filters ----------
     if min_year:
@@ -515,46 +467,38 @@ def user_search(request):
         books = books.order_by('author')
     elif sort_option == 'Title':
         books = books.order_by('title')
-    # 'Relevance' keeps current ordering (or PG rank if used)
+    # 'Relevance' keeps current ordering
 
-    # ---------- FACETS (cache by current filter signature) ----------  # NEW
-    facet_cache_key = "facets:" + _re.sub(r'\s+', '', f"{q}|{field}|{sort_option}|{active_categories}|{active_resource_types}|{active_subjects}|{min_year}|{max_year}")
-    cached_facets = cache.get(facet_cache_key)
+    # ---------- FACETS (based on CURRENT filtered set) ----------
+    shelf_categories = (
+        books.values('shelf_category')
+             .annotate(count=Count('shelf_category'))
+             .order_by('-count', 'shelf_category')
+    )
 
-    if cached_facets is None:
-        shelf_categories = (
-            books.values('shelf_category')
-                 .annotate(count=Count('shelf_category'))
-                 .order_by('-count', 'shelf_category')
-        )
+    resource_types = (
+        books.values('book_type')
+             .annotate(count=Count('book_type'))
+             .order_by('-count', 'book_type')
+    )
 
-        resource_types = (
-            books.values('book_type')
-                 .annotate(count=Count('book_type'))
-                 .order_by('-count', 'book_type')
-        )
+    # Subjects / Keywords facet with typo normalization (display cleaned labels)
+    subj_counter = {}
+    for s in books.values_list('primary_keyword', flat=True):
+        for token in split_keywords(s or ''):
+            norm = normalize_token(token, cutoff=0.66)
+            if not norm:
+                continue
+            subj_counter[norm] = subj_counter.get(norm, 0) + 1
 
-        subj_counter = {}
-        for s in books.values_list('primary_keyword', flat=True):
-            for token in split_keywords(s or ''):
-                norm = normalize_token(token, cutoff=0.66)
-                if not norm:
-                    continue
-                subj_counter[norm] = subj_counter.get(norm, 0) + 1
-
-        subjects_facet = [
-            {'term': k, 'display': k.title(), 'count': v}
-            for k, v in subj_counter.items()
-        ]
-        subjects_facet.sort(key=lambda x: (-x['count'], x['display']))
-
-        cached_facets = (list(shelf_categories), list(resource_types), subjects_facet)
-        cache.set(facet_cache_key, cached_facets, 60 * 10)  # 10 minutes TTL  # NEW
-    else:
-        shelf_categories, resource_types, subjects_facet = cached_facets
+    subjects_facet = [
+        {'term': k, 'display': k.title(), 'count': v}
+        for k, v in subj_counter.items()
+    ]
+    subjects_facet.sort(key=lambda x: (-x['count'], x['display']))
 
     # ---------- Pagination AFTER all filtering ----------
-    paginator = Paginator(books, 5)
+    paginator = Paginator(books, 5)  # 5 per page
     page = request.GET.get('page')
     books_page = paginator.get_page(page)
 
@@ -577,7 +521,6 @@ def user_search(request):
     }
 
     return render(request, 'user_search.html', context)
-
 
 def view_info(request):
     book_id = request.GET.get('book_id')
