@@ -734,3 +734,64 @@ document.addEventListener('DOMContentLoaded', initQrCode);
       .filter(p => p.keyword); // drop rows that became empty after stripping
   };
 })();
+
+// === ADD-ONLY WRAP: protect "3D/2D/1D", strip outline numbers like "1.", "1.1", etc. ===
+(function () {
+  // Use a harmless sentinel character for D so digit-letter split won't trigger on it.
+  // Here we use Latin capital D with dot below: U+1E0E (looks like 'Ḏ').
+  const SENTINEL_D = '\u1E0E';
+
+  // Protect occurrences like "3D", "3-D", "3 D" (and 1/2 as well) so normalizeText won't split "3D".
+  function protectDimensionalTokens(s) {
+    return String(s || '')
+      // normalize "3 - D" → "3D" first
+      .replace(/\b([123])\s*-\s*D\b/gi, '$1D')
+      .replace(/\b([123])\s*D\b/gi, (_, d) => `${d}${SENTINEL_D}`);
+  }
+
+  // Restore sentinel back to normal "D"
+  function unprotectDimensionalTokens(s) {
+    return String(s || '').replace(new RegExp(SENTINEL_D, 'g'), 'D');
+  }
+
+  // Remove leading numbering like "1.", "1.1", "1.1.2", "3.1,3", optionally followed by "." or ")" and space
+  function stripHeadingNumber(s) {
+    return String(s || '')
+      .replace(/^\s*\d+(?:[.,]\s*\d+)*(?:[.)]|\s+)?\s*/ , '')
+      .trim();
+  }
+
+  // Detect keywords that are ONLY numbering (so we drop them entirely)
+  function isPureHeadingNumber(s) {
+    return /^\s*\d+(?:[.,]\s*\d+)*\.?\s*$/.test(String(s || ''));
+  }
+
+  // Keep original, then wrap
+  const _origParsePairs = (typeof window !== 'undefined' && window.parsePairs) ? window.parsePairs : parsePairs;
+
+  // Override global parsePairs by wrapping (no edits to original)
+  function wrappedParsePairs(text) {
+    // 1) Protect 1D/2D/3D before parsing to avoid "3" being counted as a page
+    const protectedText = protectDimensionalTokens(text);
+
+    // 2) Run original parser
+    const pairs = _origParsePairs(protectedText) || [];
+
+    // 3) Post-process keywords: unprotect D, strip numbering, drop empty/pure-numbering rows
+    const out = [];
+    for (const p of pairs) {
+      let k = unprotectDimensionalTokens(p.keyword);
+      k = stripHeadingNumber(k);
+      if (!k || isPureHeadingNumber(k)) continue;
+      out.push({ keyword: k, pages: p.pages });
+    }
+    return out;
+  }
+
+  if (typeof window !== 'undefined') {
+    window.parsePairs = wrappedParsePairs;
+  } else {
+    // fallback (if not in browser global)
+    parsePairs = wrappedParsePairs; // eslint-disable-line no-global-assign
+  }
+})();
