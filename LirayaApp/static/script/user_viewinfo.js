@@ -859,8 +859,6 @@ document.addEventListener('DOMContentLoaded', initQrCode);
   }
 })();
 
-
-<script>
 // --- ADD-ONLY: prevent "N/A" from being split into "N" and "A" in parseAuthors ---
 (function () {
   // Use division slash U+2215 as a temporary sentinel (looks like "/")
@@ -892,4 +890,3 @@ document.addEventListener('DOMContentLoaded', initQrCode);
     return list.map(a => restoreNA(a).trim());
   };
 })();
-</script>
