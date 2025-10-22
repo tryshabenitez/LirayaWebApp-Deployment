@@ -151,6 +151,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const raw = decodeJsUnicodeEscapes(rawAttr);
+  // If this looks like a thesis ABSTRACT, hide the button and bail out early
+  if (/\babstract\b/i.test(raw)) {
+    if (btn) btn.style.display = 'none';
+    return; // do not wire up modal at all
+  }
+
 
   const modal      = document.getElementById('pages-modal');
   const modalBody  = document.getElementById('pages-modal-body');
@@ -206,7 +212,6 @@ document.addEventListener('DOMContentLoaded', function () {
       const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
       return /^\d+(?:(?:[,\-–—]\d+)+)?$/.test(t);
     };
-
   
     // Break up glued tokens like:
     //   "Chapter12" -> ["Chapter","12"]
@@ -238,29 +243,29 @@ document.addEventListener('DOMContentLoaded', function () {
   
     // Ignore headings like "Chapter 2", "Figure 3" (case-insensitive, with common OCR typos)
     // Also ignore typical front-matter like "Foreword vii", "Acknowledgments viii", "Introduction ix"
+    // Plus: standalone years (e.g., 2021), 1D/2D/3D, MODULE n (titles that shouldn't be treated as keywords)
     function isIgnorableKeyword(str) {
       const s = str.trim();
-    
-      // 1) Existing: Chapter/Figure headings (with common OCR typos)
+  
+      // Chapter/Figure headings
       if (/^(chapter|chaptr|chaptre|ciapter)\s*\d+$/i.test(s)) return true;
       if (/^(figure|figuer|figre)\s*\d+$/i.test(s)) return true;
-    
-      // 2) Front matter with Roman numerals
+  
+      // Front matter with Roman numerals
       if (/^(foreword|acknowledgments?|introduction)\s+[ivxlcdm]+$/i.test(s)) return true;
       if (/^[A-Za-z]{3,}\s+[ivxlcdm]{2,}$/i.test(s)) return true;
-    
-      // 3) NEW: Standalone years (e.g., 2021). Relaxed: any 4 digits.
+  
+      // Standalone year (any 4 digits)
       if (/^\d{4}$/.test(s)) return true;
-    
-      // 4) NEW: 1D/2D/3D (case-insensitive, allow spaces like "3 D")
+  
+      // 1D/2D/3D (allow space like "3 D")
       if (/^[123]\s*D$/i.test(s)) return true;
-    
-      // 5) NEW: MODULE n (case-insensitive)
+  
+      // MODULE n
       if (/^module\s+\d+$/i.test(s)) return true;
-    
+  
       return false;
     }
-
   
     while (i < tokens.length) {
       let tok = tokens[i];
@@ -286,54 +291,27 @@ document.addEventListener('DOMContentLoaded', function () {
         const nextTok = tokens[i];
         const s2 = splitTokenIfGlued(nextTok);
         if (s2) tokens.splice(i, 1, s2[0], s2[1]);
-      
+  
         if (!isPageChunk(tokens[i])) break;
-      
+  
         // Normalize any dash variant to a simple hyphen for consistency
         const normalized = String(tokens[i].replace(/,$/, '')).replace(/[–—]/g, '-');
         pageParts.push(normalized);
         i++;
       }
-      
+  
       // Build final display string preserving ranges & comma lists
       // e.g., ["57-59", "60,61", "70—72"] -> "57-59, 60,61, 70-72"
       const pages = pageParts.length ? pageParts.join(', ') : '—';
-      
+  
       const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
-      
+  
       // Skip headings etc.
       if (isIgnorableKeyword(keyword)) {
         words = [];
         continue;
       }
-      
-      if (keyword) pairs.push({ keyword, pages });
-      words = [];
-
   
-      // Keep only the first number of each range (e.g., "57-59" -> "57")
-      const firstOnly = [];
-      pageParts.forEach((part) => {
-        part.split(',').forEach(chunk => {
-          const c = chunk.trim();
-          if (!c) return;
-          const firstRaw = c.split('-')[0];
-          if (/^0{2,}\d+$/.test(firstRaw)) return; // ignore artifact like "0002"
-          let num = firstRaw.replace(/^0+/, '');
-          if (num === '') num = '0';
-          firstOnly.push(num);
-        });
-      });
-  
-      const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
-  
-      // Skip Chapter/Figure headings etc.
-      if (isIgnorableKeyword(keyword)) {
-        words = [];
-        continue;
-      }
-  
-      const pages = firstOnly.length ? firstOnly.join(', ') : '—';
       if (keyword) pairs.push({ keyword, pages });
       words = [];
     }
@@ -347,6 +325,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
     return pairs;
   }
+
 
   function buildTable() {
     const tbody = document.querySelector('#pages-table tbody');
