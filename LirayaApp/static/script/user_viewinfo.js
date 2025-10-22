@@ -49,34 +49,59 @@ document.addEventListener('DOMContentLoaded', function () {
     return String(str || '').replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1));
   }
 
-    // === Helpers just for citations ===
-  const isNA = (v) => /^\s*(?:n\/?a|n\.?a\.?|na|none|-)\s*$/i.test(String(v || ''));
+  // === Helpers just for citations ===
+
+  // Field-level NA (whole field equals NA-like)
+  const isNA = (v) => {
+    const s = String(v || '').trim().toLowerCase();
+    return /^(?:n\/?a|n\.?\s*a\.?|na|none|-)$/.test(s);
+  };
+  // Token-level NA ("N/A", "N & A", "N and A", lone N or A)
+  const isNAToken = (v) => /^\s*n\s*(?:\/|&|\+|and)?\s*a\s*$/i.test(String(v || '')) || /^(?:n|a)$/i.test(String(v || ''));
+
   const clean = (v) => (isNA(v) ? '' : String(v || '').trim());
 
-  // Expand tokens like "Smith, John, Doe, Jane" into ["Smith, John", "Doe, Jane"]
+  // Expand tokens like "Smith, John, Doe, Jane" → ["Smith, John", "Doe, Jane"]
   function explodeCommaAuthors(token) {
     const s = String(token || '').trim();
     if (!s) return [];
-    // sequences of "Lastname, Firstname" pairs
     const pairs = s.match(/[^,]+,\s*[^,]+/g);
     if (pairs && pairs.length >= 2) return pairs.map(t => t.trim());
-    // otherwise if many commas, split on commas as a fallback
     if (s.includes(',') && s.split(',').length > 2) {
       return s.split(',').map(t => t.trim()).filter(Boolean);
     }
     return [s];
   }
 
-  function chicagoAuthorList(authorArray) {
-    // Use your nameToApa inversion to get "Last, F. M." tokens, then join with "and"
-    const items = authorArray.map(nameToApa).filter(Boolean);
+  // --- CHICAGO: FULL NAMES (no initials) ---
+  function toChicagoFullName(rawName) {
+    if (!rawName) return '';
+    let name = String(rawName)
+      .replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
+      .replace(/\s+(Jr\.?|Sr\.?|III|II|IV)\s*$/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    if (!name) return '';
+    if (name.includes(',')) {
+      // Already "Last, First Middle"
+      return name.replace(/\s{2,}/g, ' ');
+    }
+    const parts = name.split(/\s+/);
+    if (parts.length === 1) return parts[0];
+    const last  = parts.pop();
+    const given = parts.join(' ');
+    return `${last}, ${given}`;
+  }
+  function chicagoFullAuthorList(authorArray) {
+    const items = authorArray.map(toChicagoFullName).filter(Boolean);
     if (items.length <= 1) return items.join('');
     if (items.length === 2) return `${items[0]} and ${items[1]}`;
     return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
   }
 
   function buildCitations() {
-    // Pull metadata and sanitize NA-like inputs
+    // Pull metadata and sanitize NA-like inputs (whole-field)
     const titleRaw     = metaEl?.dataset.title || '';
     const authorRaw    = metaEl?.dataset.author || '';
     const coauthorsRaw = metaEl?.dataset.coauthor || '';
@@ -89,23 +114,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const year      = clean(yearRaw);
     const publisher = clean(publisherRaw);
 
-    // Build full author list: parseAuthors + extra exploding of comma-blobs
+    // Build author list using your parser, then explode comma-blobs, drop NA tokens
     let authorList = parseAuthors(author, coauthors);
-    authorList = authorList.flatMap(explodeCommaAuthors)
+    authorList = authorList
+      .flatMap(explodeCommaAuthors)
       .map(a => a.trim())
-      .filter(a => a && !isNA(a));
+      .filter(a => a && !isNA(a) && !isNAToken(a));
 
     // Prepare strings
-    const apaAuthorsStr     = formatApaAuthorList(authorList); // "Last, F. M., & Last, F. M."
-    const chicagoAuthorsStr = chicagoAuthorList(authorList);
+    const apaAuthorsStr     = formatApaAuthorList(authorList);     // APA initials
+    const chicagoAuthorsStr = chicagoFullAuthorList(authorList);   // Chicago full names
 
     const eApaAuthors = escapeHtml(apaAuthorsStr);
     const eChiAuthors = escapeHtml(chicagoAuthorsStr);
-    const eYearAPA    = escapeHtml(year || 'n.d.');  // APA uses (n.d.)
-    const eYearCHI    = escapeHtml(year || 'n.d.');  // Chicago prints n.d.
+    const eYearAPA    = escapeHtml(year || 'n.d.');  // APA shows (n.d.)
+    const eYearCHI    = escapeHtml(year || 'n.d.');  // Chicago shows n.d.
     const ePubl       = escapeHtml(publisher);
     const titleAPA    = escapeHtml(sentenceCase(title)); // APA: sentence case
-    const titleCHI    = escapeHtml(headlineCase(title)); // Chicago: headline case
+    const titleCHI    = escapeHtml(headlineCase(title)); // Chicago: Headline Case
 
     // ---------- APA 7th ----------
     // With authors: Author(s). (Year). Title. Publisher.
@@ -121,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function () {
       apaLine += `<em>${titleAPA}</em>. `;
     }
     if (ePubl) apaLine += `${ePubl}.`;
-
     const apa = `<div style="margin-bottom:10px;">${apaLine}</div>`;
 
     // ---------- Chicago 17th (Notes & Bibliography) ----------
