@@ -85,23 +85,48 @@ document.addEventListener('DOMContentLoaded', function () {
     return [s];
   }
 
-  // MLA full names (invert to "Last, First Middle" if not already inverted)
+  // --- MLA: ensure single-letter initials in the given/middle names get a trailing period (e.g., "C." not "C") ---
+  function ensureInitialPeriods(givenPart) {
+    return String(givenPart || '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(tok => {
+        // If token is a single letter (with or without a dot), force "X."
+        const m = tok.match(/^([A-Za-z])\.?$/);
+        if (m) return m[1].toUpperCase() + '.';
+        return tok; // leave full words as-is
+      })
+      .join(' ');
+  }
+
+  // MLA full names (invert to "Last, First Middle" if not already inverted) + add periods to one-letter tokens
   function toFullNameInverted(rawName) {
     if (!rawName) return '';
     if (rawName === 'N/A') return 'N/A';
+
     let name = String(rawName)
       .replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
       .replace(/\s+(Jr\.?|Sr\.?|III|II|IV)\s*$/i, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
+
     if (!name) return '';
-    if (name.includes(',')) return name.replace(/\s{2,}/g, ' ');
+
+    if (name.includes(',')) {
+      // Already "Last, First Middle" -> normalize the given/middle side
+      const [last, given = ''] = name.split(',', 2).map(s => s.trim());
+      const fixedGiven = ensureInitialPeriods(given);
+      return `${last}, ${fixedGiven}`;
+    }
+
+    // "First Middle Last" -> invert and fix initials on the given part
     const parts = name.split(/\s+/);
     if (parts.length === 1) return parts[0];
     const last  = parts.pop();
-    const given = parts.join(' ');
+    const given = ensureInitialPeriods(parts.join(' '));
     return `${last}, ${given}`;
   }
+
   function mlaFullAuthorList(authorArray) {
     const items = authorArray.map(toFullNameInverted).filter(Boolean);
     if (items.length <= 1) return items.join('');
