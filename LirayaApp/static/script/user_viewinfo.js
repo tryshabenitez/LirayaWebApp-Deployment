@@ -51,31 +51,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // === Helpers just for citations ===
 
-  // Field-level NA (whole field equals NA-like)
-  const isNA = (v) => {
-    const s = String(v || '').trim().toLowerCase();
-    return /^(?:n\/?a|n\.?\s*a\.?|na|none|-)$/.test(s);
-  };
-  // Token-level NA ("N/A", "N & A", "N and A", lone N or A)
-  const isNAToken = (v) => /^\s*n\s*(?:\/|&|\+|and)?\s*a\s*$/i.test(String(v || '')) || /^(?:n|a)$/i.test(String(v || ''));
+  // Field-level NA (whole field equals an NA-like value)
+  const isNAField = (v) => /^(?:n\/?a|n\.?\s*a\.?|na|none|-)\s*$/i.test(String(v || '').trim());
+  const cleanField = (v) => (isNAField(v) ? '' : String(v || '').trim());
 
-  const clean = (v) => (isNA(v) ? '' : String(v || '').trim());
+  // Token-level NA: normalize ANY variant to the literal "N/A"
+  const isNAToken = (v) => /^\s*n\s*(?:\/|&|\+|and)?\s*a\s*$/i.test(String(v || '')) || /^(?:n|a)$/i.test(String(v || ''));
+  const normalizeNAToken = (v) => (isNAToken(v) ? 'N/A' : String(v || '').trim());
 
   // Expand tokens like "Smith, John, Doe, Jane" → ["Smith, John", "Doe, Jane"]
   function explodeCommaAuthors(token) {
     const s = String(token || '').trim();
     if (!s) return [];
+    // detect repeated "Lastname, Firstname" pairs
     const pairs = s.match(/[^,]+,\s*[^,]+/g);
     if (pairs && pairs.length >= 2) return pairs.map(t => t.trim());
+    // fallback: if many commas, split
     if (s.includes(',') && s.split(',').length > 2) {
       return s.split(',').map(t => t.trim()).filter(Boolean);
     }
     return [s];
   }
 
-  // --- CHICAGO: FULL NAMES (no initials) ---
-  function toChicagoFullName(rawName) {
+  // MLA (full names): keep full name, format as "Last, First Middle" if not already inverted
+  function toFullNameInverted(rawName) {
     if (!rawName) return '';
+    if (rawName === 'N/A') return 'N/A'; // keep literal
     let name = String(rawName)
       .replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
       .replace(/\s+(Jr\.?|Sr\.?|III|II|IV)\s*$/i, '')
@@ -84,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!name) return '';
     if (name.includes(',')) {
-      // Already "Last, First Middle"
+      // already "Last, First Middle"
       return name.replace(/\s{2,}/g, ' ');
     }
     const parts = name.split(/\s+/);
@@ -93,45 +94,43 @@ document.addEventListener('DOMContentLoaded', function () {
     const given = parts.join(' ');
     return `${last}, ${given}`;
   }
-  function chicagoFullAuthorList(authorArray) {
-    const items = authorArray.map(toChicagoFullName).filter(Boolean);
+  function mlaFullAuthorList(authorArray) {
+    const items = authorArray.map(toFullNameInverted).filter(Boolean);
     if (items.length <= 1) return items.join('');
     if (items.length === 2) return `${items[0]} and ${items[1]}`;
     return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
   }
 
   function buildCitations() {
-    // Pull metadata and sanitize NA-like inputs (whole-field)
+    // Pull metadata; treat NA-like whole fields as empty (authors handled per-token)
     const titleRaw     = metaEl?.dataset.title || '';
     const authorRaw    = metaEl?.dataset.author || '';
     const coauthorsRaw = metaEl?.dataset.coauthor || '';
     const yearRaw      = metaEl?.dataset.year || '';
     const publisherRaw = metaEl?.dataset.publisher || '';
 
-    const title     = clean(titleRaw);
-    const author    = clean(authorRaw);
-    const coauthors = clean(coauthorsRaw);
-    const year      = clean(yearRaw);
-    const publisher = clean(publisherRaw);
+    const title     = cleanField(titleRaw);
+    const year      = cleanField(yearRaw);
+    const publisher = cleanField(publisherRaw);
 
-    // Build author list using your parser, then explode comma-blobs, drop NA tokens
-    let authorList = parseAuthors(author, coauthors);
+    // Build author list: parse, explode comma blobs, normalize NA tokens to "N/A"
+    let authorList = parseAuthors(authorRaw, coauthorsRaw);
     authorList = authorList
       .flatMap(explodeCommaAuthors)
-      .map(a => a.trim())
-      .filter(a => a && !isNA(a) && !isNAToken(a));
+      .map(normalizeNAToken)            // turn any NA variant into "N/A"
+      .filter(a => a);                  // keep "N/A" literal; drop empties
 
     // Prepare strings
-    const apaAuthorsStr     = formatApaAuthorList(authorList);     // APA initials
-    const chicagoAuthorsStr = chicagoFullAuthorList(authorList);   // Chicago full names
+    const apaAuthorsStr = formatApaAuthorList(authorList);   // APA initials; "N/A" stays "N/A"
+    const mlaAuthorsStr = mlaFullAuthorList(authorList);     // MLA full names; "N/A" stays "N/A"
 
     const eApaAuthors = escapeHtml(apaAuthorsStr);
-    const eChiAuthors = escapeHtml(chicagoAuthorsStr);
-    const eYearAPA    = escapeHtml(year || 'n.d.');  // APA shows (n.d.)
-    const eYearCHI    = escapeHtml(year || 'n.d.');  // Chicago shows n.d.
+    const eMlaAuthors = escapeHtml(mlaAuthorsStr);
+    const eYearAPA    = escapeHtml(year || 'n.d.');          // APA -> (n.d.)
+    const eYearMLA    = escapeHtml(year || 'n.d.');          // MLA prints n.d.
     const ePubl       = escapeHtml(publisher);
-    const titleAPA    = escapeHtml(sentenceCase(title)); // APA: sentence case
-    const titleCHI    = escapeHtml(headlineCase(title)); // Chicago: Headline Case
+    const titleAPA    = escapeHtml(sentenceCase(title));      // APA: sentence case
+    const titleMLA    = escapeHtml(headlineCase(title));      // MLA: title case (approx.)
 
     // ---------- APA 7th ----------
     // With authors: Author(s). (Year). Title. Publisher.
@@ -149,24 +148,23 @@ document.addEventListener('DOMContentLoaded', function () {
     if (ePubl) apaLine += `${ePubl}.`;
     const apa = `<div style="margin-bottom:10px;">${apaLine}</div>`;
 
-    // ---------- Chicago 17th (Notes & Bibliography) ----------
-    // With authors: Author(s). Title in Headline Case. Publisher, Year.
-    // No authors:   Title in Headline Case. Publisher, Year.
-    const chiParts = [];
-    if (authorList.length && eChiAuthors) chiParts.push(`${eChiAuthors}.`);
-    if (titleCHI) chiParts.push(`<em>${titleCHI}</em>.`);
-    const tail = [ePubl, eYearCHI].filter(Boolean).join(', ');
-    if (tail) chiParts.push(tail + '.');
+    // ---------- MLA 9th ----------
+    // With authors: Author(s). Title in Title Case. Publisher, Year.
+    // No authors:   Title in Title Case. Publisher, Year.
+    const mlaParts = [];
+    if (authorList.length && eMlaAuthors) mlaParts.push(`${eMlaAuthors}.`);
+    if (titleMLA) mlaParts.push(`<em>${titleMLA}</em>.`);
+    const tail = [ePubl, eYearMLA].filter(Boolean).join(', ');
+    if (tail) mlaParts.push(tail + '.');
 
-    const chicago = `
+    const mla = `
       <div style="margin-bottom:10px;">
-        <strong>Chicago Style (17th ed., Notes & Bibliography)</strong><br>
-        ${chiParts.join(' ')}
+        <strong>MLA (9th ed.)</strong><br>
+        ${mlaParts.join(' ')}
       </div>
     `;
 
-    // Only APA + Chicago
-    return apa + chicago;
+    return apa + mla;
   }
 
 
