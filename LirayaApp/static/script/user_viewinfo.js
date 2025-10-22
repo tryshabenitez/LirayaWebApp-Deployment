@@ -51,43 +51,51 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // === Helpers just for citations ===
 
-  // Field-level NA (whole field equals an NA-like value)
+  // Whole-field NA like "N/A", "NA", "None", "-"
   const isNAField = (v) => /^(?:n\/?a|n\.?\s*a\.?|na|none|-)\s*$/i.test(String(v || '').trim());
   const cleanField = (v) => (isNAField(v) ? '' : String(v || '').trim());
 
-  // Token-level NA: normalize ANY variant to the literal "N/A"
-  const isNAToken = (v) => /^\s*n\s*(?:\/|&|\+|and)?\s*a\s*$/i.test(String(v || '')) || /^(?:n|a)$/i.test(String(v || ''));
-  const normalizeNAToken = (v) => (isNAToken(v) ? 'N/A' : String(v || '').trim());
+  // Protect N/A before parseAuthors (so "/"-split won't break it)
+  const SENTINEL_SLASH = '\u2215'; // looks like '/', used to protect
+  const protectNA = (s) => String(s || '').replace(/\bn\s*\/\s*a\b/gi, m =>
+    m.replace('/', SENTINEL_SLASH).replace(/\s+/g, '')
+  );
 
-  // Expand tokens like "Smith, John, Doe, Jane" → ["Smith, John", "Doe, Jane"]
+  // Strip leading/trailing punctuation for token checks
+  const stripPunct = (s) => String(s || '').replace(/^[\s,.;:]+|[\s,.;:]+$/g, '').trim();
+
+  // Token-level NA: catch N/A, N & A, N and A, lone N / A, with optional periods
+  const isNAToken = (v) => {
+    const s = stripPunct(v).replace(/\./g, '');
+    return /^\s*n\s*(?:\/|&|\+|and)?\s*a\s*$/i.test(s) || /^(?:n|a)$/i.test(s);
+  };
+
+  // Normalize any NA variant to literal "N/A"
+  const normalizeNAToken = (v) => (isNAToken(v) ? 'N/A' : stripPunct(v));
+
+  // Expand "Smith, John, Doe, Jane" → ["Smith, John", "Doe, Jane"]
   function explodeCommaAuthors(token) {
     const s = String(token || '').trim();
     if (!s) return [];
-    // detect repeated "Lastname, Firstname" pairs
     const pairs = s.match(/[^,]+,\s*[^,]+/g);
     if (pairs && pairs.length >= 2) return pairs.map(t => t.trim());
-    // fallback: if many commas, split
     if (s.includes(',') && s.split(',').length > 2) {
       return s.split(',').map(t => t.trim()).filter(Boolean);
     }
     return [s];
   }
 
-  // MLA (full names): keep full name, format as "Last, First Middle" if not already inverted
+  // MLA full names (invert to "Last, First Middle" if not already inverted)
   function toFullNameInverted(rawName) {
     if (!rawName) return '';
-    if (rawName === 'N/A') return 'N/A'; // keep literal
+    if (rawName === 'N/A') return 'N/A';
     let name = String(rawName)
       .replace(/[\u00A0\u1680\u2000-\u200B\u202F\u205F\u3000]/g, ' ')
       .replace(/\s+(Jr\.?|Sr\.?|III|II|IV)\s*$/i, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
-
     if (!name) return '';
-    if (name.includes(',')) {
-      // already "Last, First Middle"
-      return name.replace(/\s{2,}/g, ' ');
-    }
+    if (name.includes(',')) return name.replace(/\s{2,}/g, ' ');
     const parts = name.split(/\s+/);
     if (parts.length === 1) return parts[0];
     const last  = parts.pop();
@@ -102,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function buildCitations() {
-    // Pull metadata; treat NA-like whole fields as empty (authors handled per-token)
+    // Pull metadata; treat NA-like whole fields as empty
     const titleRaw     = metaEl?.dataset.title || '';
     const authorRaw    = metaEl?.dataset.author || '';
     const coauthorsRaw = metaEl?.dataset.coauthor || '';
@@ -113,14 +121,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const year      = cleanField(yearRaw);
     const publisher = cleanField(publisherRaw);
 
-    // Build author list: parse, explode comma blobs, normalize NA tokens to "N/A"
-    let authorList = parseAuthors(authorRaw, coauthorsRaw);
+    // Build authors: protect N/A before parseAuthors, then normalize tokens to "N/A"
+    let authorList = parseAuthors(protectNA(authorRaw), protectNA(coauthorsRaw));
     authorList = authorList
       .flatMap(explodeCommaAuthors)
-      .map(normalizeNAToken)            // turn any NA variant into "N/A"
-      .filter(a => a);                  // keep "N/A" literal; drop empties
+      .map(s => s.replace(new RegExp(SENTINEL_SLASH, 'g'), '/')) // restore "/"
+      .map(normalizeNAToken)
+      .filter(Boolean);
 
-    // Prepare strings
+    // Dedupe authors (so multiple N/A collapse to one)
+    const seen = new Set();
+    authorList = authorList.filter(a => {
+      const key = a.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Strings for rendering
     const apaAuthorsStr = formatApaAuthorList(authorList);   // APA initials; "N/A" stays "N/A"
     const mlaAuthorsStr = mlaFullAuthorList(authorList);     // MLA full names; "N/A" stays "N/A"
 
@@ -129,12 +147,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const eYearAPA    = escapeHtml(year || 'n.d.');          // APA -> (n.d.)
     const eYearMLA    = escapeHtml(year || 'n.d.');          // MLA prints n.d.
     const ePubl       = escapeHtml(publisher);
-    const titleAPA    = escapeHtml(sentenceCase(title));      // APA: sentence case
-    const titleMLA    = escapeHtml(headlineCase(title));      // MLA: title case (approx.)
+    const titleAPA    = escapeHtml(sentenceCase(title));      // APA sentence case
+    const titleMLA    = escapeHtml(headlineCase(title));      // MLA title case (approx.)
 
     // ---------- APA 7th ----------
-    // With authors: Author(s). (Year). Title. Publisher.
-    // No authors:   Title. (Year). Publisher.
     let apaLine = '<strong>APA (7th ed.)</strong><br>';
     if (authorList.length && eApaAuthors) {
       apaLine += `${eApaAuthors}. `;
@@ -149,14 +165,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const apa = `<div style="margin-bottom:10px;">${apaLine}</div>`;
 
     // ---------- MLA 9th ----------
-    // With authors: Author(s). Title in Title Case. Publisher, Year.
-    // No authors:   Title in Title Case. Publisher, Year.
     const mlaParts = [];
     if (authorList.length && eMlaAuthors) mlaParts.push(`${eMlaAuthors}.`);
     if (titleMLA) mlaParts.push(`<em>${titleMLA}</em>.`);
     const tail = [ePubl, eYearMLA].filter(Boolean).join(', ');
     if (tail) mlaParts.push(tail + '.');
-
     const mla = `
       <div style="margin-bottom:10px;">
         <strong>MLA (9th ed.)</strong><br>
@@ -166,7 +179,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     return apa + mla;
   }
-
 
   function openCiteModal() {
     bodyEl.innerHTML = buildCitations();
