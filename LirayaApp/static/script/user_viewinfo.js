@@ -371,6 +371,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 
+
   function openModal() {
     if (!built) buildTable();
     if (modalBody && wrap) {
