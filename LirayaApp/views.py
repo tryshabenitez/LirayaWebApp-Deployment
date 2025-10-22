@@ -31,7 +31,7 @@ import traceback
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Q, Count, F,  Max, Value, CharField, Case, When, Sum, Min, DateTimeField, CharField
+from django.db.models import Q, Count, F,  Max, Value, CharField, Case, When, Sum, Min, DateTimeField
 from django.db.models.functions import Concat, TruncMonth, Coalesce
 from datetime import timedelta
 from django.utils import timezone
@@ -61,7 +61,7 @@ import requests
 from django.http import JsonResponse
 from difflib import get_close_matches
 from collections import Counter
-from django.db import transaction, connection
+from django.db import transaction
 from django.utils.timezone import localdate
 import time
 from .pdf_generator import (
@@ -77,14 +77,6 @@ from django.db import models
 from cloudinary import uploader
 from cloudinary.uploader import upload, destroy
 import pytz
-from django.core.cache import cache  # NEW
-
-try:
-    from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
-    from django.contrib.postgres.search import TrigramSimilarity
-    _PG_SEARCH_OK = True
-except Exception:
-    _PG_SEARCH_OK = False
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -193,6 +185,20 @@ def user_homepage(request):
 
 def user_aboutus(request):
     return render(request, 'user_aboutus.html')
+
+# views.py
+from django.db.models import CharField
+from django.db import connection
+
+from django.core.cache import cache  # NEW
+
+try:
+    from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+    from django.contrib.postgres.search import TrigramSimilarity
+    _PG_SEARCH_OK = True
+except Exception:
+    _PG_SEARCH_OK = False
+
 
 def user_search(request):
 
@@ -572,6 +578,7 @@ def user_search(request):
 
     return render(request, 'user_search.html', context)
 
+
 def view_info(request):
     book_id = request.GET.get('book_id')
     if not book_id:
@@ -592,6 +599,7 @@ def view_info(request):
         pass
 
     return render(request, 'user_viewinfo.html', {'book': book})
+
 
 def user_suggestions(request):
     q = (request.GET.get('q') or '').strip()
