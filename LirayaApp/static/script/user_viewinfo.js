@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
     // Remove micro/uncommon spaces ONLY when they appear between letters
     // (prevents A C K … artifacts from OCR)
-    s = s.replace(/([A-Za-z])[\u2000-\u200A\u202F\u205F]+(?=[A-Za-z])/g, '$1');
+    s = s.replace(/([A-Za-z])[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]+(?=[A-Za-z])/g, '$1');
   
     // Convert remaining exotic spaces to regular spaces (word separators)
     s = s.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ');
