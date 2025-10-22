@@ -711,3 +711,26 @@ document.addEventListener('DOMContentLoaded', initQrCode);
     }
   });
 })();
+
+
+// === Add-only: strip numbered prefixes like "1.", "1.1", "1.1.2", "3.1,3" ===
+(function () {
+  // Remove leading outline numbers (handles dots OR commas between levels, and trailing "." or ")" or whitespace)
+  function stripHeadingNumber(s) {
+    return String(s || '')
+      .replace(/^\s*\d+(?:[.,]\d+)*(?:[.)]|\s+)\s*/ , '')  // e.g., "1. ", "1.1 ", "1.1.2 ", "3.1,3 "
+      .trim();
+  }
+
+  // Preserve original, then wrap
+  const _origParsePairs = window.parsePairs || parsePairs;
+  window.parsePairs = function (text) {
+    const pairs = _origParsePairs(text) || [];
+    return pairs
+      .map(p => ({
+        keyword: stripHeadingNumber(p.keyword),
+        pages: p.pages
+      }))
+      .filter(p => p.keyword); // drop rows that became empty after stripping
+  };
+})();
