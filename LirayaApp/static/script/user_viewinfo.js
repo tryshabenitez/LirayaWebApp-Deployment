@@ -201,11 +201,12 @@ document.addEventListener('DOMContentLoaded', function () {
     let words = [];
     let i = 0;
   
-    // Accept only clean page tokens: "12", "12,13,15", or "12-14"
+    // Accept clean page tokens: "12", "12,13,15", "12-14", "12–14", "12—14"
     const isPageChunk = (rawTok) => {
       const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
-      return /^\d+(?:[-,]\d+)*$/.test(t);
+      return /^\d+(?:(?:[,\-–—]\d+)+)?$/.test(t);
     };
+
   
     // Break up glued tokens like:
     //   "Chapter12" -> ["Chapter","12"]
@@ -239,18 +240,27 @@ document.addEventListener('DOMContentLoaded', function () {
     // Also ignore typical front-matter like "Foreword vii", "Acknowledgments viii", "Introduction ix"
     function isIgnorableKeyword(str) {
       const s = str.trim();
-  
+    
+      // 1) Existing: Chapter/Figure headings (with common OCR typos)
       if (/^(chapter|chaptr|chaptre|ciapter)\s*\d+$/i.test(s)) return true;
       if (/^(figure|figuer|figre)\s*\d+$/i.test(s)) return true;
-  
-      // Front matter + Roman numerals
+    
+      // 2) Front matter with Roman numerals
       if (/^(foreword|acknowledgments?|introduction)\s+[ivxlcdm]+$/i.test(s)) return true;
-  
-      // Generic "Word + Roman numerals" often indicate front matter; be conservative
       if (/^[A-Za-z]{3,}\s+[ivxlcdm]{2,}$/i.test(s)) return true;
-  
+    
+      // 3) NEW: Standalone years (e.g., 2021). Relaxed: any 4 digits.
+      if (/^\d{4}$/.test(s)) return true;
+    
+      // 4) NEW: 1D/2D/3D (case-insensitive, allow spaces like "3 D")
+      if (/^[123]\s*D$/i.test(s)) return true;
+    
+      // 5) NEW: MODULE n (case-insensitive)
+      if (/^module\s+\d+$/i.test(s)) return true;
+    
       return false;
     }
+
   
     while (i < tokens.length) {
       let tok = tokens[i];
@@ -269,18 +279,37 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       if (words.length === 0) { i++; continue; }
   
-      // Collect contiguous page-like chunks ("12", "12-14", "12,13")
+      // Collect contiguous page-like chunks ("12", "12-14", "12,13", incl. en/em dashes)
       const pageParts = [];
       while (i < tokens.length) {
         // If next is glued, split before checking again
         const nextTok = tokens[i];
         const s2 = splitTokenIfGlued(nextTok);
         if (s2) tokens.splice(i, 1, s2[0], s2[1]);
-  
+      
         if (!isPageChunk(tokens[i])) break;
-        pageParts.push(tokens[i].replace(/,$/, ''));
+      
+        // Normalize any dash variant to a simple hyphen for consistency
+        const normalized = String(tokens[i].replace(/,$/, '')).replace(/[–—]/g, '-');
+        pageParts.push(normalized);
         i++;
       }
+      
+      // Build final display string preserving ranges & comma lists
+      // e.g., ["57-59", "60,61", "70—72"] -> "57-59, 60,61, 70-72"
+      const pages = pageParts.length ? pageParts.join(', ') : '—';
+      
+      const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
+      
+      // Skip headings etc.
+      if (isIgnorableKeyword(keyword)) {
+        words = [];
+        continue;
+      }
+      
+      if (keyword) pairs.push({ keyword, pages });
+      words = [];
+
   
       // Keep only the first number of each range (e.g., "57-59" -> "57")
       const firstOnly = [];
