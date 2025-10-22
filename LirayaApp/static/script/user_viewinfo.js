@@ -329,19 +329,73 @@ document.addEventListener('DOMContentLoaded', function () {
   
     const pairs = parsePairs(raw);
   
-    // Sort: special-characters-first, then A→Z (case-insensitive)
+    // ---- 1) Group by keyword (case-insensitive) and merge pages ----
+    const groups = new Map();
+    const splitPages = (pagesStr) =>
+      String(pagesStr)
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+  
+    for (const p of pairs) {
+      const key = String(p.keyword).trim().toLowerCase();
+      if (!key) continue;
+  
+      if (!groups.has(key)) {
+        groups.set(key, {
+          keyword: p.keyword,          // keep original casing from first appearance
+          pageSet: new Set(),          // to dedupe page tokens
+          pageList: [],                // to preserve first-seen order
+          hasNumeric: false,           // to help with the "hide button" logic
+        });
+      }
+  
+      const g = groups.get(key);
+  
+      // Merge pages: ignore '—' if we already have numeric pages
+      if (p.pages && p.pages !== '—') {
+        const tokens = splitPages(p.pages);
+        for (const tok of tokens) {
+          if (!g.pageSet.has(tok)) {
+            g.pageSet.add(tok);
+            g.pageList.push(tok);
+          }
+          if (/\d/.test(tok)) g.hasNumeric = true;
+        }
+      } else {
+        // If no pages yet, allow '—' as placeholder
+        if (g.pageList.length === 0) {
+          g.pageSet.add('—');
+          g.pageList.push('—');
+        }
+      }
+    }
+  
+    // Convert groups back to array of { keyword, pages }
+    const merged = [];
+    for (const g of groups.values()) {
+      // If we ended up with tokens and also had an initial '—', drop the '—'
+      let list = g.pageList;
+      if (list.length > 1 && list.includes('—')) {
+        list = list.filter(t => t !== '—');
+      }
+      const pages = list.length ? list.join(', ') : '—';
+      merged.push({ keyword: g.keyword, pages, _hasNumeric: g.hasNumeric });
+    }
+  
+    // ---- 2) Sort: special-characters first, then A→Z (case-insensitive) ----
     const collator = new Intl.Collator('en', { sensitivity: 'base' });
     const startsWithLetter = s => /^[A-Za-z]/.test(String(s).trim());
   
-    pairs.sort((a, b) => {
+    merged.sort((a, b) => {
       const aIsLetter = startsWithLetter(a.keyword) ? 1 : 0; // 0 = special, 1 = letters
       const bIsLetter = startsWithLetter(b.keyword) ? 1 : 0;
       if (aIsLetter !== bIsLetter) return aIsLetter - bIsLetter; // specials first
       return collator.compare(a.keyword, b.keyword);
     });
   
-    // If no numeric pages at all, hide the button and stop
-    const hasPages = pairs.some(p => /\d/.test(p.pages));
+    // ---- 3) Hide button if nothing numeric remains ----
+    const hasPages = merged.some(p => /\d/.test(p.pages));
     if (!hasPages) {
       const btn = document.getElementById('show-pages-btn');
       if (btn) btn.style.display = 'none';
@@ -349,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
   
-    if (!pairs.length) {
+    if (!merged.length) {
       const tr = document.createElement('tr');
       tr.innerHTML = '<td colspan="2">No page index available.</td>';
       tbody.appendChild(tr);
@@ -357,12 +411,12 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
   
-    pairs.forEach((p, idx) => {
+    // ---- 4) Render (BOLD + UPPERCASE titles) ----
+    merged.forEach((p, idx) => {
       const tr = document.createElement('tr');
       tr.className = idx % 2 === 0 ? 'row-odd' : 'row-even';
-      const esc = (v) => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-  
-      // BOLD + UPPERCASE titles
+      const esc = (v) =>
+        String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
       tr.innerHTML = `<td><strong>${esc(p.keyword).toUpperCase()}</strong></td><td>${esc(p.pages)}</td>`;
       tbody.appendChild(tr);
     });
