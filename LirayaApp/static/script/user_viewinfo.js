@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return String(str || '').replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1));
   }
 
-  // === Helpers just for citations ===
+    // === Helpers just for citations ===
   const isNA = (v) => /^\s*(?:n\/?a|n\.?a\.?|na|none|-)\s*$/i.test(String(v || ''));
   const clean = (v) => (isNA(v) ? '' : String(v || '').trim());
 
@@ -57,10 +57,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function explodeCommaAuthors(token) {
     const s = String(token || '').trim();
     if (!s) return [];
-    // Detect repeating "Lastname, Firstname" pairs
+    // sequences of "Lastname, Firstname" pairs
     const pairs = s.match(/[^,]+,\s*[^,]+/g);
     if (pairs && pairs.length >= 2) return pairs.map(t => t.trim());
-    // Fallback: if there are many commas but not "Last, First" structure, split on commas
+    // otherwise if many commas, split on commas as a fallback
     if (s.includes(',') && s.split(',').length > 2) {
       return s.split(',').map(t => t.trim()).filter(Boolean);
     }
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function chicagoAuthorList(authorArray) {
-    // Reuse your inversion logic (nameToApa) for "Last, F. M." then join with "and"
+    // Use your nameToApa inversion to get "Last, F. M." tokens, then join with "and"
     const items = authorArray.map(nameToApa).filter(Boolean);
     if (items.length <= 1) return items.join('');
     if (items.length === 2) return `${items[0]} and ${items[1]}`;
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function buildCitations() {
-    // Pull metadata and clean NA-ish values
+    // Pull metadata and sanitize NA-like inputs
     const titleRaw     = metaEl?.dataset.title || '';
     const authorRaw    = metaEl?.dataset.author || '';
     const coauthorsRaw = metaEl?.dataset.coauthor || '';
@@ -89,58 +89,61 @@ document.addEventListener('DOMContentLoaded', function () {
     const year      = clean(yearRaw);
     const publisher = clean(publisherRaw);
 
-    // Authors
-    // Start with your parser, then further explode comma-lists (handles "A, B, C")
+    // Build full author list: parseAuthors + extra exploding of comma-blobs
     let authorList = parseAuthors(author, coauthors);
     authorList = authorList.flatMap(explodeCommaAuthors)
       .map(a => a.trim())
       .filter(a => a && !isNA(a));
 
-    const apaAuthorsStr = formatApaAuthorList(authorList); // "Last, F. M., & Last, F. M."
+    // Prepare strings
+    const apaAuthorsStr     = formatApaAuthorList(authorList); // "Last, F. M., & Last, F. M."
     const chicagoAuthorsStr = chicagoAuthorList(authorList);
 
-    // Escapes
     const eApaAuthors = escapeHtml(apaAuthorsStr);
-    const eChicagoAuthors = escapeHtml(chicagoAuthorsStr);
-    const eYear  = escapeHtml(year || 'n.d.');
-    const ePubl  = escapeHtml(publisher);
-    const titleAPA = escapeHtml(sentenceCase(title));
-    const titleHL  = escapeHtml(headlineCase(title));
+    const eChiAuthors = escapeHtml(chicagoAuthorsStr);
+    const eYearAPA    = escapeHtml(year || 'n.d.');  // APA uses (n.d.)
+    const eYearCHI    = escapeHtml(year || 'n.d.');  // Chicago prints n.d.
+    const ePubl       = escapeHtml(publisher);
+    const titleAPA    = escapeHtml(sentenceCase(title)); // APA: sentence case
+    const titleCHI    = escapeHtml(headlineCase(title)); // Chicago: headline case
 
-    // APA 7 rules (baseline for books):
-    // - With author(s): Author(s). (Year). Title in sentence case. Publisher.
-    // - No author: Title in sentence case. (Year). Publisher.
-    // - Missing year: (n.d.)
-    // Build pieces conditionally to avoid dangling spaces/punctuation.
-    let apaLine = '<strong>APA (7th ed.) Citation</strong><br>';
-    if (authorList.length) apaLine += (eApaAuthors ? eApaAuthors + '. ' : '');
-    if (!authorList.length && titleAPA) apaLine += (titleAPA ? '<em>' + titleAPA + '</em>. ' : '');
-    apaLine += '(' + eYear + '). ';
-    if (authorList.length && titleAPA) apaLine += '<em>' + titleAPA + '</em>. ';
-    if (ePubl) apaLine += ePubl + '.';
+    // ---------- APA 7th ----------
+    // With authors: Author(s). (Year). Title. Publisher.
+    // No authors:   Title. (Year). Publisher.
+    let apaLine = '<strong>APA (7th ed.)</strong><br>';
+    if (authorList.length && eApaAuthors) {
+      apaLine += `${eApaAuthors}. `;
+    } else if (titleAPA) {
+      apaLine += `<em>${titleAPA}</em>. `;
+    }
+    apaLine += `(${eYearAPA}). `;
+    if (authorList.length && titleAPA) {
+      apaLine += `<em>${titleAPA}</em>. `;
+    }
+    if (ePubl) apaLine += `${ePubl}.`;
 
     const apa = `<div style="margin-bottom:10px;">${apaLine}</div>`;
 
-    // Chicago 17 (Notes & Bibliography) baseline for books:
-    // - With author(s): Author(s). Title in Headline Case. Publisher, Year.
-    // - No author: Title in Headline Case. Publisher, Year.
-    const chicagoParts = [];
-    if (authorList.length && eChicagoAuthors) chicagoParts.push(eChicagoAuthors + '.');
-    if (titleHL) chicagoParts.push('<em>' + titleHL + '</em>.');
-    if (ePubl || eYear) {
-      const tail = [ePubl, (year ? year : 'n.d.')].filter(Boolean).join(', ');
-      if (tail) chicagoParts.push(tail + '.');
-    }
+    // ---------- Chicago 17th (Notes & Bibliography) ----------
+    // With authors: Author(s). Title in Headline Case. Publisher, Year.
+    // No authors:   Title in Headline Case. Publisher, Year.
+    const chiParts = [];
+    if (authorList.length && eChiAuthors) chiParts.push(`${eChiAuthors}.`);
+    if (titleCHI) chiParts.push(`<em>${titleCHI}</em>.`);
+    const tail = [ePubl, eYearCHI].filter(Boolean).join(', ');
+    if (tail) chiParts.push(tail + '.');
+
     const chicago = `
       <div style="margin-bottom:10px;">
         <strong>Chicago Style (17th ed., Notes & Bibliography)</strong><br>
-        ${chicagoParts.join(' ')}
+        ${chiParts.join(' ')}
       </div>
     `;
 
-    // Only APA + Chicago (MLA removed; no generic warning block)
+    // Only APA + Chicago
     return apa + chicago;
   }
+
 
   function openCiteModal() {
     bodyEl.innerHTML = buildCitations();
@@ -855,3 +858,38 @@ document.addEventListener('DOMContentLoaded', initQrCode);
     parsePairs = wrappedParsePairs; // eslint-disable-line no-global-assign
   }
 })();
+
+
+<script>
+// --- ADD-ONLY: prevent "N/A" from being split into "N" and "A" in parseAuthors ---
+(function () {
+  // Use division slash U+2215 as a temporary sentinel (looks like "/")
+  const SENTINEL_SLASH = '\u2215';
+
+  // Canonicalize and protect N/A variants: "N/A", "n / a", "N /A", etc.
+  function protectNA(s) {
+    if (s == null) return s;
+    return String(s).replace(/\bn\s*\/\s*a\b/gi, m =>
+      // keep visible "N/A" but swap the slash to SENTINEL so splitting on "/" won't fire
+      m.replace('/', SENTINEL_SLASH).replace(/\s+/g, '').toUpperCase() // -> "N\u2215A"
+    );
+  }
+
+  // Restore sentinel back to a normal slash
+  function restoreNA(s) {
+    if (s == null) return s;
+    return String(s).replace(new RegExp(SENTINEL_SLASH, 'g'), '/');
+  }
+
+  // Preserve original, then wrap
+  const _origParseAuthors = (typeof window !== 'undefined' && window.parseAuthors) ? window.parseAuthors : parseAuthors;
+
+  window.parseAuthors = function (primaryAuthor, coAuthors) {
+    const protectedPrimary = protectNA(primaryAuthor);
+    const protectedCo      = protectNA(coAuthors);
+    const list = _origParseAuthors(protectedPrimary, protectedCo) || [];
+    // Restore "N/A" tokens exactly; trim strays
+    return list.map(a => restoreNA(a).trim());
+  };
+})();
+</script>
