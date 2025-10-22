@@ -49,66 +49,97 @@ document.addEventListener('DOMContentLoaded', function () {
     return String(str || '').replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1));
   }
 
+  // === Helpers just for citations ===
+  const isNA = (v) => /^\s*(?:n\/?a|n\.?a\.?|na|none|-)\s*$/i.test(String(v || ''));
+  const clean = (v) => (isNA(v) ? '' : String(v || '').trim());
+
+  // Expand tokens like "Smith, John, Doe, Jane" into ["Smith, John", "Doe, Jane"]
+  function explodeCommaAuthors(token) {
+    const s = String(token || '').trim();
+    if (!s) return [];
+    // Detect repeating "Lastname, Firstname" pairs
+    const pairs = s.match(/[^,]+,\s*[^,]+/g);
+    if (pairs && pairs.length >= 2) return pairs.map(t => t.trim());
+    // Fallback: if there are many commas but not "Last, First" structure, split on commas
+    if (s.includes(',') && s.split(',').length > 2) {
+      return s.split(',').map(t => t.trim()).filter(Boolean);
+    }
+    return [s];
+  }
+
+  function chicagoAuthorList(authorArray) {
+    // Reuse your inversion logic (nameToApa) for "Last, F. M." then join with "and"
+    const items = authorArray.map(nameToApa).filter(Boolean);
+    if (items.length <= 1) return items.join('');
+    if (items.length === 2) return `${items[0]} and ${items[1]}`;
+    return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+  }
+
   function buildCitations() {
-    // Pull metadata
-    const title     = metaEl?.dataset.title || '';
-    const author    = metaEl?.dataset.author || '';
-    const theCoauthors = metaEl?.dataset.coauthor || '';
-    const year      = metaEl?.dataset.year || '';
-    const publisher = metaEl?.dataset.publisher || '';
+    // Pull metadata and clean NA-ish values
+    const titleRaw     = metaEl?.dataset.title || '';
+    const authorRaw    = metaEl?.dataset.author || '';
+    const coauthorsRaw = metaEl?.dataset.coauthor || '';
+    const yearRaw      = metaEl?.dataset.year || '';
+    const publisherRaw = metaEl?.dataset.publisher || '';
+
+    const title     = clean(titleRaw);
+    const author    = clean(authorRaw);
+    const coauthors = clean(coauthorsRaw);
+    const year      = clean(yearRaw);
+    const publisher = clean(publisherRaw);
 
     // Authors
-    const authorList = parseAuthors(author, theCoauthors);
-    const apaAuthors = formatApaAuthorList(authorList); // "Last, F. M., & Last, F. M."
-    const chicagoMlaAuthors = [author, theCoauthors].filter(Boolean).join('; ').trim();
+    // Start with your parser, then further explode comma-lists (handles "A, B, C")
+    let authorList = parseAuthors(author, coauthors);
+    authorList = authorList.flatMap(explodeCommaAuthors)
+      .map(a => a.trim())
+      .filter(a => a && !isNA(a));
+
+    const apaAuthorsStr = formatApaAuthorList(authorList); // "Last, F. M., & Last, F. M."
+    const chicagoAuthorsStr = chicagoAuthorList(authorList);
 
     // Escapes
-    const eApaAuthors = escapeHtml(apaAuthors);
-    const eAuthorsCM  = escapeHtml(chicagoMlaAuthors);
-    const eYear       = escapeHtml(year);
-    const ePublisher  = escapeHtml(publisher);
-
+    const eApaAuthors = escapeHtml(apaAuthorsStr);
+    const eChicagoAuthors = escapeHtml(chicagoAuthorsStr);
+    const eYear  = escapeHtml(year || 'n.d.');
+    const ePubl  = escapeHtml(publisher);
     const titleAPA = escapeHtml(sentenceCase(title));
     const titleHL  = escapeHtml(headlineCase(title));
 
-    // APA 7: Author(s). (Year). *Title in sentence case*. Publisher.
-    const apa = `
-      <div style="margin-bottom:10px;">
-        <strong>APA (7th ed.) Citation</strong><br>
-        ${eApaAuthors ? eApaAuthors + '. ' : ''}
-        ${eYear ? '(' + eYear + '). ' : ''}
-        ${titleAPA ? '<em>' + titleAPA + '</em>. ' : ''}
-        ${ePublisher ? ePublisher + '.' : ''}
-      </div>
-    `;
+    // APA 7 rules (baseline for books):
+    // - With author(s): Author(s). (Year). Title in sentence case. Publisher.
+    // - No author: Title in sentence case. (Year). Publisher.
+    // - Missing year: (n.d.)
+    // Build pieces conditionally to avoid dangling spaces/punctuation.
+    let apaLine = '<strong>APA (7th ed.) Citation</strong><br>';
+    if (authorList.length) apaLine += (eApaAuthors ? eApaAuthors + '. ' : '');
+    if (!authorList.length && titleAPA) apaLine += (titleAPA ? '<em>' + titleAPA + '</em>. ' : '');
+    apaLine += '(' + eYear + '). ';
+    if (authorList.length && titleAPA) apaLine += '<em>' + titleAPA + '</em>. ';
+    if (ePubl) apaLine += ePubl + '.';
 
-    // Chicago 17 (Notes & Bibliography): Author(s). *Title in Headline Case*. Publisher, Year.
+    const apa = `<div style="margin-bottom:10px;">${apaLine}</div>`;
+
+    // Chicago 17 (Notes & Bibliography) baseline for books:
+    // - With author(s): Author(s). Title in Headline Case. Publisher, Year.
+    // - No author: Title in Headline Case. Publisher, Year.
+    const chicagoParts = [];
+    if (authorList.length && eChicagoAuthors) chicagoParts.push(eChicagoAuthors + '.');
+    if (titleHL) chicagoParts.push('<em>' + titleHL + '</em>.');
+    if (ePubl || eYear) {
+      const tail = [ePubl, (year ? year : 'n.d.')].filter(Boolean).join(', ');
+      if (tail) chicagoParts.push(tail + '.');
+    }
     const chicago = `
       <div style="margin-bottom:10px;">
         <strong>Chicago Style (17th ed., Notes & Bibliography)</strong><br>
-        ${eAuthorsCM ? eAuthorsCM + '. ' : ''}
-        ${titleHL ? '<em>' + titleHL + '</em>. ' : ''}
-        ${ePublisher ? ePublisher + ', ' : ''}${eYear ? eYear + '.' : ''}
+        ${chicagoParts.join(' ')}
       </div>
     `;
 
-    // MLA 9: Author(s). *Title in Title Case*. Publisher, Year.
-    const mla = `
-      <div style="margin-bottom:10px;">
-        <strong>MLA (9th ed.) Citation</strong><br>
-        ${eAuthorsCM ? eAuthorsCM + '. ' : ''}
-        ${titleHL ? '<em>' + titleHL + '</em>. ' : ''}
-        ${ePublisher ? ePublisher + ', ' : ''}${eYear ? eYear + '.' : ''}
-      </div>
-    `;
-
-    const warn = `
-      <div style="margin-top:6px; font-size:12px; color:#555;">
-        <em></em>
-      </div>
-    `;
-
-    return apa + chicago + mla + warn;
+    // Only APA + Chicago (MLA removed; no generic warning block)
+    return apa + chicago;
   }
 
   function openCiteModal() {
@@ -131,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.key === 'Escape' && citeModal.style.display === 'flex') closeCiteModal();
   });
 })();
+
 
 // ---------- Pages Modal (moved from inline script) ----------
 (function () {
