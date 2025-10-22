@@ -208,8 +208,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let i = 0;
   
     // Accept clean page tokens: "12", "12,13,15", "12-14", "12–14", "12—14"
+    // Tolerate trailing ";" or "," on each token.
     const isPageChunk = (rawTok) => {
-      const t = String(rawTok).replace(/,$/, ''); // drop trailing comma
+      const t = String(rawTok).replace(/[;,]$/, ''); // drop trailing semicolon/comma
       return /^\d+(?:(?:[,\-–—]\d+)+)?$/.test(t);
     };
   
@@ -229,25 +230,22 @@ document.addEventListener('DOMContentLoaded', function () {
       m = tok.match(/^([A-Za-z]+)(\d+)$/);
       if (m) return [m[1], m[2]];
   
-      // Letters glued to roman numerals at the end (≥2 to avoid splitting normal words on single 'i')
-      // e.g., "FOREWORDvii" -> ["FOREWORD","vii"]
+      // Letters glued to roman numerals at the end (≥2)
       m = tok.match(/^([A-Za-z]{3,})([ivxlcdm]{2,})$/i);
       if (m) return [m[1], m[2]];
   
-      // Roman numerals glued before Chapter/Figure (e.g., "ixChapter")
+      // Roman numerals glued before Chapter/Figure
       m = tok.match(/^([ivxlcdm]{2,})(chapter|chaptr|chaptre|ciapter|figure|figuer|figre)$/i);
       if (m) return [m[1], m[2]];
   
       return null;
     }
   
-    // Ignore headings like "Chapter 2", "Figure 3" (case-insensitive, with common OCR typos)
-    // Also ignore typical front-matter like "Foreword vii", "Acknowledgments viii", "Introduction ix"
-    // Plus: standalone years (e.g., 2021), 1D/2D/3D, MODULE n (titles that shouldn't be treated as keywords)
+    // Ignore headings and titles that shouldn't become keywords
     function isIgnorableKeyword(str) {
       const s = str.trim();
   
-      // Chapter/Figure headings
+      // Chapter/Figure headings (with typos)
       if (/^(chapter|chaptr|chaptre|ciapter)\s*\d+$/i.test(s)) return true;
       if (/^(figure|figuer|figre)\s*\d+$/i.test(s)) return true;
   
@@ -258,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Standalone year (any 4 digits)
       if (/^\d{4}$/.test(s)) return true;
   
-      // 1D/2D/3D (allow space like "3 D")
+      // 1D/2D/3D (allow "3 D")
       if (/^[123]\s*D$/i.test(s)) return true;
   
       // MODULE n
@@ -278,7 +276,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
   
       if (!isPageChunk(tok)) {
-        words.push(tok.replace(/,$/, ''));
+        // strip trailing separators from keyword tokens too
+        words.push(tok.replace(/[;,]$/, ''));
         i++;
         continue;
       }
@@ -287,26 +286,23 @@ document.addEventListener('DOMContentLoaded', function () {
       // Collect contiguous page-like chunks ("12", "12-14", "12,13", incl. en/em dashes)
       const pageParts = [];
       while (i < tokens.length) {
-        // If next is glued, split before checking again
         const nextTok = tokens[i];
         const s2 = splitTokenIfGlued(nextTok);
         if (s2) tokens.splice(i, 1, s2[0], s2[1]);
   
         if (!isPageChunk(tokens[i])) break;
   
-        // Normalize any dash variant to a simple hyphen for consistency
-        const normalized = String(tokens[i].replace(/,$/, '')).replace(/[–—]/g, '-');
+        // Normalize any dash variant to a simple hyphen; strip trailing semicolons/commas
+        const normalized = String(tokens[i]).replace(/[;,]$/, '').replace(/[–—]/g, '-');
         pageParts.push(normalized);
         i++;
       }
   
-      // Build final display string preserving ranges & comma lists
-      // e.g., ["57-59", "60,61", "70—72"] -> "57-59, 60,61, 70-72"
+      // Preserve ranges & comma lists
       const pages = pageParts.length ? pageParts.join(', ') : '—';
   
       const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
   
-      // Skip headings etc.
       if (isIgnorableKeyword(keyword)) {
         words = [];
         continue;
@@ -333,7 +329,18 @@ document.addEventListener('DOMContentLoaded', function () {
   
     const pairs = parsePairs(raw);
   
-    // NEW: if no numeric pages at all, hide the button and stop
+    // Sort: special-characters-first, then A→Z (case-insensitive)
+    const collator = new Intl.Collator('en', { sensitivity: 'base' });
+    const startsWithLetter = s => /^[A-Za-z]/.test(String(s).trim());
+  
+    pairs.sort((a, b) => {
+      const aIsLetter = startsWithLetter(a.keyword) ? 1 : 0; // 0 = special, 1 = letters
+      const bIsLetter = startsWithLetter(b.keyword) ? 1 : 0;
+      if (aIsLetter !== bIsLetter) return aIsLetter - bIsLetter; // specials first
+      return collator.compare(a.keyword, b.keyword);
+    });
+  
+    // If no numeric pages at all, hide the button and stop
     const hasPages = pairs.some(p => /\d/.test(p.pages));
     if (!hasPages) {
       const btn = document.getElementById('show-pages-btn');
@@ -354,7 +361,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const tr = document.createElement('tr');
       tr.className = idx % 2 === 0 ? 'row-odd' : 'row-even';
       const esc = (v) => String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-      tr.innerHTML = `<td>${esc(p.keyword)}</td><td>${esc(p.pages)}</td>`;
+  
+      // BOLD + UPPERCASE titles
+      tr.innerHTML = `<td><strong>${esc(p.keyword).toUpperCase()}</strong></td><td>${esc(p.pages)}</td>`;
       tbody.appendChild(tr);
     });
   
