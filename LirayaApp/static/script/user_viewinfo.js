@@ -198,54 +198,71 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function parsePairs(text) {
-    const cleaned = normalizeText(text);
+    // --- Protect 1D/2D/3D (and 1-D/2-D/3-D, 1 D/2 D/3 D) before normalization so "3" isn't seen as a page ---
+    const SENTINEL_D = '\u1E0E'; // Latin capital D with dot below
+    function protectDimensionalTokens(s) {
+      return String(s || '')
+        .replace(/\b([123])\s*-\s*D\b/gi, '$1D')                  // normalize "3 - D" -> "3D"
+        .replace(/\b([123])\s*D\b/gi, (_, d) => `${d}${SENTINEL_D}`); // "3D"/"3 D" -> "3Ḏ"
+    }
+    function unprotectDimensionalTokens(s) {
+      return String(s || '').replace(new RegExp(SENTINEL_D, 'g'), 'D');
+    }
+  
+    // --- Strip leading outline numbering like "1.", "1.1", "1.1.2", "3.1,3", optionally with trailing "." or ")" ---
+    function stripHeadingNumber(s) {
+      return String(s || '')
+        .replace(/^\s*\d+(?:[.,]\s*\d+)*(?:[.)])?\s*/ , '')
+        .trim();
+    }
+    function isPureHeadingNumber(s) {
+      return /^\s*\d+(?:[.,]\s*\d+)*\.?\s*$/.test(String(s || ''));
+    }
+  
+    // Protect first, then normalize
+    const protectedText = protectDimensionalTokens(text);
+    const cleaned = normalizeText(protectedText);
     if (!cleaned) return [];
   
-    // We will split more precisely INSIDE the loop when we detect glued tokens
+    // Tokenize
     const tokens = cleaned.split(/\s+/);
     const pairs = [];
     let words = [];
     let i = 0;
   
-    // Accept clean page tokens: "12", "12,13,15", "12-14", "12–14", "12—14"
-    // Tolerate trailing ";" or "," on each token.
+    // Accept page tokens: "12", "12,13,15", "12-14", "12–14", "12—14"
+    // Also tolerate trailing ";" or "," on each token.
     const isPageChunk = (rawTok) => {
       const t = String(rawTok).replace(/[;,]$/, ''); // drop trailing semicolon/comma
       return /^\d+(?:(?:[,\-–—]\d+)+)?$/.test(t);
     };
   
-    // Break up glued tokens like:
-    //   "Chapter12" -> ["Chapter","12"]
-    //   "FOREWORDvii" -> ["FOREWORD","vii"]  (roman part handled as text, not page)
-    //   "ixChapter" -> ["ix","Chapter"]
-    //   "Figure3" -> ["Figure","3"]
+    // Split glued tokens, but don't touch the protected "Ḏ"
     function splitTokenIfGlued(tok) {
-      let m;
+      // Avoid splitting the protected dimensional tokens like "3Ḏ"
+      if (/^[123]$/.test(tok) || /^[123]$/.test(tok[0]) && tok[1] === SENTINEL_D) return null;
   
-      // Chapter/Figure (with common OCR typos) glued to digits
+      let m;
       m = tok.match(/^(chapter|chaptr|chaptre|ciapter|figure|figuer|figre)(\d+)$/i);
       if (m) return [m[1], m[2]];
   
-      // Letters glued to digits at the end: "Keyword31"
       m = tok.match(/^([A-Za-z]+)(\d+)$/);
       if (m) return [m[1], m[2]];
   
-      // Letters glued to roman numerals at the end (≥2)
       m = tok.match(/^([A-Za-z]{3,})([ivxlcdm]{2,})$/i);
       if (m) return [m[1], m[2]];
   
-      // Roman numerals glued before Chapter/Figure
       m = tok.match(/^([ivxlcdm]{2,})(chapter|chaptr|chaptre|ciapter|figure|figuer|figre)$/i);
       if (m) return [m[1], m[2]];
   
       return null;
     }
   
-    // Ignore headings and titles that shouldn't become keywords
+    // Titles that should be ignored entirely as keywords
     function isIgnorableKeyword(str) {
       const s = str.trim();
   
-      // Chapter/Figure headings (with typos)
+      // Chapter/Figure headings
       if (/^(chapter|chaptr|chaptre|ciapter)\s*\d+$/i.test(s)) return true;
       if (/^(figure|figuer|figre)\s*\d+$/i.test(s)) return true;
   
@@ -256,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Standalone year (any 4 digits)
       if (/^\d{4}$/.test(s)) return true;
   
-      // 1D/2D/3D (allow "3 D")
+      // Exactly "1D/2D/3D" only (not phrases containing them)
       if (/^[123]\s*D$/i.test(s)) return true;
   
       // MODULE n
@@ -268,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
     while (i < tokens.length) {
       let tok = tokens[i];
   
-      // If token is glued, split it in-place so subsequent logic sees parts separately
+      // If token is glued, split in-place so subsequent logic sees parts separately
       const split = splitTokenIfGlued(tok);
       if (split) {
         tokens.splice(i, 1, split[0], split[1]);
@@ -276,14 +293,14 @@ document.addEventListener('DOMContentLoaded', function () {
       }
   
       if (!isPageChunk(tok)) {
-        // strip trailing separators from keyword tokens too
+        // Strip trailing separators from word tokens as well
         words.push(tok.replace(/[;,]$/, ''));
         i++;
         continue;
       }
       if (words.length === 0) { i++; continue; }
   
-      // Collect contiguous page-like chunks ("12", "12-14", "12,13", incl. en/em dashes)
+      // Collect contiguous page-like chunks ("12", "12-14", "12,13", including en/em dashes)
       const pageParts = [];
       while (i < tokens.length) {
         const nextTok = tokens[i];
@@ -301,26 +318,34 @@ document.addEventListener('DOMContentLoaded', function () {
       // Preserve ranges & comma lists
       const pages = pageParts.length ? pageParts.join(', ') : '—';
   
-      const keyword = words.join(' ').replace(/\s+/g, ' ').trim();
+      // Build keyword, then unprotect "Ḏ"->"D" and strip leading numbering like "1.1.2 "
+      let keyword = words.join(' ').replace(/\s+/g, ' ').trim();
+      keyword = unprotectDimensionalTokens(keyword);
+      keyword = stripHeadingNumber(keyword);
   
-      if (isIgnorableKeyword(keyword)) {
+      // Drop rows that are pure numbering or ignorable headings
+      if (!keyword || isPureHeadingNumber(keyword) || isIgnorableKeyword(keyword)) {
         words = [];
         continue;
       }
   
-      if (keyword) pairs.push({ keyword, pages });
+      pairs.push({ keyword, pages });
       words = [];
     }
   
+    // Any trailing words without pages (rare), clean & push as "—"
     if (words.length) {
-      const keyword = words.join(' ').trim();
-      if (!isIgnorableKeyword(keyword)) {
+      let keyword = words.join(' ').trim();
+      keyword = unprotectDimensionalTokens(keyword);
+      keyword = stripHeadingNumber(keyword);
+      if (keyword && !isPureHeadingNumber(keyword) && !isIgnorableKeyword(keyword)) {
         pairs.push({ keyword, pages: '—' });
       }
     }
   
     return pairs;
   }
+
 
 
   function buildTable() {
