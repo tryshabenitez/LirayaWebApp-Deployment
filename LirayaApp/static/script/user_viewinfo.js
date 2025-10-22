@@ -535,6 +535,8 @@ function bindCopyLinkButton() {
 }
 document.addEventListener('DOMContentLoaded', bindCopyLinkButton);
 
+
+
 function initQrCode() {
   const openBtn    = document.getElementById('btn-qr');
   const modal      = document.getElementById('qr-modal');
@@ -613,3 +615,27 @@ function initQrCode() {
 
 // Ensure it runs
 document.addEventListener('DOMContentLoaded', initQrCode);
+
+(function () {
+  // Hide "Show Pages" if scanned content contains the word "Abstract" (case-insensitive)
+  function decodeJsUnicodeEscapes(s) {
+    if (!s) return '';
+    return s
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/\\u/g, ' ');
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const holder = document.getElementById('scanned-content-holder');
+    const btn    = document.getElementById('show-pages-btn');
+    if (!holder || !btn) return;
+
+    const rawAttr  = holder.dataset.content || '';
+    const decoded  = decodeJsUnicodeEscapes(rawAttr);
+
+    // Case-insensitive whole-word match for "abstract"
+    if (/\babstract\b/i.test(decoded)) {
+      btn.style.display = 'none';
+    }
+  });
+})();
