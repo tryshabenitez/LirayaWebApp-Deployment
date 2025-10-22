@@ -169,7 +169,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function normalizeText(text) {
     if (!text) return '';
     let s = text;
-  
+
+    // Remove discretionary/soft hyphen so words don't split (e.g., "SOL­ID" -> "SOLID")
+    s = s.replace(/\u00AD/g, '');
+    
     // Remove zero-width and joiners entirely (do NOT turn into spaces)
     s = s.replace(/[\u200B\u200C\u200D\u2060\uFEFF]/g, '');
   
