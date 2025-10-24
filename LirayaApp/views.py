@@ -3655,62 +3655,93 @@ def librarian_profile(request):
 def librarian_search_history(request):
     account_id = request.session.get('account_id')
     user_info = get_user_info(account_id)
-    time_filter = request.GET.get('timeFilter', 'all')
+
+    # Normalize filter input (case/spacing)
+    raw_tf = request.GET.get('timeFilter', 'all')
+    tf_key = (raw_tf or 'all').strip().lower().replace(' ', '').replace('_', '').replace('-', '')
+
+    # Support only these public options in the UI, but accept a few aliases
+    if tf_key in ('last24hours', 'last24h', '24h'):
+        time_filter = 'last24hours'
+    elif tf_key in ('last7days', '7d'):
+        time_filter = 'last7days'
+    elif tf_key in ('last30days', '30d', 'lastmonth'):  # accept legacy alias
+        time_filter = 'last30days'
+    elif tf_key in ('all', ''):
+        time_filter = 'all'
+    else:
+        # Legacy values you previously had; map sensibly
+        # 'lastyear' -> show last 30 days in this view to keep the UX simple
+        time_filter = 'last30days'
+
     now = timezone.now()
 
-    # Filter based on the selected time period
+    # Compute window start using updated_at as the basis
     if time_filter == 'last24hours':
         start_date = now - timedelta(hours=24)
     elif time_filter == 'last7days':
         start_date = now - timedelta(days=7)
     elif time_filter == 'last30days':
         start_date = now - timedelta(days=30)
-    elif time_filter == 'lastMonth':
-        first_day_of_current_month = now.replace(day=1)
-        start_date = first_day_of_current_month - timedelta(days=1)
-        start_date = start_date.replace(day=1)
-    elif time_filter == 'lastYear':
-        start_date = now - timedelta(days=365)
     else:
-        start_date = None
+        start_date = None  # 'all'
 
-    # Apply the time filter
+    # Apply the time filter to KeywordLog on updated_at
     if start_date:
-        keyword_logs = KeywordLog.objects.filter(updated_at__gte=start_date)
+        keyword_logs_qs = KeywordLog.objects.filter(updated_at__gte=start_date)
     else:
-        keyword_logs = KeywordLog.objects.all()
+        keyword_logs_qs = KeywordLog.objects.all()
 
     # Sort by search count after applying the time filter
-    keyword_logs = keyword_logs.order_by('-user_search_count')
+    keyword_logs_qs = keyword_logs_qs.order_by('-user_search_count')
 
     # Paginate the result
-    paginator = Paginator(keyword_logs, 10)  # Show 10 logs per page
+    paginator = Paginator(keyword_logs_qs, 10)  # Show 10 logs per page
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
+    # Build the same shape the template & AJAX expect
     logs_data = []
     for log in page_obj:
-        books = Books.objects.filter(title__icontains=log.user_keyword_search) | Books.objects.filter(author__icontains=log.user_keyword_search) | Books.objects.filter(primary_keyword__icontains=log.user_keyword_search)
-        formatted_books = [f"{book.title.upper()} (title) - {log.user_keyword_search.lower()} (keyword)" for book in books]
+        # Build "books" exactly as your HTML logic expects (list => length used as count)
+        books_qs = (
+            Books.objects.filter(title__icontains=log.user_keyword_search) |
+            Books.objects.filter(author__icontains=log.user_keyword_search) |
+            Books.objects.filter(primary_keyword__icontains=log.user_keyword_search)
+        )
+        formatted_books = [
+            f"{book.title.upper()} (title) - {log.user_keyword_search.lower()} (keyword)"
+            for book in books_qs
+        ]
 
         logs_data.append({
             'user_keyword_search': log.user_keyword_search,
             'user_search_count': log.user_search_count,
-            'updated_at': log.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'books': formatted_books,
-            'user_info': user_info, 
+            'updated_at': log.updated_at.strftime('%Y-%m-%d %H:%M:%S') if log.updated_at else '',
+            'books': formatted_books,   # template uses |length for count
+            'user_info': user_info,
         })
 
-    # Return the filtered search history as JSON (if it's an AJAX request)
+    # AJAX response (so dropdown changes update the table without full reload)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'keyword_logs': logs_data,
             'currentPage': page_obj.number,
-            'totalPages': paginator.num_pages
+            'totalPages': paginator.num_pages,
+            'timeFilter': time_filter,  # keep client dropdown in sync
         })
 
-    # For non-AJAX requests, render the regular template
-    return render(request, 'librarian_SearchHistory.html', {'keyword_logs': logs_data, 'user_info': user_info, 'page_obj': page_obj})
+    # Server-rendered page
+    return render(
+        request,
+        'librarian_SearchHistory.html',
+        {
+            'keyword_logs': logs_data,
+            'user_info': user_info,
+            'page_obj': page_obj,
+            'timeFilter': time_filter,  # keep dropdown selected on first load
+        }
+    )
 
 def logout_view(request):
     # Log the user out
