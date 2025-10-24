@@ -2274,10 +2274,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     stats2 = context.get("stats_new", {}) or stats
     chart2 = context.get("chart_new", {}) or chart
 
-    # Page 3 rows (prefer time-filtered upstream if provided)
-    no_results_rows = list(context.get("no_results_rows", []) or [])
-
-    # Helper that mirrors the HTML template's truthiness for `log.books`
+    # --- Helper that mirrors the HTML template's truthiness for `log.books` ---
     def _has_results_like_html(log):
         """
         Jinja `{% if log.books %}`:
@@ -2320,68 +2317,65 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         except Exception:
             return bool(val)
 
-    # For Page 3 alignment (if view didn’t provide rows), compute here using the same time filter.
-    # We DO NOT modify views.py; we just query KeywordLog here if needed.
-    if not no_results_rows:
-        try:
-            tf = (meta.get("range_label") or "all").strip().lower()
-            # Treat "last12months" like "all" (effectively removed) without touching the view
-            if tf in ("last12months", "lasttwelvemonths", "12mo", "12months"):
-                tf = "all"
+    # --- Page 3 rows: ALWAYS recompute from DB using the same time filter, to match HTML exactly ---
+    try:
+        tf = (meta.get("range_label") or "all").strip().lower()
+        # Neutralize 12 months -> act like "all"
+        if tf in ("last12months", "lasttwelvemonths", "12mo", "12months"):
+            tf = "all"
 
-            # choose activity field (prefer real DateTimeField)
-            field_map = {f.name: f for f in KeywordLog._meta.get_fields() if hasattr(f, 'get_internal_type')}
-            def _is_dt(name):
-                f = field_map.get(name)
-                return isinstance(f, DateTimeField) or (getattr(f, 'get_internal_type', lambda: '')() == 'DateTimeField')
-            activity_field = next((n for n in ('search_times', 'updated_at', 'created_at') if _is_dt(n)), 'created_at')
+        # choose activity field (prefer real DateTimeField)
+        field_map = {f.name: f for f in KeywordLog._meta.get_fields() if hasattr(f, 'get_internal_type')}
+        def _is_dt(name):
+            f = field_map.get(name)
+            return isinstance(f, DateTimeField) or (getattr(f, 'get_internal_type', lambda: '')() == 'DateTimeField')
+        activity_field = next((n for n in ('search_times', 'updated_at', 'created_at') if _is_dt(n)), 'created_at')
 
-            end_dt = timezone.localtime(timezone.now())
+        end_dt = timezone.localtime(timezone.now())
 
-            # window
-            if tf == 'last24hours':
-                start_dt = end_dt - timedelta(hours=24)
-            elif tf == 'last7days':
-                start_dt = (end_dt - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
-            elif tf == 'last30days':
-                start_dt = end_dt - timedelta(days=30)
-            elif tf == 'lastmonth':
-                first_this_month = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                last_month_end = first_this_month - timedelta(seconds=1)
-                start_dt = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                end_dt = last_month_end
-            elif tf == 'lastyear':
-                year = end_dt.year - 1
-                start_dt = end_dt.replace(year=year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-                end_dt   = end_dt.replace(year=year, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
-            else:
-                start_dt = None  # all time
+        # window
+        if tf == 'last24hours':
+            start_dt = end_dt - timedelta(hours=24)
+        elif tf == 'last7days':
+            start_dt = (end_dt - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+        elif tf == 'last30days':
+            start_dt = end_dt - timedelta(days=30)
+        elif tf == 'lastmonth':
+            first_this_month = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_month_end = first_this_month - timedelta(seconds=1)
+            start_dt = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_dt = last_month_end
+        elif tf == 'lastyear':
+            year = end_dt.year - 1
+            start_dt = end_dt.replace(year=year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_dt   = end_dt.replace(year=year, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+        else:
+            start_dt = None  # all time
 
-            logs_qs = KeywordLog.objects.all()
-            if start_dt:
-                logs_qs = logs_qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_dt})
+        logs_qs = KeywordLog.objects.all()
+        if start_dt:
+            logs_qs = logs_qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_dt})
 
-            rows = []
-            for log in logs_qs:
-                # INCLUDE ONLY when the HTML would show "0" / "No results found"
-                if not _has_results_like_html(log):
-                    first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
-                    if not first_s:
-                        first_s = _fmt_dt(getattr(log, "created_at", None))
-                    if not last_s:
-                        last_s = _fmt_dt(getattr(log, "updated_at", None))
-                    rows.append({
-                        "keyword": getattr(log, "user_keyword_search", "") or "",
-                        "count": int(getattr(log, "user_search_count", 0) or 0),
-                        "first": first_s or "—",
-                        "last":  last_s or "—",
-                    })
-            # sort by Last desc then Keyword asc
-            rows.sort(key=lambda r: (r["last"], r["keyword"]), reverse=True)
-            no_results_rows = rows
-        except Exception:
-            # if anything goes wrong, keep no_results_rows as empty or whatever context passed
-            pass
+        no_results_rows = []
+        for log in logs_qs:
+            # INCLUDE ONLY when the HTML would show "0" / "No results found"
+            if not _has_results_like_html(log):
+                first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
+                if not first_s:
+                    first_s = _fmt_dt(getattr(log, "created_at", None))
+                if not last_s:
+                    last_s = _fmt_dt(getattr(log, "updated_at", None))
+                no_results_rows.append({
+                    "keyword": getattr(log, "user_keyword_search", "") or "",
+                    "count": int(getattr(log, "user_search_count", 0) or 0),
+                    "first": first_s or "—",
+                    "last":  last_s or "—",
+                })
+        # sort by Last desc then Keyword asc
+        no_results_rows.sort(key=lambda r: (r["last"], r["keyword"]), reverse=True)
+    except Exception:
+        # If anything fails, fall back to whatever context passed (but we tried)
+        no_results_rows = list(context.get("no_results_rows", []) or [])
 
     title_text = meta.get("title", "Keyword Search History Report")
 
@@ -2459,6 +2453,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     counts = chart.get('counts') or [stats.get('total_searches', 0)]
     # ensure lengths match
     if len(counts) != len(labels):
+        # pad or trim counts to match labels
         if len(counts) < len(labels):
             counts = list(counts) + [0] * (len(labels) - len(counts))
         else:
@@ -2557,8 +2552,9 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         flowables.append(Paragraph("No keywords without results for the selected period.", content_style))
         flowables.append(Spacer(1, 10))
         desc3 = (
-            "This page lists keywords that produced no book results in the selected period "
-            f"from {_s} to {_e}. No such keywords were found."
+            "This page highlights keywords that returned no book results in the selected period "
+            f"from {_s} to {_e}. None were found. Use this signal to confirm that patrons are "
+            "generally finding what they need, and continue monitoring to catch new unmet searches early."
         )
         flowables.append(Paragraph(desc3, content_style))
     else:
@@ -2638,13 +2634,12 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         ]))
         flowables.append(table)
 
-        # Page 3 description (like Pages 1 & 2)
+        # Page 3 description — focused on acquisitions/metadata decisions
         flowables.append(Spacer(1, 10))
         desc3 = (
-            "This table lists all keywords that produced no book results in the selected period "
-            f"from {_s} to {_e}. For each keyword, it shows the total number of times it was "
-            "searched and the first/last recorded search timestamps. Use this list to identify "
-            "gaps in catalog coverage and target metadata improvements or acquisitions."
+            "This table surfaces keywords that returned no book results in the selected period "
+            f"from {_s} to {_e}. Use it to understand what patrons are searching for but cannot find. "
+            "Treat these entries as an actionable recommendations list for acquisitions and/or metadata improvements."
         )
         flowables.append(Paragraph(desc3, content_style))
 
