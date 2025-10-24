@@ -229,7 +229,7 @@ def user_search(request):
                 out.append(wl)
         return out
 
-        def split_keywords(s):
+    def split_keywords(s):
         """
         Split comma-separated keywords into clean alphanumeric tokens.
         Removes punctuation-only tokens and stopwords.
