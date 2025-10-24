@@ -2006,24 +2006,24 @@ def generate_pdf(request, report_type):
     
     elif report_type == 'keyword_search_history':
         # Uses only KeywordLog fields
-        # Normalize filter; accept variants like "Last 12 Months"
+        # Normalize filter
         tf_raw = request.GET.get('timeFilter', 'all')
         tf_key = tf_raw.strip().lower().replace(' ', '').replace('_', '').replace('-', '')
         tf = (
             'last24hours' if tf_key in ('last24hours', 'last24h', '24h') else
             'last7days' if tf_key in ('last7days', '7d') else
             'last30days' if tf_key in ('last30days', '30d') else
-            'last12months' if tf_key in ('last12months', 'lasttwelvemonths', '12mo', '12months') else
+            # REMOVED: last12months
             'lastmonth' if tf_key in ('lastmonth',) else
             'lastyear' if tf_key in ('lastyear',) else
             'all'
         )
-
+    
         end_dt = timezone.localtime(timezone.now())    # window end (local)
         tz_now = end_dt                                # for "generated_at"
-
+    
         logs_qs = KeywordLog.objects.all()
-
+    
         # ---------- helpers ----------
         def _to_aware(dt):
             """Return an aware datetime in current TZ, or None."""
@@ -2043,22 +2043,22 @@ def generate_pdf(request, report_type):
                 except Exception:
                     dt = timezone.make_aware(dt)  # default
             return dt
-
+    
         def _lt(dt):
             """localtime wrapper that tolerates strings/naive values."""
             adt = _to_aware(dt)
             return timezone.localtime(adt) if adt else None
-
+    
         # Choose the ACTIVITY timestamp field (for Figure 1 totals).
         # Only pick fields that are actually DateTimeField.
         field_map = {f.name: f for f in KeywordLog._meta.get_fields() if hasattr(f, 'get_internal_type')}
         def _is_dt(name): 
             f = field_map.get(name)
             return isinstance(f, DateTimeField) or (getattr(f, 'get_internal_type', lambda: '')() == 'DateTimeField')
-
+    
         for_name_order = ('search_times', 'updated_at', 'created_at')
         activity_field = next((n for n in for_name_order if _is_dt(n)), 'created_at')
-
+    
         # ---- Build X-axis buckets and counts (Figure 1 + Figure 2) ----
         def _bucket_data(qs, tf, end_dt):
             """
@@ -2072,7 +2072,7 @@ def generate_pdf(request, report_type):
             labels, counts_total, counts_new = [], [], []
             start_dt = None
             end_used = end_dt
-
+    
             # ---------- All Time (quartiles) ----------
             if tf == 'all':
                 # Use created_at for start, ACTIVITY field for end
@@ -2080,10 +2080,10 @@ def generate_pdf(request, report_type):
                 first_dt = _lt(agg['first'])
                 last_dt  = _lt(agg['last'])
                 labels = ['Earliest', '2nd Quarter', '3rd Quarter', 'Latest']
-
+    
                 if not first_dt or not last_dt:
                     return labels, [0, 0, 0, 0], [0, 0, 0, 0], end_dt, end_dt
-
+    
                 start_dt = first_dt
                 end_used = last_dt
                 span = end_used - start_dt
@@ -2091,14 +2091,14 @@ def generate_pdf(request, report_type):
                     total_searches = int(qs.aggregate(total=Sum('user_search_count'))['total'] or 0)
                     new_ids = set(qs.values_list('keyword_id', flat=True))
                     return labels, [total_searches, 0, 0, 0], [len(new_ids), 0, 0, 0], start_dt, end_used
-
+    
                 q1_end = start_dt + span / 4
                 q2_end = start_dt + span / 2
                 q3_end = start_dt + (span * 3) / 4
-
+    
                 counts_total = [0, 0, 0, 0]
                 new_sets = [set(), set(), set(), set()]
-
+    
                 for log in qs:
                     ts = _lt(getattr(log, activity_field, None)) or end_used
                     v = int(getattr(log, 'user_search_count', 0) or 0)
@@ -2110,7 +2110,7 @@ def generate_pdf(request, report_type):
                         counts_total[2] += v
                     else:
                         counts_total[3] += v
-
+    
                     crt = _lt(getattr(log, 'created_at', None)) or start_dt
                     if crt <= q1_end:
                         new_sets[0].add(log.keyword_id)
@@ -2120,132 +2120,71 @@ def generate_pdf(request, report_type):
                         new_sets[2].add(log.keyword_id)
                     else:
                         new_sets[3].add(log.keyword_id)
-
+    
                 counts_new = [len(s) for s in new_sets]
                 return labels, counts_total, counts_new, start_dt, end_used
-
+    
             # ---------- Last 24 Hours (4 bands) ----------
             if tf == 'last24hours':
                 start_dt = end_dt - timedelta(hours=24)
                 labels = ['00:00 - 06:00', '06:00 - 12:00', '12:00 - 18:00', '18:00 - 23:59']
                 counts_total = [0, 0, 0, 0]
                 new_sets = [set(), set(), set(), set()]
-
+    
                 for log in qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_dt}):
                     dt = _lt(getattr(log, activity_field))
                     hr = dt.hour if dt else 0
                     idx = 0 if hr < 6 else 1 if hr < 12 else 2 if hr < 18 else 3
                     counts_total[idx] += int(getattr(log, 'user_search_count', 0) or 0)
-
+    
                 for log in qs.filter(created_at__gte=start_dt, created_at__lte=end_dt):
                     dt = _lt(log.created_at)
                     hr = dt.hour if dt else 0
                     idx = 0 if hr < 6 else 1 if hr < 12 else 2 if hr < 18 else 3
                     new_sets[idx].add(log.keyword_id)
-
+    
                 return labels, counts_total, [len(s) for s in new_sets], start_dt, end_dt
-
+    
             # ---------- Last 7 Days (Day 1 ... Day 7) ----------
             if tf == 'last7days':
                 start_dt = (end_dt - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
                 labels = [f'Day {i}' for i in range(1, 8)]
                 counts_total = [0] * 7
                 new_sets = [set() for _ in range(7)]
-
+    
                 for log in qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_dt}):
                     d = (_lt(getattr(log, activity_field)) or end_dt).date()
                     idx = (d - start_dt.date()).days
                     if 0 <= idx <= 6:
                         counts_total[idx] += int(getattr(log, 'user_search_count', 0) or 0)
-
+    
                 for log in qs.filter(created_at__gte=start_dt, created_at__lte=end_dt):
                     d = (_lt(log.created_at) or start_dt).date()
                     idx = (d - start_dt.date()).days
                     if 0 <= idx <= 6:
                         new_sets[idx].add(log.keyword_id)
-
+    
                 return labels, counts_total, [len(s) for s in new_sets], start_dt, end_dt
-
+    
             # ---------- Last 30 Days (Week 1-4) ----------
             if tf == 'last30days':
                 start_dt = end_dt - timedelta(days=30)
                 labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
                 counts_total = [0, 0, 0, 0]
                 new_sets = [set(), set(), set(), set()]
-
+    
                 for log in qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_dt}):
                     days_since = ((_lt(getattr(log, activity_field)) or end_dt).date() - start_dt.date()).days
                     idx = 0 if days_since <= 6 else 1 if days_since <= 13 else 2 if days_since <= 21 else 3
                     counts_total[idx] += int(getattr(log, 'user_search_count', 0) or 0)
-
+    
                 for log in qs.filter(created_at__gte=start_dt, created_at__lte=end_dt):
                     days_since = ((_lt(log.created_at) or start_dt).date() - start_dt.date()).days
                     idx = 0 if days_since <= 6 else 1 if days_since <= 13 else 2 if days_since <= 21 else 3
                     new_sets[idx].add(log.keyword_id)
-
+    
                 return labels, counts_total, [len(s) for s in new_sets], start_dt, end_dt
-
-            # ---------- Last 12 Months (sliding; includes current month) ----------
-            if tf == 'last12months':
-                anchor = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-                def subtract_months(y, m, n):
-                    total = y * 12 + (m - 1) - n
-                    return total // 12, (total % 12) + 1
-
-                start_y, start_m = subtract_months(anchor.year, anchor.month, 11)
-                start_dt = anchor.replace(year=start_y, month=start_m, day=1)
-
-                seq = []
-                yy, mm = start_y, start_m
-                for _ in range(12):
-                    seq.append((yy, mm))
-                    if mm == 12:
-                        yy += 1
-                        mm = 1
-                    else:
-                        mm += 1
-
-                labels = [calendar.month_name[m] for (y, m) in seq]
-                month_index = {(y, m): i for i, (y, m) in enumerate(seq)}
-
-                counts_total = [0] * 12
-                counts_new   = [0] * 12
-
-                # FIG 1: sum(user_search_count) per month of ACTIVITY field (SQL)
-                agg1 = (
-                    qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_dt})
-                    .annotate(m=TruncMonth(F(activity_field)))
-                    .values('m')
-                    .annotate(total=Sum('user_search_count'))
-                )
-                for row in agg1:
-                    mdt = row['m']  # datetime (month start) from DB
-                    if not isinstance(mdt, datetime):
-                        continue
-                    key = (mdt.year, mdt.month)  # no need to localtime here
-                    idx = month_index.get(key)
-                    if idx is not None:
-                        counts_total[idx] = int(row['total'] or 0)
-
-                # FIG 2: distinct NEW keywords per created_at month (SQL)
-                agg2 = (
-                    qs.filter(created_at__gte=start_dt, created_at__lte=end_dt)
-                    .annotate(m=TruncMonth('created_at'))
-                    .values('m')
-                    .annotate(n=Count('keyword_id', distinct=True))
-                )
-                for row in agg2:
-                    mdt = row['m']
-                    if not isinstance(mdt, datetime):
-                        continue
-                    key = (mdt.year, mdt.month)
-                    idx = month_index.get(key)
-                    if idx is not None:
-                        counts_new[idx] = int(row['n'] or 0)
-
-                return labels, counts_total, counts_new, start_dt, end_dt
-
+    
             # ---------- Last Month (previous full month; single bucket) ----------
             if tf == 'lastmonth':
                 first_this_month = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -2253,13 +2192,13 @@ def generate_pdf(request, report_type):
                 start_dt = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 end_used = last_month_end
                 labels = [last_month_end.strftime('%B %Y')]
-
+    
                 total = int(qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_used})
                             .aggregate(total=Sum('user_search_count'))['total'] or 0)
                 new_ids = set(qs.filter(created_at__gte=start_dt, created_at__lte=end_used)
                                 .values_list('keyword_id', flat=True))
                 return labels, [total], [len(new_ids)], start_dt, end_used
-
+    
             # ---------- Last Year (previous calendar year, Jan-Dec) ----------
             if tf == 'lastyear':
                 year = end_dt.year - 1
@@ -2268,21 +2207,21 @@ def generate_pdf(request, report_type):
                 labels = ['January','February','March','April','May','June','July','August','September','October','November','December']
                 counts_total = [0] * 12
                 new_sets = [set() for _ in range(12)]
-
+    
                 for log in qs.filter(**{f"{activity_field}__year": year}):
                     dt = _lt(getattr(log, activity_field))
                     if not dt: 
                         continue
                     counts_total[dt.month - 1] += int(getattr(log, 'user_search_count', 0) or 0)
-
+    
                 for log in qs.filter(created_at__year=year):
                     dt = _lt(log.created_at)
                     if not dt:
                         continue
                     new_sets[dt.month - 1].add(log.keyword_id)
-
+    
                 return labels, counts_total, [len(s) for s in new_sets], start_dt, end_used
-
+    
             # ---------- Fallback: All Time (single bucket) ----------
             labels = ['All Time']
             total = int(qs.aggregate(total=Sum('user_search_count'))['total'] or 0)
@@ -2292,19 +2231,28 @@ def generate_pdf(request, report_type):
             end_used = last_activity
             new_ids = set(qs.values_list('keyword_id', flat=True))
             return labels, [total], [len(new_ids)], start_dt, end_used
-
+    
         labels, counts, new_counts, start_dt, end_used = _bucket_data(logs_qs, tf, end_dt)
-
+    
         total = sum(counts) if counts else 0
         total_new = sum(new_counts) if new_counts else 0
-
+    
         start_d = start_dt.date() if isinstance(start_dt, datetime) else end_dt.date()
         end_d = end_used.date() if isinstance(end_used, datetime) else end_dt.date()
         days = max(1, (end_d - start_d).days + 1)
-
+    
         avg = round(total / days, 2) if days else 0.0
         avg_new = round(total_new / days, 2) if days else 0.0
-
+    
+        # Build the time-filtered logs for Page 3 using the same window
+        if tf == 'all':
+            logs_for_page3 = logs_qs.order_by('-updated_at')
+        else:
+            logs_for_page3 = logs_qs.filter(**{
+                f"{activity_field}__gte": start_dt,
+                f"{activity_field}__lte": end_used
+            }).order_by('-updated_at')
+    
         context = {
             "meta": {
                 "title": "Keyword Search History Report",
@@ -2337,9 +2285,12 @@ def generate_pdf(request, report_type):
                 "labels": labels,
                 "counts": new_counts,      # Figure 2 buckets
             },
+    
+            # IMPORTANT: pass logs so the PDF generator can build Page 3 aligned with the same window
+            "logs": logs_for_page3,
         }
-
-        # Build PDF (first page: Figure 1; second page: Figure 2)
+    
+        # Build PDF (first page: Figure 1; second page: Figure 2; third page: No-results table)
         generate_keyword_search_history(pdf_buffer, context, user_info)
         file_name = 'Liraya_KeywordSearchHistory_Report.pdf'
 
@@ -4131,3 +4082,5 @@ def first_login_view(request):
             return redirect('login')
 
     return render(request, 'force_change_password.html', {'account_id': account_id})
+
+)
