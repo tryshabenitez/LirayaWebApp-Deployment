@@ -2148,25 +2148,37 @@ def _parse_first_last(search_times_str):
 
 def _normalize_book_count(log):
     """
-    Derive the book result count from the log object without touching other views.
-    Preferred: a numeric field like total_book_results.
-    Fallbacks: books list/JSON/string/None.
+    STRICT: return >0 only when we have unambiguous evidence of results.
+    Anything ambiguous (including non-JSON strings) counts as 0.
     """
-    # 1) Numeric cache field (adjust to your model if different)
+    # 1) Preferred numeric field (rename if your model uses a different one)
     if hasattr(log, "total_book_results"):
         try:
-            return int(getattr(log, "total_book_results") or 0)
+            n = int(getattr(log, "total_book_results") or 0)
+            return max(0, n)
         except Exception:
-            pass
+            return 0
 
-    # 2) If your log has a 'books' attribute (list/JSON/string)
+    # 2) Generic 'books' attribute (list/tuple/int/float/JSON-string)
     val = getattr(log, "books", None)
     if val is None:
         return 0
+
+    # list / tuple
     if isinstance(val, (list, tuple)):
-        return len(val)
+        try:
+            return max(0, int(len(val)))
+        except Exception:
+            return 0
+
+    # numeric
     if isinstance(val, (int, float)):
-        return int(val)
+        try:
+            return max(0, int(val))
+        except Exception:
+            return 0
+
+    # JSON-encoded list string -> count its length
     if isinstance(val, str):
         s = val.strip()
         if not s:
@@ -2175,15 +2187,18 @@ def _normalize_book_count(log):
             import json
             try:
                 arr = json.loads(s)
-                return len(arr) if isinstance(arr, list) else 0
+                return max(0, int(len(arr))) if isinstance(arr, list) else 0
             except Exception:
                 return 0
-        # Non-empty non-JSON string → treat as “some results”
-        return 1
+        # IMPORTANT: non-JSON strings are AMBIGUOUS -> treat as 0
+        return 0
+
+    # Fallback: try len(); if it fails, treat as 0
     try:
-        return len(val)
+        return max(0, int(len(val)))
     except Exception:
-        return 1
+        return 0
+
 
 
 def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=None):
@@ -2440,37 +2455,77 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     # ===== Page 3 =====
     flowables.append(PageBreak())
-    flowables.append(Paragraph("KEYWORDS WITH NO BOOK RESULTS", title_topic_style))
-    flowables.append(Spacer(1, 6))
+    flowables.append(Paragraph("FIGURE 3: KEYWORDS WITH NO BOOK RESULTS", title_topic_style))
+    flowables.append(Spacer(1, 5))
 
     if not no_results_rows:
         flowables.append(Paragraph("No keywords without results for the selected period.", content_style))
     else:
-        # header + rows
-        tdata = [["Keyword", "Total Amount of Times Searched", "First Searched", "Last Searched"]]
+        # --- Styles for better wrapping/fit ---
+        header_cell_style = ParagraphStyle(
+            name='HeaderCell',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=9,           # slightly smaller so it fits
+            leading=11,
+            alignment=1           # center
+        )
+        body_keyword_style = ParagraphStyle(
+            name='BodyKeyword',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=10,
+            leading=12,
+            wordWrap='CJK'        # allows wrapping even for long/unspaced tokens
+        )
+        body_center_style = ParagraphStyle(
+            name='BodyCenter',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=10,
+            leading=12,
+            alignment=1           # center
+        )
+
+        # Two-line header for the long column name
+        header_row = [
+            Paragraph("Keyword", header_cell_style),
+            Paragraph("Total Amount of<br/>Times Searched", header_cell_style),
+            Paragraph("First Searched", header_cell_style),
+            Paragraph("Last Searched", header_cell_style),
+        ]
+
+        # Build table data with wrapped cells
+        tdata = [header_row]
         for row in no_results_rows:
             tdata.append([
-                str(row.get("keyword", "")),
-                int(row.get("count", 0)),
-                str(row.get("first", "—")),
-                str(row.get("last", "—")),
+                Paragraph(str(row.get("keyword", "")), body_keyword_style),
+                Paragraph(str(int(row.get("count", 0))), body_center_style),
+                Paragraph(str(row.get("first", "—")), body_center_style),
+                Paragraph(str(row.get("last", "—")),  body_center_style),
             ])
 
-        table = Table(tdata, colWidths=[2.6*inch, 1.7*inch, 1.35*inch, 1.35*inch], repeatRows=1)
+        # Column widths that fit the printable area (~6.5")
+        # 3.0 + 1.1 + 1.2 + 1.2 = 6.5 inches
+        table = Table(
+            tdata,
+            colWidths=[3.0*inch, 1.1*inch, 1.2*inch, 1.2*inch],
+            repeatRows=1
+        )
+
         table.setStyle(TableStyle([
             # Header styling
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3e151a')),
             ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
             ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE',   (0, 0), (-1, 0), 10),
-            ('ALIGN',      (1, 0), (1, 0), 'CENTER'),
-            ('ALIGN',      (2, 0), (3, 0), 'CENTER'),
+            ('FONTSIZE',   (0, 0), (-1, 0), 9),
             ('TOPPADDING', (0, 0), (-1, 0), 8),
             ('BOTTOMPADDING',(0,0),(-1,0), 8),
 
             # Body styling
             ('FONTNAME',   (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE',   (0, 1), (-1, -1), 10),
+            ('VALIGN',     (0, 1), (-1, -1), 'TOP'),
             ('ALIGN',      (1, 1), (1, -1), 'CENTER'),
             ('ALIGN',      (2, 1), (3, -1), 'CENTER'),
             ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.whitesmoke, colors.HexColor('#f8f8f8')]),
