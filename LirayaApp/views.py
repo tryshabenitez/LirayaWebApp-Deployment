@@ -278,7 +278,7 @@ def user_search(request):
                 break
         return result
 
-    def simple_variants(token, limit=8):
+    def simple_variants(token, limit=30):
         """
         Return a small ranked set of plausible variants (1–2 edits + vowel insertion patch).
         """
