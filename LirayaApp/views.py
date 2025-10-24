@@ -188,11 +188,10 @@ def user_aboutus(request):
 
 
 def user_search(request):
-
-    # Base queryset
+    # ------- Base queryset -------
     books = Books.objects.filter(is_archived=False)
 
-    # ---------- Read query params ----------
+    # ------- Read query params -------
     q = (request.GET.get('q') or "").strip()
     field = (request.GET.get('field') or "allFields").strip()
     sort_option = request.GET.get('sort', 'Relevance')
@@ -202,15 +201,98 @@ def user_search(request):
     min_year = request.GET.get('min_year')
     max_year = request.GET.get('max_year')
 
-    # ---------- Stopwords (connecting words) ----------
+    # ------- Stopwords (connecting words) -------
     STOPWORDS = {
         'the','or','at','and','of','to','a','an','in','on','by','for','with','from',
         'is','are','as','that','this','these','those','be','was','were','been','it',
         'its','into','than','then','over','under','between','among','via','per','vs'
     }
 
-    # --- helper: append a timestamp to search_times atomically ---
-    SEP = "\n"  # change to ", " if you want comma-separated
+    # ===============================
+    #   LIGHTWEIGHT ONLINE CORRECTOR
+    # ===============================
+    LETTERS = string.ascii_lowercase
+    VOWELS = set('aeiou')
+
+    def split_words(s):
+        """Split by whitespace, drop stopwords, keep alnum tokens only."""
+        raw = (s or '').replace(',', ' ').split()
+        out = []
+        for w in raw:
+            w = _re.sub(r'[^A-Za-z0-9\-]', '', w).strip()
+            if not w:
+                continue
+            wl = w.lower()
+            if wl not in STOPWORDS:
+                out.append(w)
+        return out
+
+    def split_keywords(s):
+        """Primary_keyword is comma-separated; also split inner spaces into single-word tokens."""
+        out = []
+        for chunk in (s or '').split(','):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            for w in chunk.split():
+                w = _re.sub(r'[^A-Za-z0-9\-]', '', w).strip()
+                if w and w.lower() not in STOPWORDS:
+                    out.append(w)
+        return out
+
+    # ---- Edits at Damerau-Levenshtein distance 1 (limited) ----
+    def edits1(word):
+        """Generate a small set of plausible variants at edit distance 1 without using the DB."""
+        w = word.lower()
+        splits = [(w[:i], w[i:]) for i in range(len(w)+1)]
+
+        # deletions (remove one char)
+        deletes = {L + R[1:] for L, R in splits if R}
+
+        # transposes (swap adjacent)
+        transposes = {L + R[1] + R[0] + R[2:] for L, R in splits if len(R) > 1}
+
+        # replacements: bias toward vowels (lighter set) + common consonants
+        COMMONS = set('tnsrhldcmpgbfywk')  # frequent letters to limit explosion
+        repl_pool = VOWELS | COMMONS
+        replaces = {L + c + (R[1:] if R else '') for L, R in splits if R for c in repl_pool if c != R[0]}
+
+        # insertions: insert a vowel (helps “compter” -> “computer”)
+        inserts = {L + v + R for L, R in splits for v in VOWELS}
+
+        variants = deletes | transposes | replaces | inserts
+        # prune: length sanity + keep alnum
+        variants = {v for v in variants if 2 <= len(v) <= 48 and _re.fullmatch(r'[a-z0-9\-]+', v or '')}
+        return variants
+
+    def simple_variants(token, limit=6):
+        """
+        Return a small ranked set of plausible variants:
+        - Prefer variants that add vowels
+        - Prefer longer (likely missing-letter cases)
+        - Keep deterministic cap to avoid huge SQL OR trees
+        """
+        base = token.lower()
+        cand = edits1(base)
+        # Heuristic scoring
+        def score(x):
+            # more vowels, slightly longer, fewer dashes
+            return (sum(1 for ch in x if ch in VOWELS), len(x), -x.count('-'), -abs(len(x) - len(base)))
+        ranked = sorted(cand, key=score, reverse=True)
+        # Ensure original token included
+        out = [base]
+        for v in ranked:
+            if v != base:
+                out.append(v)
+            if len(out) >= max(1, limit):
+                break
+        return out
+
+    # ===============================
+    #           LOGGING
+    # (kept as-is; you can disable if needed)
+    # ===============================
+    SEP = "\n"
     def _append_time(pk):
         now = timezone.now()
         ts_str = now.strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -221,214 +303,93 @@ def user_search(request):
                 default=Concat('search_times', Value(SEP), Value(ts_str)),
                 output_field=CharField(),
             ),
-            updated_at=now,  # queryset.update() bypasses auto_now, so set explicitly
+            updated_at=now,
         )
 
-    # --- Log user search terms (only when there is real input) ---
     if q and q.strip():
-        terms_for_log = _normalize_terms_for_logging(q, STOPWORDS)  # your existing helper
+        # assumes your existing helper exists
+        terms_for_log = _normalize_terms_for_logging(q, STOPWORDS)
         for term in terms_for_log:
             obj, _ = KeywordLog.objects.get_or_create(user_keyword_search=term)
-            # atomic increment + append time (+ touch updated_at)
             KeywordLog.objects.filter(pk=obj.pk).update(
                 user_search_count=F('user_search_count') + 1,
                 updated_at=timezone.now(),
             )
             _append_time(obj.pk)
 
-    # ----- Record search usage (aggregate only when 2+ terms to avoid single-term double count) -----
-    try:
-        terms_for_log = _normalize_terms_for_logging(q, STOPWORDS)
-        if terms_for_log and len(terms_for_log) > 1:
-            joined = ', '.join(terms_for_log)  # e.g. "computer, engineering, technology"
-            with transaction.atomic():
-                rec, _created = KeywordLog.objects.get_or_create(
-                    user_keyword_search=joined,
-                    defaults={'user_search_count': 0},
-                )
-                KeywordLog.objects.filter(pk=rec.pk).update(
-                    user_search_count=F('user_search_count') + 1,
-                    updated_at=timezone.now(),
-                )
-                _append_time(rec.pk)
-    except Exception:
-        # Never block search if logging fails
-        pass
+        try:
+            if terms_for_log and len(terms_for_log) > 1:
+                joined = ', '.join(terms_for_log)
+                with transaction.atomic():
+                    rec, _created = KeywordLog.objects.get_or_create(
+                        user_keyword_search=joined,
+                        defaults={'user_search_count': 0},
+                    )
+                    KeywordLog.objects.filter(pk=rec.pk).update(
+                        user_search_count=F('user_search_count') + 1,
+                        updated_at=timezone.now(),
+                    )
+                    _append_time(rec.pk)
+        except Exception:
+            pass  # never block search
 
-    # ---------- Token helpers ----------
-    def split_words(s):
-        # split by whitespace, drop stopwords
-        return [w for w in (s or '').replace(',', ' ').split() if w and w.lower() not in STOPWORDS]
-
-    def split_keywords(s):
-        # primary_keyword is comma separated; also split inner spaces into single-word tokens
-        out = []
-        for chunk in (s or '').split(','):
-            chunk = chunk.strip()
-            if not chunk:
-                continue
-            for w in chunk.split():
-                wl = w.strip()
-                if wl and wl.lower() not in STOPWORDS:
-                    out.append(wl)
-        return out
-
-    def title_tokens(s):
-        # pull alpha chunks from title, drop stopwords, normalize lower, len>=3
-        return [t.lower() for t in _re.findall(r"[A-Za-z]+", s or "") if len(t) >= 3 and t.lower() not in STOPWORDS]
-
-    # ---------- Fuzzy helpers (robust to heavy OCR noise) ----------
-    def _trigrams(s):
-        s = f" {s.lower()} "
-        return {s[i:i+3] for i in range(len(s)-2)} if len(s) >= 3 else {s}
-
-    def _dice(a, b):
-        A, B = _trigrams(a), _trigrams(b)
-        if not A or not B:
-            return 0.0
-        inter = len(A & B)
-        return (2.0 * inter) / (len(A) + len(B))
-
-    def _lev_ratio(a, b):
-        la, lb = len(a), len(b)
-        if la == 0 and lb == 0:
-            return 1.0
-        prev = list(range(lb + 1))
-        for i in range(1, la + 1):
-            cur = [i] + [0]*lb
-            ca = a[i-1]
-            for j in range(1, lb + 1):
-                cb = b[j-1]
-                cost = 0 if ca == cb else 1
-                cur[j] = min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + cost)
-            prev = cur
-        dist = prev[lb]
-        return 1.0 - (dist / float(max(la, lb)))
-
-    def _skeleton(s):
-        return _re.sub(r'[aeiou]+', '', s.lower())
-
-    def _skeleton_ratio(a, b):
-        sa, sb = _skeleton(a), _skeleton(b)
-        return _dice(sa, sb)
-
-    def _sim(a, b):
-        if not a or not b:
-            return 0.0
-        return max(_dice(a, b), _lev_ratio(a, b), _skeleton_ratio(a, b))
-
-    # ---------- Build a reference vocab + counts from ENTIRE DB ----------
-    vocab_counts = {}
-    for pk, ti in Books.objects.values_list('primary_keyword', 'title'):
-        for t in split_keywords(pk or ''):
-            tl = t.lower()
-            vocab_counts[tl] = vocab_counts.get(tl, 0) + 1
-        for t in title_tokens(ti or ''):
-            vocab_counts[t] = vocab_counts.get(t, 0) + 1
-
-    vocab = set(vocab_counts.keys())
-
-    # bucket by first letter to reduce comparisons
-    buckets = {}
-    for t in vocab:
-        key = (t[:1] or '#')
-        buckets.setdefault(key, set()).add(t)
-
-    def _bucket_candidates(tok):
-        if not tok:
-            return vocab
-        key = tok[:1].lower()
-        cand = set()
-        for k in {key, chr(max(ord('a'), ord(key) - 1)), chr(min(ord('z'), ord(key) + 1))}:
-            cand |= buckets.get(k, set())
-        return cand or vocab
-
-    def normalize_token(tok, cutoff=0.72):
-        """
-        Map a noisy token to the most frequent close token from the corpus.
-        Keep original if no good match.
-        """
-        t = (tok or '').lower()
-        if not t or len(t) <= 2:
-            return t
-        cands = _bucket_candidates(t)
-        best, best_s, best_count = t, 0.0, -1
-        for c in cands:
-            if abs(len(c) - len(t)) > max(3, int(0.6 * len(t))):
-                continue
-            s = _sim(t, c)
-            if s >= cutoff:
-                cnt = vocab_counts.get(c, 0)
-                if (s > best_s) or (abs(s - best_s) < 1e-6 and cnt > best_count):
-                    best, best_s, best_count = c, s, cnt
-        return best if best_s >= cutoff else t
-
-    def fuzzy_variants(term, cutoff=0.72, limit=10):
-        """Up to 'limit' close variants from vocab for filtering."""
-        t = (term or '').lower()
-        if not t:
-            return {t}
-        cands = _bucket_candidates(t)
-        scored = []
-        for c in cands:
-            s = _sim(t, c)
-            if s >= cutoff:
-                scored.append((s, vocab_counts.get(c, 0), c))
-        scored.sort(key=lambda x: (-x[0], -x[1], x[2]))
-        top = [c for _, _, c in scored[:limit]]
-        return set(top) or {t}
-
-    # ---------- Apply SEARCH filter first (now fuzzy) ----------
+    # ===============================
+    #           SEARCH
+    # ===============================
     if q:
-        if field == 'author':
-            tokens = split_words(q)
-            for t in tokens:
-                books = books.filter(author__icontains=t)
+        # Build corrected tokens ON THE FLY (no DB vocab, no regex scans)
+        tokens = split_words(q)
+        kw_tokens = split_keywords(q)
 
-        elif field == 'title':
-            tokens = split_words(q)
-            for t in tokens:
-                vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=8))
+        def apply_field_filters(qs, field_name, toks):
+            """Apply icontains across original+variants per token."""
+            for t in toks:
+                variants = simple_variants(t, limit=6)  # includes original first
                 q_or = Q()
-                for v in vars_:
-                    q_or |= Q(title__icontains=v)
-                books = books.filter(q_or)
+                for v in variants:
+                    if field_name == 'keywords':
+                        q_or |= Q(primary_keyword__icontains=v)
+                    elif field_name == 'title':
+                        q_or |= Q(title__icontains=v)
+                    elif field_name == 'author':
+                        q_or |= Q(author__icontains=v)
+                    else:  # allFields
+                        q_or |= (
+                            Q(title__icontains=v) |
+                            Q(author__icontains=v) |
+                            Q(primary_keyword__icontains=v)
+                        )
+                qs = qs.filter(q_or)
+            return qs
 
+        if field == 'author':
+            books = apply_field_filters(books, 'author', tokens or kw_tokens)
+        elif field == 'title':
+            books = apply_field_filters(books, 'title', tokens or kw_tokens)
         elif field == 'keywords':
-            tokens = split_keywords(q)
-            for t in tokens:
-                vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=12))
-                inner = '|'.join(_re.escape(v) for v in vars_)
-                pattern = rf'(^|[,\s])(?:{inner})([,\s]|$)'
-                books = books.filter(primary_keyword__iregex=pattern)
-
-        else:  # allFields
-            tokens = split_words(q)
-            extra_kw = split_keywords(q)
+            # Prefer keyword tokens; fall back to split_words
+            books = apply_field_filters(books, 'keywords', kw_tokens or tokens)
+        else:
+            # allFields: merge unique tokens
             token_set, seen = [], set()
-            for t in tokens + extra_kw:
+            for t in tokens + kw_tokens:
                 tl = t.lower()
                 if tl not in seen:
                     token_set.append(t)
                     seen.add(tl)
+            books = apply_field_filters(books, 'all', token_set)
 
-            for t in token_set:
-                vars_ = list(fuzzy_variants(t, cutoff=0.72, limit=10))
-                q_or = Q()
-                for v in vars_:
-                    q_or |= Q(title__icontains=v) | Q(author__icontains=v)
-                inner = '|'.join(_re.escape(v) for v in vars_)
-                pattern = rf'(^|[,\s])(?:{inner})([,\s]|$)'
-                q_or |= Q(primary_keyword__iregex=pattern)
-                books = books.filter(q_or)
-
-    # ---------- Apply YEAR filters ----------
+    # ===============================
+    #         YEAR FILTERS
+    # ===============================
     if min_year:
         books = books.filter(year_of_publication__gte=min_year)
     if max_year:
         books = books.filter(year_of_publication__lte=max_year)
 
-    # ---------- Apply CATEGORY / RESOURCE TYPE filters ----------
+    # ===============================
+    #    CATEGORY / RESOURCE TYPE
+    # ===============================
     if active_categories:
         cats = [c for c in active_categories.split(',') if c]
         if cats:
@@ -443,22 +404,25 @@ def user_search(request):
     else:
         rtypes = []
 
-    # ---------- Apply SUBJECTS / KEYWORDS facet filter (fuzzy across selected) ----------
+    # ===============================
+    #   SUBJECTS FACET FILTER (no fuzzy)
+    # ===============================
     if active_subjects:
         subs = [s for s in active_subjects.split(',') if s]
         if subs:
             q_or = Q()
             for s_term in subs:
-                variants = fuzzy_variants(s_term, cutoff=0.72, limit=16)
-                inner = '|'.join(_re.escape(v) for v in variants)
-                pattern = rf'(^|[,\s])(?:{inner})([,\s]|$)'
-                q_or |= Q(primary_keyword__iregex=pattern)
+                # Apply same lightweight variants to the selected subject term
+                for v in simple_variants(s_term, limit=6):
+                    q_or |= Q(primary_keyword__icontains=v)
             if q_or:
                 books = books.filter(q_or)
     else:
         subs = []
 
-    # ---------- SORT ----------
+    # ===============================
+    #           SORT
+    # ===============================
     if sort_option == 'Newest to Oldest':
         books = books.order_by('-year_of_publication')
     elif sort_option == 'Oldest to Newest':
@@ -467,9 +431,11 @@ def user_search(request):
         books = books.order_by('author')
     elif sort_option == 'Title':
         books = books.order_by('title')
-    # 'Relevance' keeps current ordering
+    # 'Relevance' -> keep current order
 
-    # ---------- FACETS (based on CURRENT filtered set) ----------
+    # ===============================
+    #           FACETS
+    # ===============================
     shelf_categories = (
         books.values('shelf_category')
              .annotate(count=Count('shelf_category'))
@@ -482,14 +448,12 @@ def user_search(request):
              .order_by('-count', 'book_type')
     )
 
-    # Subjects / Keywords facet with typo normalization (display cleaned labels)
+    # Subjects / Keywords facet (simple count; no heavy normalization)
     subj_counter = {}
     for s in books.values_list('primary_keyword', flat=True):
         for token in split_keywords(s or ''):
-            norm = normalize_token(token, cutoff=0.66)
-            if not norm:
-                continue
-            subj_counter[norm] = subj_counter.get(norm, 0) + 1
+            key = token.lower()
+            subj_counter[key] = subj_counter.get(key, 0) + 1
 
     subjects_facet = [
         {'term': k, 'display': k.title(), 'count': v}
@@ -497,7 +461,9 @@ def user_search(request):
     ]
     subjects_facet.sort(key=lambda x: (-x['count'], x['display']))
 
-    # ---------- Pagination AFTER all filtering ----------
+    # ===============================
+    #         PAGINATION
+    # ===============================
     paginator = Paginator(books, 5)  # 5 per page
     page = request.GET.get('page')
     books_page = paginator.get_page(page)
@@ -505,7 +471,9 @@ def user_search(request):
     current_page = books_page.number
     total_pages = paginator.num_pages
 
-    # ---------- Context ----------
+    # ===============================
+    #           CONTEXT
+    # ===============================
     context = {
         'books': books_page,
         'current_page': current_page,
@@ -521,6 +489,7 @@ def user_search(request):
     }
 
     return render(request, 'user_search.html', context)
+
 
 def view_info(request):
     book_id = request.GET.get('book_id')
