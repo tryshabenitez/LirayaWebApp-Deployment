@@ -367,6 +367,17 @@
                     </button>
                 </div>
 
+                <!-- Upload TEMPORARY Button -->
+                <div class="scan-actions">
+                    <input type="file" id="pageUpload" accept="image/*" style="display: none;">
+                    <button type="button" id="uploadButton" class="scan-button" 
+                            data-intro="Step 10.5: Or upload an image from your device." 
+                            data-step="11.5"
+                            data-tooltip="Upload">
+                            Upload
+                    </button>
+                </div>
+              
                 <div class="scan-actions">
                     <button type="button" id="cropButton" class="scan-button" 
                         data-intro="Step 11: Once captured, crop the desired part to scan." 
@@ -1096,6 +1107,70 @@ function captureImage(retake = false) {
 // --------- BUTTONS AND CROP FUNCTIONS ---------///
 let cropper = null;
 
+// Handle file upload through the upload button
+document.getElementById('uploadButton').addEventListener('click', function() {
+    document.getElementById('pageUpload').click(); // Trigger the hidden file input
+});
+
+// Handle the actual file selection
+document.getElementById('pageUpload').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const imgData = e.target.result;
+        
+        if (imgData) {
+            const capturedImage = document.getElementById('capturedImage');
+            capturedImage.src = imgData;  // Set the captured image
+            capturedImage.style.display = 'block';  // Make it visible
+            
+            // Hide the camera preview
+            document.getElementById('cameraPreview').style.display = 'none';
+
+            // Initialize the Cropper.js instance on the captured image
+            if (cropper) {
+                cropper.destroy();  // Destroy previous cropper instance if any
+            }
+
+            cropper = new Cropper(capturedImage, {
+                aspectRatio: NaN,  // Allow free resizing (no fixed aspect ratio)
+                viewMode: 1,       // Controls the cropping area (1 = inside the image, 2 = outside)
+                autoCropArea: 1,   // Auto crop area
+                zoomable: false,    // Disable zooming
+                cropBoxResizable: true,  // Allow the crop box to be resized
+                cropBoxMovable: true,    // Allow the crop box to be moved
+                ready: function () {
+                    // Make crop box border thick and colored for visibility
+                    const cropBox = document.querySelector('.cropper-crop-box');
+                    if (cropBox) {
+                        cropBox.style.border = '2px solid #00e0ff'; // Bright thick border
+                    }
+                    // Also make handles larger
+                    const handles = document.querySelectorAll('.cropper-line, .cropper-point');
+                    handles.forEach(h => {
+                        h.style.background = '#00e0ff';
+                        h.style.width = '10px';
+                        h.style.height = '10px';
+                        h.style.borderRadius = '2px';
+                    });
+                    console.log("Cropper is ready.");
+                },
+            });
+        } else {
+            // If no image is loaded, show an alert
+            alert("No image found.");
+        }
+    };
+    
+    // Read the selected file as data URL
+    reader.readAsDataURL(file);
+    
+    // Reset the file input for future uploads
+    event.target.value = '';
+});
+  
 document.getElementById('captureButton').addEventListener('click', function() {
     const cameraPreview = document.getElementById('cameraPreview');
     const canvas = document.createElement('canvas');
