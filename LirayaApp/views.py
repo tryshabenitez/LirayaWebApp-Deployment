@@ -44,6 +44,7 @@ import base64
 import json
 import spacy
 import cv2
+import difflib
 import numpy as np
 import easyocr 
 import torch
@@ -209,13 +210,10 @@ def user_search(request):
     }
 
     # ===============================
-    #   LIGHTWEIGHT ONLINE CORRECTOR
+    #        FUZZY (difflib) — ONLINE
     # ===============================
-    LETTERS = string.ascii_lowercase
-    VOWELS = set('aeiou')
-
     def split_words(s):
-        """Split by whitespace, drop stopwords, keep alnum tokens only."""
+        """Split by whitespace, drop stopwords, keep alnum/dash tokens only."""
         raw = (s or '').replace(',', ' ').split()
         out = []
         for w in raw:
@@ -228,7 +226,7 @@ def user_search(request):
         return out
 
     def split_keywords(s):
-        """Primary_keyword is comma-separated; also split inner spaces into single-word tokens."""
+        """primary_keyword is comma-separated; also split inner spaces into tokens."""
         out = []
         for chunk in (s or '').split(','):
             chunk = chunk.strip()
@@ -240,93 +238,44 @@ def user_search(request):
                     out.append(w)
         return out
 
-    # ---- Edits at (Damerau) Levenshtein distance 1 ----
-    def edits1(word):
-        """Generate a small set of plausible variants at edit distance 1 without using the DB."""
-        w = word.lower()
-        splits = [(w[:i], w[i:]) for i in range(len(w)+1)]
-
-        # deletions (remove one char)
-        deletes = {L + R[1:] for L, R in splits if R}
-
-        # transposes (swap adjacent)
-        transposes = {L + R[1] + R[0] + R[2:] for L, R in splits if len(R) > 1}
-
-        # replacements: bias toward vowels + common consonants (limits explosion)
-        COMMONS = set('tnsrhldcmpgbfywk')
-        repl_pool = VOWELS | COMMONS
-        replaces = {L + c + (R[1:] if R else '') for L, R in splits if R for c in repl_pool if c != R[0]}
-
-        # insertions: insert a vowel (helps “compter” -> “computer”)
-        inserts = {L + v + R for L, R in splits for v in VOWELS}
-
-        variants = deletes | transposes | replaces | inserts
-        variants = {v for v in variants if 2 <= len(v) <= 48 and _re.fullmatch(r'[a-z0-9\-]+', v or '')}
-        return variants
-
-    # ---- Limited 2-edit expansion (capped) ----
-    def edits2(word):
-        """Generate two-step variants but keep it small (fast)."""
-        result = set()
-        for e1 in edits1(word):
-            for e2 in edits1(e1):
-                if abs(len(e2) - len(word)) <= 3:
-                    result.add(e2)
-                if len(result) > 100:  # hard cap to avoid explosion
-                    break
-            if len(result) > 100:
-                break
-        return result
-
-    def simple_variants(token, limit=30):
+    def build_reference_vocab(row_limit=20000):
         """
-        Return a small ranked set of plausible variants (1–2 edits + vowel insertion patch).
+        Build a small in-memory vocabulary from titles and primary_keyword.
+        Capped by row_limit to keep it fast and deterministic.
         """
-        base = token.lower()
-    
-        # Base one- and two-edit candidates
-        cand = edits1(base) | edits2(base)
-    
-        # ---- VOWEL INSERTION PATCH ----
-        # Handle common missing-vowel patterns like 'compter' -> 'computer', 'comuter' -> 'computer'
-        vowel_patch = set()
-        if base.startswith("comp") and "u" not in base and "computer".startswith(base[:5]):
-            vowel_patch.add("computer")
-        elif base.startswith("com") and "u" not in base and len(base) >= 5:
-            vowel_patch.add(base[:3] + "u" + base[3:])
-        elif base.startswith("cm") or base.startswith("cmp"):
-            vowel_patch.add(base.replace("cmp", "comp"))
-            vowel_patch.add("computer")
-    
-        # Add common vowel insertions in the middle (generic)
-        for i in range(1, len(base)):
-            if (base[i-1] not in VOWELS) and (base[i] not in VOWELS):
-                vowel_patch.add(base[:i] + "a" + base[i:])
-                vowel_patch.add(base[:i] + "e" + base[i:])
-                vowel_patch.add(base[:i] + "i" + base[i:])
-                vowel_patch.add(base[:i] + "o" + base[i:])
-                vowel_patch.add(base[:i] + "u" + base[i:])
-    
-        cand |= vowel_patch
-    
-        # Heuristic scoring for ordering
-        def score(x):
-            return (sum(1 for ch in x if ch in VOWELS), len(x), -abs(len(x) - len(base)))
-    
-        ranked = sorted(cand, key=score, reverse=True)
-    
-        out = [base]
-        for v in ranked:
-            if v != base:
-                out.append(v)
-            if len(out) >= limit:
-                break
-        return out
+        vocab = set()
+        for title, keywords in Books.objects.only('title', 'primary_keyword') \
+                                           .values_list('title', 'primary_keyword')[:row_limit]:
+            if title:
+                for w in title.replace(',', ' ').split():
+                    wl = w.strip().lower()
+                    if len(wl) >= 3 and wl not in STOPWORDS:
+                        vocab.add(wl)
+            if keywords:
+                for w in keywords.replace(',', ' ').split():
+                    wl = w.strip().lower()
+                    if len(wl) >= 3 and wl not in STOPWORDS:
+                        vocab.add(wl)
+        return list(vocab)
 
+    # Build per-request (no persistent cache as requested)
+    REFERENCE_VOCAB = build_reference_vocab()
+
+    def fuzzy_variants(token, n=7, cutoff=0.68):
+        """
+        Return up to 'n' close matches from in-memory vocab using difflib.
+        Always includes the original token.
+        """
+        base = (token or "").lower()
+        if not base:
+            return [base]
+        matches = difflib.get_close_matches(base, REFERENCE_VOCAB, n=n, cutoff=cutoff)
+        if base not in matches:
+            matches.insert(0, base)
+        return matches
 
     # ===============================
-    #           LOGGING
-    # (kept as-is; you can disable if needed)
+    #           LOGGING (kept)
     # ===============================
     SEP = "\n"
     def _append_time(pk):
@@ -373,14 +322,13 @@ def user_search(request):
     #           SEARCH
     # ===============================
     if q:
-        # Build corrected tokens ON THE FLY (no DB vocab, no regex scans)
         tokens = split_words(q)
         kw_tokens = split_keywords(q)
 
         def apply_field_filters(qs, field_name, toks):
-            """Apply icontains across original+variants per token."""
+            """Apply icontains across fuzzy variants per token (title/author/keywords)."""
             for t in toks:
-                variants = simple_variants(t, limit=30)  # includes original first
+                variants = fuzzy_variants(t, n=7, cutoff=0.68)  # includes original first
                 q_or = Q()
                 for v in variants:
                     if field_name == 'keywords':
@@ -403,7 +351,6 @@ def user_search(request):
         elif field == 'title':
             books = apply_field_filters(books, 'title', tokens or kw_tokens)
         elif field == 'keywords':
-            # Prefer keyword tokens; fall back to split_words
             books = apply_field_filters(books, 'keywords', kw_tokens or tokens)
         else:
             # allFields: merge unique tokens
@@ -441,15 +388,14 @@ def user_search(request):
         rtypes = []
 
     # ===============================
-    #   SUBJECTS FACET FILTER (no fuzzy)
+    #   SUBJECTS FACET FILTER (fuzzy via difflib too)
     # ===============================
     if active_subjects:
         subs = [s for s in active_subjects.split(',') if s]
         if subs:
             q_or = Q()
             for s_term in subs:
-                # Apply same lightweight variants to the selected subject term
-                for v in simple_variants(s_term, limit=8):
+                for v in fuzzy_variants(s_term, n=7, cutoff=0.68):
                     q_or |= Q(primary_keyword__icontains=v)
             if q_or:
                 books = books.filter(q_or)
@@ -484,7 +430,7 @@ def user_search(request):
              .order_by('-count', 'book_type')
     )
 
-    # Subjects / Keywords facet (simple count; no heavy normalization)
+    # Subjects / Keywords facet (simple count)
     subj_counter = {}
     for s in books.values_list('primary_keyword', flat=True):
         for token in split_keywords(s or ''):
@@ -525,6 +471,7 @@ def user_search(request):
     }
 
     return render(request, 'user_search.html', context)
+
 
 
 
