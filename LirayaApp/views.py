@@ -380,7 +380,7 @@ def user_search(request):
         def apply_field_filters(qs, field_name, toks):
             """Apply icontains across original+variants per token."""
             for t in toks:
-                variants = simple_variants(t, limit=8)  # includes original first
+                variants = simple_variants(t, limit=30)  # includes original first
                 q_or = Q()
                 for v in variants:
                     if field_name == 'keywords':
