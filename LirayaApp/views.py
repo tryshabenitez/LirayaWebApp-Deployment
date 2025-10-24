@@ -240,7 +240,7 @@ def user_search(request):
                     out.append(w)
         return out
 
-    # ---- Edits at Damerau-Levenshtein distance 1 (limited) ----
+    # ---- Edits at (Damerau) Levenshtein distance 1 ----
     def edits1(word):
         """Generate a small set of plausible variants at edit distance 1 without using the DB."""
         w = word.lower()
@@ -252,8 +252,8 @@ def user_search(request):
         # transposes (swap adjacent)
         transposes = {L + R[1] + R[0] + R[2:] for L, R in splits if len(R) > 1}
 
-        # replacements: bias toward vowels (lighter set) + common consonants
-        COMMONS = set('tnsrhldcmpgbfywk')  # frequent letters to limit explosion
+        # replacements: bias toward vowels + common consonants (limits explosion)
+        COMMONS = set('tnsrhldcmpgbfywk')
         repl_pool = VOWELS | COMMONS
         replaces = {L + c + (R[1:] if R else '') for L, R in splits if R for c in repl_pool if c != R[0]}
 
@@ -261,30 +261,39 @@ def user_search(request):
         inserts = {L + v + R for L, R in splits for v in VOWELS}
 
         variants = deletes | transposes | replaces | inserts
-        # prune: length sanity + keep alnum
         variants = {v for v in variants if 2 <= len(v) <= 48 and _re.fullmatch(r'[a-z0-9\-]+', v or '')}
         return variants
 
-    def simple_variants(token, limit=6):
+    # ---- Limited 2-edit expansion (capped) ----
+    def edits2(word):
+        """Generate two-step variants but keep it small (fast)."""
+        result = set()
+        for e1 in edits1(word):
+            for e2 in edits1(e1):
+                if abs(len(e2) - len(word)) <= 3:
+                    result.add(e2)
+                if len(result) > 100:  # hard cap to avoid explosion
+                    break
+            if len(result) > 100:
+                break
+        return result
+
+    def simple_variants(token, limit=8):
         """
-        Return a small ranked set of plausible variants:
-        - Prefer variants that add vowels
-        - Prefer longer (likely missing-letter cases)
-        - Keep deterministic cap to avoid huge SQL OR trees
+        Return a small, ranked set of plausible variants (1- and 2-edit).
+        Keeps deterministic cap to avoid huge SQL OR trees.
         """
         base = token.lower()
-        cand = edits1(base)
-        # Heuristic scoring
+        cand = edits1(base) | edits2(base)
+        # Heuristic score: more vowels, slightly longer, closer length to base
         def score(x):
-            # more vowels, slightly longer, fewer dashes
-            return (sum(1 for ch in x if ch in VOWELS), len(x), -x.count('-'), -abs(len(x) - len(base)))
+            return (sum(1 for ch in x if ch in VOWELS), len(x), -abs(len(x) - len(base)))
         ranked = sorted(cand, key=score, reverse=True)
-        # Ensure original token included
         out = [base]
         for v in ranked:
             if v != base:
                 out.append(v)
-            if len(out) >= max(1, limit):
+            if len(out) >= limit:
                 break
         return out
 
@@ -344,7 +353,7 @@ def user_search(request):
         def apply_field_filters(qs, field_name, toks):
             """Apply icontains across original+variants per token."""
             for t in toks:
-                variants = simple_variants(t, limit=6)  # includes original first
+                variants = simple_variants(t, limit=8)  # includes original first
                 q_or = Q()
                 for v in variants:
                     if field_name == 'keywords':
@@ -413,7 +422,7 @@ def user_search(request):
             q_or = Q()
             for s_term in subs:
                 # Apply same lightweight variants to the selected subject term
-                for v in simple_variants(s_term, limit=6):
+                for v in simple_variants(s_term, limit=8):
                     q_or |= Q(primary_keyword__icontains=v)
             if q_or:
                 books = books.filter(q_or)
@@ -489,6 +498,7 @@ def user_search(request):
     }
 
     return render(request, 'user_search.html', context)
+
 
 
 def view_info(request):
