@@ -2246,8 +2246,6 @@ def _normalize_book_count(log):
     except Exception:
         return 0
 
-
-
 def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=None):
     """
     Page 1:
@@ -2654,4 +2652,5 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                 os.remove(p)
         except Exception:
             pass
+
 
