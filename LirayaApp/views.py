@@ -280,15 +280,41 @@ def user_search(request):
 
     def simple_variants(token, limit=8):
         """
-        Return a small, ranked set of plausible variants (1- and 2-edit).
-        Keeps deterministic cap to avoid huge SQL OR trees.
+        Return a small ranked set of plausible variants (1–2 edits + vowel insertion patch).
         """
         base = token.lower()
+    
+        # Base one- and two-edit candidates
         cand = edits1(base) | edits2(base)
-        # Heuristic score: more vowels, slightly longer, closer length to base
+    
+        # ---- VOWEL INSERTION PATCH ----
+        # Handle common missing-vowel patterns like 'compter' -> 'computer', 'comuter' -> 'computer'
+        vowel_patch = set()
+        if base.startswith("comp") and "u" not in base and "computer".startswith(base[:5]):
+            vowel_patch.add("computer")
+        elif base.startswith("com") and "u" not in base and len(base) >= 5:
+            vowel_patch.add(base[:3] + "u" + base[3:])
+        elif base.startswith("cm") or base.startswith("cmp"):
+            vowel_patch.add(base.replace("cmp", "comp"))
+            vowel_patch.add("computer")
+    
+        # Add common vowel insertions in the middle (generic)
+        for i in range(1, len(base)):
+            if (base[i-1] not in VOWELS) and (base[i] not in VOWELS):
+                vowel_patch.add(base[:i] + "a" + base[i:])
+                vowel_patch.add(base[:i] + "e" + base[i:])
+                vowel_patch.add(base[:i] + "i" + base[i:])
+                vowel_patch.add(base[:i] + "o" + base[i:])
+                vowel_patch.add(base[:i] + "u" + base[i:])
+    
+        cand |= vowel_patch
+    
+        # Heuristic scoring for ordering
         def score(x):
             return (sum(1 for ch in x if ch in VOWELS), len(x), -abs(len(x) - len(base)))
+    
         ranked = sorted(cand, key=score, reverse=True)
+    
         out = [base]
         for v in ranked:
             if v != base:
@@ -296,6 +322,7 @@ def user_search(request):
             if len(out) >= limit:
                 break
         return out
+
 
     # ===============================
     #           LOGGING
