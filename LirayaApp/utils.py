@@ -18,209 +18,49 @@ import spacy
 
 nlp = spacy.load("en_core_web_sm")
 
-# EasyOCR function for text extraction
-def predict_title_with_easyocr(image):
+import tempfile
+from google.cloud import vision
 
-    # Initialize EasyOCR reader for English
-    reader = easyocr.Reader(['en'])
-    # Perform OCR on the image
-    result = reader.readtext(image)
-    # Combine the OCR result to extract title
-    extracted_text = ' '.join([res[1] for res in result])
-    return extracted_text
+# Check if running on Railway with JSON in env
+if os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON"):
+    credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+    # Write credentials to a temporary file (lives only while the app runs)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
+        temp_file.write(credentials_json.encode())
+        temp_file.flush()
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_file.name
+
+
+def predict_title_with_google_vision(image_content):
+    try:
+        # Initialize and use Google Vision API
+        client = vision.ImageAnnotatorClient()
+        image = vision.Image(content=image_content)
+        response = client.text_detection(image=image)
+
+        # Get and clean the text
+        if not response.text_annotations:
+            return ""
+        
+        text = response.text_annotations[0].description
+        # Clean up: normalize spaces and handle line breaks
+        text = ' '.join(text.replace('\n', ' ').split())
+        
+        return text.strip()
+    except Exception as e:
+        print(f"Error in text detection: {str(e)}")
+        return ""
   
 #------------------------------------- INDEX/TOC/ABSTRACT -------------------------------------#
 
-_EASYOCR_READER = easyocr.Reader(['en', 'tl'], gpu=False)
+
 
 #------------------ Pre-Processing Image ------------------#
-def _preprocess_image_for_ocr(img_pil: Image.Image) -> Image.Image:
-    """
-    Gentle pre-processing:
-    - Convert to grayscale
-    - Light histogram equalization (optional, boosts contrast without losing details)
-    """
-    img_cv = np.array(img_pil)
-    gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-    gray = cv2.equalizeHist(gray)  # keep text strokes clear
-    return Image.fromarray(gray)
+
 
 
 #------------------ OCR Processing ------------------#
-
-def _easyocr_text_from_array(img_array: np.ndarray, scanned_type: str = "TOC") -> str:
-    """
-    EasyOCR with column-aware ordering.
-    Non-Index: unchanged.
-    Index: cluster OCR word boxes into 2 or 3 vertical columns, then read L->R and top->bottom.
-    """
-
-    scanned_type = (scanned_type or "").strip().lower()
-    if scanned_type == "index":
-        # ---------------- helpers ----------------
-        def _ocr_words(arr: np.ndarray):
-            """Return list of (x_center, y_top, y_bottom, text, conf, box_width)."""
-            out = []
-            res = _EASYOCR_READER.readtext(arr, detail=1, paragraph=False)
-            for item in (res or []):
-                try:
-                    box, txt, conf = item
-                except Exception:
-                    # some easyocr versions return (box, txt)
-                    box, txt = item[:2]
-                    conf = 1.0
-                if not txt or conf is None:
-                    continue
-                xs = [p[0] for p in box]
-                ys = [p[1] for p in box]
-                x_c = float(np.mean(xs))
-                y_t = float(min(ys))
-                y_b = float(max(ys))
-                w   = float(max(xs) - min(xs))
-                txt = re.sub(r"\s+", " ", str(txt)).strip()
-                if not txt:
-                    continue
-                out.append((x_c, y_t, y_b, txt, float(conf), w))
-            return out
-
-        def _kmeans_1d(xs: np.ndarray, k: int, iters: int = 25):
-            """Tiny 1-D kmeans; returns centers (sorted) and labels aligned to xs."""
-            # init centers using quantiles for stability
-            qs = np.linspace(0, 1, k + 2)[1:-1]
-            centers = np.quantile(xs, qs)
-            labels = np.zeros(len(xs), dtype=int)
-            for _ in range(iters):
-                # assign
-                dists = np.abs(xs[:, None] - centers[None, :])
-                new_labels = np.argmin(dists, axis=1)
-                if np.array_equal(new_labels, labels):
-                    break
-                labels = new_labels
-                # update
-                for j in range(k):
-                    m = xs[labels == j]
-                    if len(m):
-                        centers[j] = float(np.mean(m))
-            order = np.argsort(centers)
-            remap = {old: i for i, old in enumerate(order)}
-            centers_sorted = centers[order]
-            labels_sorted = np.array([remap[l] for l in labels], dtype=int)
-            return centers_sorted, labels_sorted
-
-        def _group_lines(words):
-            """
-            words: list of tuples for one column, sorted by y_top.
-            Build text lines by grouping close y's and concatenate tokens.
-            """
-            if not words:
-                return []
-            # median height for adaptive line gap
-            heights = [max(4.0, (y_b - y_t)) for _, y_t, y_b, *_ in words]
-            med_h = float(np.median(heights)) if heights else 14.0
-            y_tol = 0.65 * med_h
-
-            lines = []
-            cur_y = None
-            cur = []
-            for item in words:
-                _, y_t, y_b, txt, *_ = item
-                y_mid = 0.5 * (y_t + y_b)
-                if cur_y is None or abs(y_mid - cur_y) <= y_tol:
-                    cur.append(txt)
-                    cur_y = y_mid if cur_y is None else 0.5 * (cur_y + y_mid)
-                else:
-                    lines.append(" ".join(cur).strip())
-                    cur = [txt]
-                    cur_y = y_mid
-            if cur:
-                lines.append(" ".join(cur).strip())
-
-            # tidy dot leaders but keep them
-            lines = [re.sub(r'\s*\.{2,}\s*', '...', ln) for ln in lines if ln]
-            return lines
-
-        def _score_bleed(lines: list[str]) -> int:
-            """Your bleed score; unchanged."""
-            score = 0
-            for i in range(len(lines) - 1):
-                prev = lines[i]
-                curr = lines[i + 1]
-                if re.search(r',\s*$', prev):
-                    if re.match(
-                        r"^[A-Za-z][A-Za-z0-9\s'’\-/()]*\s+\d+(?:\s*[-–]\s*\d+)?"
-                        r"(?:\s*,\s*\d+(?:\s*[-–]\s*\d+)?)*", curr
-                    ):
-                        score += 1
-            return score
-
-        def _build_by_k(words_all, k):
-            """Cluster words into k columns and return ordered lines."""
-            if len(words_all) < max(20, 6 * k):
-                return []  # too few words for reliable clustering
-            xs = np.array([w[0] for w in words_all], dtype=float)
-            centers, labels = _kmeans_1d(xs, k=k)
-
-            # order clusters left->right
-            order = np.argsort(centers)
-            cols = []
-            for cidx in order:
-                col_words = [w for w, lab in zip(words_all, labels) if lab == cidx]
-                # sort by y_top
-                col_words.sort(key=lambda t: (t[1], t[0]))
-                cols.append(_group_lines(col_words))
-
-            # flatten: L->R columns
-            lines = []
-            for col in cols:
-                lines.extend(col)
-            return lines
-
-        # ---------------- OCR and candidates ----------------
-        words = _ocr_words(img_array)
-
-        candidates = []
-
-        # Candidate 1: k=3 columns
-        k3_lines = _build_by_k(words, 3)
-        if k3_lines:
-            candidates.append(("kmeans_3col", k3_lines))
-
-        # Candidate 2: k=2 columns
-        k2_lines = _build_by_k(words, 2)
-        if k2_lines:
-            candidates.append(("kmeans_2col", k2_lines))
-
-        # Fallback A: previous single paragraph (detail=0, paragraph=True)
-        single = _EASYOCR_READER.readtext(img_array, detail=0, paragraph=True)
-        single_lines = []
-        if single:
-            tmp = []
-            for para in single:
-                tmp.extend([re.sub(r'\s+', ' ', ln).strip()
-                            for ln in str(para).splitlines() if ln.strip()])
-            single_lines = [re.sub(r'\.{2,}', '...', ln) for ln in tmp if ln]
-            candidates.append(("single", single_lines))
-
-        # If all else fails: plain detail=0, paragraph=False
-        if not candidates:
-            res = _EASYOCR_READER.readtext(img_array, detail=0)
-            if res:
-                candidates.append(("raw", [re.sub(r'\s+', ' ', r).strip() for r in res if r.strip()]))
-
-        # ---------------- choose best ----------------
-        best_name, best_lines, best_score = None, None, None
-        for name, lines in candidates:
-            score = _score_bleed(lines)
-            # prefer lower bleed; then prefer *more* lines (more granular)
-            if (best_score is None or
-                score < best_score or
-                (score == best_score and len(lines) > len(best_lines or []))):
-                best_name, best_lines, best_score = name, lines, score
-
-        return "\n".join(best_lines or [])
-    else: 
-        result = _EASYOCR_READER.readtext(img_array, detail=0)
-        return "" if not result else "\n".join(result)
 
 
 #------------------ Post-Processing Image ------------------#
@@ -241,25 +81,43 @@ def _collapse_spaces_keep_newlines(s: str) -> str:
 #------------------ Image Transfer to Views ------------------#
 def ocr_extract_text(image_data_uri: str, scanned_type: str = "TOC") -> str:
     """
-    Raw OCR pipeline with conditional paragraph handling.
+    OCR pipeline using Google Cloud Vision API for document text detection.
     """
     try:
-        b64 = image_data_uri.split(',', 1)[1]
-    except Exception:
-        b64 = image_data_uri  
+        # Get binary data from URI
+        try:
+            b64 = image_data_uri.split(',', 1)[1]
+        except Exception:
+            b64 = image_data_uri
 
-    img_bytes = base64.b64decode(b64)
-    img = Image.open(BytesIO(img_bytes)).convert("RGB")
-
-    pre = _preprocess_image_for_ocr(img)
-    arr = np.array(pre)
-
-    raw = _easyocr_text_from_array(arr, scanned_type)   # <-- pass scanned_type
-    if not raw:
-        return "No text detected"
-
-    cleaned = _collapse_spaces_keep_newlines(raw)
-    return cleaned
+        # Decode image data
+        img_bytes = base64.b64decode(b64)
+        
+        # Initialize Vision API client
+        client = vision.ImageAnnotatorClient()
+        image = vision.Image(content=img_bytes)
+        
+        # Use document text detection (optimized for dense text)
+        # Use different detection methods based on scan type
+        if scanned_type.upper() == "TOC":
+            # For TOC, use text_detection which better preserves layout and spacing
+            response = client.text_detection(image=image)
+        else:
+            # For other types (INDEX, ABSTRACT), use document_text_detection
+            response = client.document_text_detection(image=image)
+        
+        if not response.text_annotations:
+            return "No text detected"
+            
+        # Get the full text from the response
+        text = response.text_annotations[0].description
+        
+        # Basic cleanup while preserving paragraph structure
+        cleaned = _collapse_spaces_keep_newlines(text)
+        return cleaned
+        
+    except Exception as e:
+        return "Error processing document"
 
 
 #------------------------------------- INDEX/TOC/ABSTRACT -------------------------------------#
