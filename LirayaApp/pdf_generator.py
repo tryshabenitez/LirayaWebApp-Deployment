@@ -2150,7 +2150,7 @@ def _normalize_book_count(log):
     Preferred: a numeric field like total_book_results.
     Fallbacks: books list/JSON/string/None.
     """
-    # 1) Numeric cache field (adjust if your model uses a different name)
+    # 1) Numeric cache field (adjust name if different)
     if hasattr(log, "total_book_results"):
         try:
             return int(getattr(log, "total_book_results") or 0)
@@ -2193,8 +2193,6 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     Page 2:
       - FIGURE 2: TOTAL AMOUNT OF NEW KEYWORDS (bar chart + description)
-        * Uses created_at as the basis for "new" keywords per bucket.
-        * Totals count the number of NEW keywords (not total searches).
 
     Page 3:
       - TABLE: Keywords With No Book Results (aligned to selected time filter)
@@ -2203,24 +2201,20 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     meta    = context.get("meta", {})
     stats   = context.get("stats", {})   # optional if not passing logs
     chart   = context.get("chart", {})   # optional if not passing logs
-    # second figure (new keywords)
     stats2  = context.get("stats_new", {}) or stats
     chart2  = context.get("chart_new", {}) or chart
 
-    # NEW: optionally compute everything from time-filtered logs
-    logs = context.get("logs")  # can be a queryset or list of KeywordLog
-
-    # If logs provided, compute stats/charts/Page3 here to keep this self-contained
+    # Optionally compute from time-filtered logs (preferred)
+    logs = context.get("logs")  # queryset or list of KeywordLog
     if logs is not None:
-        logs = list(logs)  # materialize queryset
+        logs = list(logs)
 
         from django.utils import timezone
         now = timezone.now()
 
-        # --- Page 1 stats (derived) ---
+        # Derive stats if not fully provided
         total_searches = sum(int(getattr(l, "user_search_count", 0) or 0) for l in logs)
 
-        # bounds: use provided start/end if available, else infer from logs
         start_date = stats.get("start_date")
         end_date   = stats.get("end_date")
         if not start_date:
@@ -2235,7 +2229,6 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         if not end_date:
             end_date = now.strftime("%Y-%m-%d")
 
-        # days calc (fallback 1)
         days = int(stats.get("days") or 1)
         if days == 1 and start_date not in (None, "—"):
             try:
@@ -2248,7 +2241,6 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                 days = 1
 
         avg = round(total_searches / max(1, days), 2)
-
         stats = {
             "total_searches": total_searches,
             "start_date": start_date,
@@ -2257,21 +2249,20 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             "average_per_day": avg,
         }
 
-        # --- Page 1 chart (top 10 as-is) ---
+        # Figure 1 chart (simple: top 10 in order)
         chart = {
             "labels": [l.user_keyword_search for l in logs[:10]],
             "counts": [int(getattr(l, "user_search_count", 0) or 0) for l in logs[:10]],
         }
 
-        # --- Page 2 (keep incoming if you have special bucketing elsewhere) ---
+        # Use provided "new" stats if you have special bucketing; else mirror stats
         stats2 = context.get("stats_new", {}) or stats
         chart2 = context.get("chart_new", {}) or chart
 
-        # --- Page 3 rows: keywords with zero results ---
+        # Page 3: rows from logs where book_count == 0
         no_results_rows = []
         for log in logs:
-            bc = _normalize_book_count(log)
-            if bc == 0:
+            if _normalize_book_count(log) == 0:
                 first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
                 if not first_s:
                     first_s = _fmt_dt(getattr(log, "created_at", None))
@@ -2283,12 +2274,9 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                     "first": first_s or "—",
                     "last":  last_s or "—",
                 })
-
-        # Sort by Last desc then Keyword asc
         no_results_rows.sort(key=lambda r: (r["last"], r["keyword"]), reverse=True)
-
     else:
-        # If no logs passed, still support old behavior reading from context
+        # Fallback to original: expect rows in context
         no_results_rows = context.get("no_results_rows", []) or []
 
     title_text = meta.get("title", "Keyword Search History Report")
@@ -2304,11 +2292,10 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     styles = getSampleStyleSheet()
     style_normal = styles['Normal']; style_normal.fontSize = 10
 
-    # Smaller title now (was 35)
     title_header_style = ParagraphStyle(
         name='TitleHeaderStyle',
         fontName='Helvetica-Bold',
-        fontSize=24,  # smaller
+        fontSize=24,
         alignment=1,
         spaceAfter=16
     )
@@ -2329,7 +2316,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     flowables.append(Paragraph(title_text, title_header_style))
     flowables.append(Spacer(1, 12))
 
-    # Header table — Title Case for "Generated by"
+    # Header table — Title Case "Generated by"
     gen_by_raw = (user_info or {}).get('full_name') or meta.get('generated_by', '—')
     generated_by = _title_case_name(gen_by_raw)
     role           = (user_info or {}).get('role')           or meta.get('generated_by_role', '—')
@@ -2345,15 +2332,15 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     header_table = Table(header_rows, colWidths=[2*inch, 4.5*inch], splitByRow=True)
     header_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#e8d8c4')),
-        ('ALIGN',      (0, 0), (-1, -1), 'LEFT'),
-        ('TEXTCOLOR',  (0, 0), (-1, -1), colors.black),
-        ('FONTNAME',   (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE',   (0, 0), (-1, -1), 12),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-        ('TOPPADDING',    (0, 0), (-1, -1), 10),
-        ('LEFTPADDING',   (0, 0), (-1, -1), 10),
-        ('RIGHTPADDING',  (0, 0), (-1, -1), 10),
-        ('GRID',       (0, 0), (-1, -1), 1, colors.white),
+        ('TOPPADDING', (0, 0), (-1, -1), 10),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 1, colors.white),
     ]))
     flowables.append(header_table)
     flowables.append(Spacer(1, 10))
@@ -2364,11 +2351,13 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     labels = chart.get('labels') or ( [l.user_keyword_search for l in logs[:10]] if logs is not None else ['All Time'] )
     counts = chart.get('counts') or ( [int(getattr(l, "user_search_count", 0) or 0) for l in logs[:10]] if logs is not None else [stats.get('total_searches', 0)] )
+
     if len(counts) != len(labels):
         if len(counts) < len(labels):
             counts = list(counts) + [0] * (len(labels) - len(counts))
         else:
             counts = counts[:len(labels)]
+
     img_path1 = _generate_bar_image(labels, counts, ylabel='Searches')
     if img_path1 and os.path.exists(img_path1):
         flowables.append(Image(img_path1, width=6*inch, height=4*inch))
@@ -2409,6 +2398,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             counts2 = list(counts2) + [0] * (len(labels2) - len(counts2))
         else:
             counts2 = counts2[:len(labels2)]
+
     img_path2 = _generate_bar_image(labels2, counts2, ylabel='New Keywords')
     if img_path2 and os.path.exists(img_path2):
         flowables.append(Image(img_path2, width=6*inch, height=4*inch))
@@ -2443,19 +2433,11 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     if not no_results_rows:
         flowables.append(Paragraph("No keywords without results for the selected period.", content_style))
     else:
-        # header + rows
         tdata = [["Keyword", "Total Amount of Times Searched", "First Searched", "Last Searched"]]
         for row in no_results_rows:
-            tdata.append([
-                str(row.get("keyword", "")),
-                int(row.get("count", 0)),
-                str(row.get("first", "—")),
-                str(row.get("last", "—")),
-            ])
-
+            tdata.append([str(row["keyword"]), int(row["count"]), str(row["first"]), str(row["last"])])
         table = Table(tdata, colWidths=[2.6*inch, 1.7*inch, 1.35*inch, 1.35*inch], repeatRows=1)
         table.setStyle(TableStyle([
-            # Header styling
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3e151a')),
             ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
             ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -2465,7 +2447,6 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             ('TOPPADDING', (0, 0), (-1, 0), 8),
             ('BOTTOMPADDING',(0,0),(-1,0), 8),
 
-            # Body styling
             ('FONTNAME',   (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE',   (0, 1), (-1, -1), 10),
             ('ALIGN',      (1, 1), (1, -1), 'CENTER'),
@@ -2489,7 +2470,6 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                 os.remove(p)
         except Exception:
             pass
-
 
 
 
