@@ -36,7 +36,7 @@ from django.db.models.functions import Concat, TruncMonth, Coalesce
 from datetime import timedelta
 from django.utils import timezone
 import re as _re
-from .utils import generate_otp, send_otp_email, predict_title_with_easyocr, ocr_extract_text 
+from .utils import generate_otp, send_otp_email, predict_title_with_google_vision, ocr_extract_text 
 from PIL import Image
 from django.core.files.base import ContentFile
 from io import BytesIO
@@ -3290,25 +3290,22 @@ def librarian_addbook(request):
             return JsonResponse({'exists': Books.objects.filter(publisher__iexact=publisher_name).exists()})
 
 
-        # --- 2) Title extraction from cropped cover (UNCHANGED) ---
+        # --- 2) Title extraction from cropped cover ---
         if 'title_image_data' in data:
             try:
                 img_data = data.get('title_image_data')
                 img_data = img_data.split(',')[1]              # strip data URI prefix
-                img_data = base64.b64decode(img_data)
-
-                img = Image.open(BytesIO(img_data)).convert("RGB")
-                img_array = np.array(img)
-
-                # Keep this EXACT call for your title flow
-                predicted_title = predict_title_with_easyocr(img_array)
-
+                img_data = base64.b64decode(img_data)         # convert to binary
+                
+                # Process the image data directly
+                predicted_title = predict_title_with_google_vision(img_data)
+                
                 return JsonResponse({'book_title': predicted_title})
             except Exception as e:
                 print(f"Error processing title: {str(e)}")
                 return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
 
-        # --- 3) TOC / Index / Abstract OCR → utils (REPLACED) ---
+        # --- 3) Document text extraction using Google Cloud Vision ---
         if 'image_data' in data:
             try:
                 data_uri = data.get('image_data')
@@ -3316,14 +3313,14 @@ def librarian_addbook(request):
                 if not data_uri:
                     return JsonResponse({'error': 'No image data received'}, status=400)
 
-                # NEW: let utils handle decoding, preprocessing, OCR, cleaning
-                cleaned_text = ocr_extract_text(data_uri, scanned_type)
+                # Process with Google Cloud Vision OCR
+                extracted_text = ocr_extract_text(data_uri, scanned_type)
 
                 return JsonResponse({
-                    'extracted_text': cleaned_text,
+                    'extracted_text': extracted_text,
                 })
             except Exception as e:
-                print(f"Error during OCR and layout parsing: {str(e)}")
+                print(f"Error during document text detection: {str(e)}")
                 return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
 
     # --- Regular POST (saving book) — UNCHANGED ---
