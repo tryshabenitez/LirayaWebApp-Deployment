@@ -213,30 +213,41 @@ def user_search(request):
     #        FUZZY (difflib) — ONLINE
     # ===============================
     def split_words(s):
-        """Split by whitespace, drop stopwords, keep alnum/dash tokens only."""
+        """
+        Split query string into alphanumeric words only.
+        Removes stopwords and ignores isolated punctuation like '-' or '.'.
+        """
         raw = (s or '').replace(',', ' ').split()
         out = []
         for w in raw:
-            w = _re.sub(r'[^A-Za-z0-9\-]', '', w).strip()
-            if not w:
+            # remove non-alphanumeric chars except inside words
+            w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
+            if not w or w in {'-', '–', '_'}:
                 continue
             wl = w.lower()
             if wl not in STOPWORDS:
-                out.append(w)
+                out.append(wl)
         return out
 
-    def split_keywords(s):
-        """primary_keyword is comma-separated; also split inner spaces into tokens."""
+        def split_keywords(s):
+        """
+        Split comma-separated keywords into clean alphanumeric tokens.
+        Removes punctuation-only tokens and stopwords.
+        """
         out = []
         for chunk in (s or '').split(','):
             chunk = chunk.strip()
             if not chunk:
                 continue
             for w in chunk.split():
-                w = _re.sub(r'[^A-Za-z0-9\-]', '', w).strip()
-                if w and w.lower() not in STOPWORDS:
-                    out.append(w)
+                w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
+                if not w or w in {'-', '–', '_'}:
+                    continue
+                wl = w.lower()
+                if wl not in STOPWORDS:
+                    out.append(wl)
         return out
+
 
     def build_reference_vocab(row_limit=20000):
         """
