@@ -2554,9 +2554,10 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             name='HeaderCell',
             parent=styles['Normal'],
             fontName='Helvetica-Bold',
-            fontSize=9,           # slightly smaller so it fits
+            fontSize=9,
             leading=11,
-            alignment=1           # center
+            alignment=1,
+            textColor=colors.white,   # <-- make header text white
         )
         body_keyword_style = ParagraphStyle(
             name='BodyKeyword',
@@ -2604,7 +2605,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         table.setStyle(TableStyle([
             # Header styling
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3e151a')),
-            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.HexColor('#ffffff')),
+            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
             ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE',   (0, 0), (-1, 0), 9),
             ('TOPPADDING', (0, 0), (-1, 0), 8),
