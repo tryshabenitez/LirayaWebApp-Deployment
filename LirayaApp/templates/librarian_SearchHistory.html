@@ -1,5 +1,4 @@
 {% extends 'Librarian_Inheritance.html' %}
-
 {% load static %}
 
 {% block title %}Librarian Search History{% endblock %}
@@ -36,11 +35,11 @@
     <!-- Filter Dropdown -->
     <div class="admin-dropdown-section">
         <label for="timeFilter">Filter by:</label>
-        <select id="timeFilter" name="timeFilter" onchange="filterSearchHistory()">
-            <option value="all">All Time</option>
-            <option value="last24hours">Last 24 Hours</option>
-            <option value="last7days">Last 7 Days</option>
-            <option value="last30days">Last 30 Days</option>
+        <select id="timeFilter" name="timeFilter" data-current="{{ timeFilter|default:'all' }}" onchange="filterSearchHistory()">
+            <option value="all">All time</option>
+            <option value="last24hours">24 hours</option>
+            <option value="last7days">Last 7 days</option>
+            <option value="last30days">Last 30 days</option>
         </select>
     </div>
 
@@ -93,8 +92,6 @@
         {% endif %}
     </div>
 
-
-
     <!-- Action Buttons -->
     <div class="action-buttons">
         <button class="add-btn">Generate PDF</button>
@@ -104,50 +101,80 @@
 
 {% block script %}
 <script>
-    function filterSearchHistory() {
-        var timeFilter = document.getElementById('timeFilter').value;
-
-        // Make an AJAX call to update the table based on selected filter
-        fetch(`/librarian-search-history/?timeFilter=${timeFilter}`)
-            .then(response => response.json())
-            .then(data => {
-                // Update the table content based on the filtered data
-                var tableBody = document.querySelector('.keyword-table tbody');
-                tableBody.innerHTML = '';
-
-                // Loop through filtered data and add rows to the table
-                data.keyword_logs.forEach(log => {
-                    var row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${log.user_keyword_search}</td>
-                        <td>${log.user_search_count}</td>
-                        <td>
-                            ${log.books.length > 0 ? '<ul>' + log.books.map(book => `<li>${book}</li>`).join('') + '</ul>' : 'No results found'}
-                        </td>
-                        <td>${log.updated_at}</td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            })
-            .catch(error => console.error('Error fetching filtered data:', error));
-    }
-
-    // Function to generate PDF for a keyword
-    function generatePDF(keyword) {
-        console.log("Generating PDF for:", keyword);
-    }
-
-
+    // Set initial selection based on server-provided timeFilter (or URL param fallback)
     document.addEventListener('DOMContentLoaded', () => {
+        const selectEl = document.getElementById('timeFilter');
+        const fromServer = selectEl.getAttribute('data-current') || 'all';
+        // If URL already has timeFilter, prefer it; else use server value
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromUrl = urlParams.get('timeFilter');
+        selectEl.value = fromUrl || fromServer;
+
+        // PDF button uses the current dropdown value
         const btn = document.querySelector('.add-btn');
         if (btn) {
-        btn.addEventListener('click', () => {
-            const tf = document.getElementById('timeFilter')?.value || 'all';
-            // Adjust path to match your URL pattern, e.g. path('generate-pdf/<str:report_type>/')
-            window.location.href = `/generate-pdf/keyword_search_history/?timeFilter=${encodeURIComponent(tf)}`;
-        });
+            btn.addEventListener('click', () => {
+                const tf = selectEl.value || 'all';
+                window.location.href = `/generate-pdf/keyword_search_history/?timeFilter=${encodeURIComponent(tf)}`;
+            });
         }
     });
+
+    function filterSearchHistory() {
+        const timeFilter = document.getElementById('timeFilter').value;
+
+        // Push state so pagination links stay consistent
+        const url = new URL(window.location.href);
+        url.searchParams.set('timeFilter', timeFilter);
+        url.searchParams.delete('page'); // reset to first page on new filter
+        window.history.replaceState({}, '', url);
+
+        // AJAX refresh to match view logic (updated_at window)
+        fetch(`/librarian-search-history/?timeFilter=${encodeURIComponent(timeFilter)}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            // Update dropdown if server adjusted the filter key
+            if (data.timeFilter) {
+                document.getElementById('timeFilter').value = data.timeFilter;
+            }
+
+            // Update table
+            const tbody = document.querySelector('.keyword-table tbody');
+            tbody.innerHTML = '';
+
+            if (!data.keyword_logs || data.keyword_logs.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="4">No search history available.</td>`;
+                tbody.appendChild(row);
+                return;
+            }
+
+            data.keyword_logs.forEach(log => {
+                const count = Array.isArray(log.books) ? log.books.length : 0;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(log.user_keyword_search)}</td>
+                    <td>${Number(log.user_search_count) || 0}</td>
+                    <td>${count}</td>
+                    <td>${escapeHtml(log.updated_at || '')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(err => console.error('Error fetching filtered data:', err));
+    }
+
+    // Basic HTML escape to avoid layout issues with odd keywords
+    function escapeHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 </script>
 {% endblock %}
-
