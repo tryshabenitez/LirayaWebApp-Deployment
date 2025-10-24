@@ -2360,7 +2360,15 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                 })
 
         # Sort like before: by Last desc then Keyword asc
-        no_results_rows.sort(key=lambda r: (r["last"], r["keyword"]), reverse=True)
+        import unicodedata
+
+        def _kw_sort_key(r):
+            kw = str(r.get("keyword", ""))
+            norm = unicodedata.normalize("NFKD", kw).strip().lower()
+            # (False < True) -> non-empty first; then alphabetical
+            return (norm == "", norm)
+        
+        no_results_rows.sort(key=_kw_sort_key)
 
     except Exception:
         # Fallback if something unexpected happens: use provided rows
