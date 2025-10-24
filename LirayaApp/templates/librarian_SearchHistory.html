@@ -101,141 +101,38 @@
 
 {% block script %}
 <script>
-(function() {
-  const $ = (sel, root=document) => root.querySelector(sel);
-
   document.addEventListener('DOMContentLoaded', () => {
-    const selectEl = $('#timeFilter');
+    const selectEl = document.getElementById('timeFilter');
+
+    // Initialize the dropdown from URL (?timeFilter=...) or the server-provided data-current
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromUrl    = urlParams.get('timeFilter');
     const fromServer = selectEl.getAttribute('data-current') || 'all';
-    const fromUrl = new URLSearchParams(location.search).get('timeFilter');
     selectEl.value = fromUrl || fromServer;
 
-    // Bind change (no inline onchange needed)
-    selectEl.addEventListener('change', () => {
-      const tf = selectEl.value || 'all';
-      const url = new URL(location.href);
-      url.searchParams.set('timeFilter', tf);
-      url.searchParams.delete('page'); // reset page when filter changes
-      history.pushState({timeFilter: tf, page: 1}, '', url);
-      fetchAndRender(tf, 1);
-    });
-
-    // PDF button uses current dropdown
-    const btn = $('.add-btn');
+    // PDF button uses the current dropdown value
+    const btn = document.querySelector('.add-btn');
     if (btn) {
       btn.addEventListener('click', () => {
         const tf = selectEl.value || 'all';
         window.location.href = `/generate-pdf/keyword_search_history/?timeFilter=${encodeURIComponent(tf)}`;
       });
     }
-
-    // Handle back/forward
-    window.addEventListener('popstate', () => {
-      const p = new URLSearchParams(location.search);
-      const tf = p.get('timeFilter') || 'all';
-      const page = Number(p.get('page') || 1);
-      selectEl.value = tf;
-      fetchAndRender(tf, page);
-    });
   });
 
-  function fetchAndRender(timeFilter, page=1) {
-    const url = new URL('/librarian-search-history/', location.origin);
-    url.searchParams.set('timeFilter', timeFilter);
-    url.searchParams.set('page', page);
+  // On change, do a REAL reload (no AJAX), resetting to page=1
+  function filterSearchHistory() {
+    const selectEl = document.getElementById('timeFilter');
+    const tf = selectEl.value || 'all';
 
-    fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
-      .then(r => r.json())
-      .then(data => {
-        if (data.timeFilter) {
-          const sel = document.getElementById('timeFilter');
-          if (sel) sel.value = data.timeFilter;
-        }
-        renderTable(data.keyword_logs || []);
-        renderPagination(
-          data.currentPage || 1,
-          data.totalPages || 1,
-          timeFilter
-        );
-      })
-      .catch(err => console.error('AJAX error:', err));
+    const url = new URL(window.location.href);
+    url.searchParams.set('timeFilter', tf);
+    url.searchParams.delete('page'); // reset to first page on filter change
+
+    // Perform a full page load so Django renders fresh data and pagination
+    window.location.href = url.toString(); // or window.location.replace(url) if you don't want a back button step
   }
-
-  function renderTable(rows) {
-    const tbody = document.querySelector('.keyword-table tbody');
-    tbody.innerHTML = '';
-    if (!rows.length) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="4">No search history available.</td>`;
-      tbody.appendChild(tr);
-      return;
-    }
-    rows.forEach(log => {
-      const count = Array.isArray(log.books) ? log.books.length : 0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escapeHtml(log.user_keyword_search)}</td>
-        <td>${Number(log.user_search_count) || 0}</td>
-        <td>${count}</td>
-        <td>${escapeHtml(log.updated_at || '')}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function renderPagination(current, total, timeFilter) {
-    const container = document.querySelector('.pagination');
-    if (!container) return;
-
-    // Build simple pager
-    const parts = [];
-    const link = (page, label, active=false, disabled=false) => {
-      const cls = [
-        active ? 'active' : '',
-        disabled ? 'disabled' : ''
-      ].join(' ').trim();
-      const a = document.createElement('a');
-      a.textContent = label;
-      if (cls) a.className = cls;
-      if (!disabled) {
-        a.href = `?page=${page}&timeFilter=${encodeURIComponent(timeFilter)}`;
-        a.addEventListener('click', (e) => {
-          e.preventDefault();
-          // Update URL & fetch without reload
-          const url = new URL(location.href);
-          url.searchParams.set('timeFilter', timeFilter);
-          url.searchParams.set('page', page);
-          history.pushState({timeFilter, page}, '', url);
-          fetchAndRender(timeFilter, page);
-        });
-      }
-      return a;
-    };
-
-    container.innerHTML = '';
-    // Prev
-    container.appendChild(link(Math.max(1, current - 1), '< Previous', false, current <= 1));
-    // Pages (compact: show up to 7 around current)
-    const start = Math.max(1, current - 3);
-    const end = Math.min(total, current + 3);
-    for (let p = start; p <= end; p++) {
-      container.appendChild(link(p, String(p), p === current, false));
-    }
-    // Next
-    container.appendChild(link(Math.min(total, current + 1), 'Next >', false, current >= total));
-  }
-
-  // Basic HTML escape
-  function escapeHtml(s) {
-    if (s === null || s === undefined) return '';
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-})();
 </script>
 {% endblock %}
+
 
