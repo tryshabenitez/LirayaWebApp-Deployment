@@ -2604,7 +2604,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         table.setStyle(TableStyle([
             # Header styling
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3e151a')),
-            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.HexColor('#ffffff')),
             ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE',   (0, 0), (-1, 0), 9),
             ('TOPPADDING', (0, 0), (-1, 0), 8),
@@ -2629,7 +2629,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         flowables.append(Spacer(1, 10))
         desc3 = (
             "This table surfaces keywords that returned no book results in the selected period "
-            f"from {_s} to {_e}. Use it to understand what patrons are searching for but cannot find. "
+            f"from {_s} to {_e}. Use it to understand what students are searching for but cannot find. "
             "Treat these entries as an actionable recommendations list for acquisitions and/or metadata improvements."
         )
         flowables.append(Paragraph(desc3, content_style))
