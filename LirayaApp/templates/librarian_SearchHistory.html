@@ -63,13 +63,9 @@
                         <td>{{ log.user_search_count }}</td>
                         <td>
                             {% if log.books %}
-                                <ul style="list-style-type: none; padding-left: 0;">
-                                    {% for book in log.books %}
-                                        <li>{{ book }}</li>
-                                    {% endfor %}
-                                </ul>
+                                {{ log.books|length }}
                             {% else %}
-                                No results found
+                                0
                             {% endif %}
                         </td>
                         <td>{{ log.updated_at }}</td>
