@@ -2104,6 +2104,53 @@ def _generate_bar_image(labels, counts, ylabel='Searches'):
 
 # --- Self-contained helpers (used by this report only) ---
 
+def _has_results_like_html(log):
+    """
+    Mirror the HTML/Jinja truthiness used in the template:
+      {% if log.books %} -> truthy means HAS results
+    So 'no results' == not log.books (falsy).
+    """
+    val = getattr(log, "books", None)
+
+    # Falsy -> no results
+    if val is None:
+        return False
+
+    # Lists / tuples
+    if isinstance(val, (list, tuple)):
+        return len(val) > 0
+
+    # Numeric
+    if isinstance(val, (int, float)):
+        try:
+            return int(val) > 0
+        except Exception:
+            return False
+
+    # Strings
+    if isinstance(val, str):
+        s = val.strip()
+        if not s:
+            return False  # empty string is falsy -> no results
+        # If it's a JSON list string, use its length
+        if s.startswith('[') and s.endswith(']'):
+            import json
+            try:
+                arr = json.loads(s)
+                return isinstance(arr, list) and len(arr) > 0
+            except Exception:
+                # Invalid JSON string: HTML would still treat non-empty string as truthy -> has results
+                return True
+        # Any other non-empty string is truthy in the template -> has results
+        return True
+
+    # Anything else: try len(), fallback to bool
+    try:
+        return len(val) > 0
+    except Exception:
+        return bool(val)
+
+
 def _title_case_name(name: str) -> str:
     if not name:
         return "—"
@@ -2230,12 +2277,55 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     # Page 3 rows (prefer time-filtered upstream if provided)
     no_results_rows = list(context.get("no_results_rows", []) or [])
 
+    # Helper that mirrors the HTML template's truthiness for `log.books`
+    def _has_results_like_html(log):
+        """
+        Jinja `{% if log.books %}`:
+          - None / empty list / empty string / 0 -> falsy (no results)
+          - non-empty list -> truthy (has results)
+          - non-empty string -> truthy (has results)
+          - numeric > 0 -> truthy (has results)
+          - JSON list string -> truthy if list length > 0
+        """
+        val = getattr(log, "books", None)
+
+        if val is None:
+            return False
+
+        if isinstance(val, (list, tuple)):
+            return len(val) > 0
+
+        if isinstance(val, (int, float)):
+            try:
+                return int(val) > 0
+            except Exception:
+                return False
+
+        if isinstance(val, str):
+            s = val.strip()
+            if not s:
+                return False
+            if s.startswith('[') and s.endswith(']'):
+                import json
+                try:
+                    arr = json.loads(s)
+                    return isinstance(arr, list) and len(arr) > 0
+                except Exception:
+                    # Non-JSON but non-empty string is truthy in template
+                    return True
+            return True
+
+        try:
+            return len(val) > 0
+        except Exception:
+            return bool(val)
+
     # For Page 3 alignment (if view didn’t provide rows), compute here using the same time filter.
     # We DO NOT modify views.py; we just query KeywordLog here if needed.
     if not no_results_rows:
         try:
             tf = (meta.get("range_label") or "all").strip().lower()
-            # treat "last12months" like "all" to effectively remove it without touching the view
+            # Treat "last12months" like "all" (effectively removed) without touching the view
             if tf in ("last12months", "lasttwelvemonths", "12mo", "12months"):
                 tf = "all"
 
@@ -2273,12 +2363,13 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
             rows = []
             for log in logs_qs:
-                if _normalize_book_count(log) == 0:
+                # INCLUDE ONLY when the HTML would show "0" / "No results found"
+                if not _has_results_like_html(log):
                     first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
                     if not first_s:
-                        first_s = _fmt_dt_local(getattr(log, "created_at", None))
+                        first_s = _fmt_dt(getattr(log, "created_at", None))
                     if not last_s:
-                        last_s = _fmt_dt_local(getattr(log, "updated_at", None))
+                        last_s = _fmt_dt(getattr(log, "updated_at", None))
                     rows.append({
                         "keyword": getattr(log, "user_keyword_search", "") or "",
                         "count": int(getattr(log, "user_search_count", 0) or 0),
@@ -2455,11 +2546,21 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     # ===== Page 3 =====
     flowables.append(PageBreak())
-    flowables.append(Paragraph("FIGURE 3: KEYWORDS WITH NO BOOK RESULTS", title_topic_style))
-    flowables.append(Spacer(1, 5))
+    flowables.append(Paragraph("KEYWORDS WITH NO BOOK RESULTS", title_topic_style))
+    flowables.append(Spacer(1, 6))
+
+    # Pull the same date range used in the charts for a clear, consistent description
+    _s = stats.get("start_date", "—")
+    _e = stats.get("end_date", "—")
 
     if not no_results_rows:
         flowables.append(Paragraph("No keywords without results for the selected period.", content_style))
+        flowables.append(Spacer(1, 10))
+        desc3 = (
+            "This page lists keywords that produced no book results in the selected period "
+            f"from {_s} to {_e}. No such keywords were found."
+        )
+        flowables.append(Paragraph(desc3, content_style))
     else:
         # --- Styles for better wrapping/fit ---
         header_cell_style = ParagraphStyle(
@@ -2537,6 +2638,16 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         ]))
         flowables.append(table)
 
+        # Page 3 description (like Pages 1 & 2)
+        flowables.append(Spacer(1, 10))
+        desc3 = (
+            "This table lists all keywords that produced no book results in the selected period "
+            f"from {_s} to {_e}. For each keyword, it shows the total number of times it was "
+            "searched and the first/last recorded search timestamps. Use this list to identify "
+            "gaps in catalog coverage and target metadata improvements or acquisitions."
+        )
+        flowables.append(Paragraph(desc3, content_style))
+
     # ---- Build ----
     doc.build(flowables, onFirstPage=create_header_and_footer, onLaterPages=create_header_and_footer)
 
@@ -2547,3 +2658,4 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                 os.remove(p)
         except Exception:
             pass
+
