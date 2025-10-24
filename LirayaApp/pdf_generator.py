@@ -2626,15 +2626,23 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         ]))
         flowables.append(table)
 
-        # Page 3 description — focused on acquisitions/metadata decisions
+        # Page 3 description — main sentence + italic note
         flowables.append(Spacer(1, 10))
-        desc3 = (
+        
+        desc3_main = (
             "This table surfaces keywords that returned no book results in the selected period "
-            f"from {_s} to {_e}. Use it to understand what students are searching for but cannot find. "
-            "Note: misspellings and variations are recorded exactly as entered and are still counted as keywords by the system. "
+            f"from <b>{_s}</b> to <b>{_e}</b>. Use it to understand what students are searching for but cannot find. "
             "Treat these entries as an actionable recommendations list for acquisitions and/or metadata improvements."
         )
-        flowables.append(Paragraph(desc3, content_style))
+        flowables.append(Paragraph(desc3_main, content_style))
+        
+        flowables.append(Spacer(1, 6))
+        
+        desc3_note = (
+            "<i>Note: misspellings and variations are recorded exactly as entered and are still counted "
+            "as keywords by the system.</i>"
+        )
+        flowables.append(Paragraph(desc3_note, content_style))
 
     # ---- Build ----
     doc.build(flowables, onFirstPage=create_header_and_footer, onLaterPages=create_header_and_footer)
