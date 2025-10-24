@@ -292,31 +292,38 @@ def user_search(request):
         )
 
     if q and q.strip():
-        # assumes your existing helper exists
-        terms_for_log = _normalize_terms_for_logging(q, STOPWORDS)
-        for term in terms_for_log:
-            obj, _ = KeywordLog.objects.get_or_create(user_keyword_search=term)
-            KeywordLog.objects.filter(pk=obj.pk).update(
-                user_search_count=F('user_search_count') + 1,
-                updated_at=timezone.now(),
-            )
-            _append_time(obj.pk)
-
         try:
-            if terms_for_log and len(terms_for_log) > 1:
-                joined = ', '.join(terms_for_log)
-                with transaction.atomic():
-                    rec, _created = KeywordLog.objects.get_or_create(
-                        user_keyword_search=joined,
-                        defaults={'user_search_count': 0},
-                    )
-                    KeywordLog.objects.filter(pk=rec.pk).update(
+            corrected_terms = []
+            for token in split_words(q):
+                variants = fuzzy_variants(token, n=1, cutoff=0.75)
+                # Only log corrected version (skip the misspelled one)
+                if variants:
+                    corrected = variants[0].lower()
+                    # if token is already correct, log it normally
+                    if corrected == token.lower():
+                        term = corrected
+                    else:
+                        term = corrected  # log only corrected term
+                        corrected_terms.append(f"{token}→{corrected}")
+    
+                    obj, _ = KeywordLog.objects.get_or_create(user_keyword_search=term)
+                    KeywordLog.objects.filter(pk=obj.pk).update(
                         user_search_count=F('user_search_count') + 1,
                         updated_at=timezone.now(),
                     )
-                    _append_time(rec.pk)
+                    _append_time(obj.pk)
+    
+            # Optional: keep a record of corrections like "compter→computer"
+            if corrected_terms:
+                KeywordLog.objects.create(
+                    user_keyword_search="; ".join(corrected_terms),
+                    user_search_count=1,
+                    updated_at=timezone.now()
+                )
+    
         except Exception:
-            pass  # never block search
+            pass  # Never block search if logging fails
+
 
     # ===============================
     #           SEARCH
