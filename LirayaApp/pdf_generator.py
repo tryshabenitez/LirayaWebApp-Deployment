@@ -2102,10 +2102,86 @@ def _generate_bar_image(labels, counts, ylabel='Searches'):
     plt.close()
     return path
 
+
+# --- Self-contained helpers (only used by PDF generator) ---
+
 def _title_case_name(name: str) -> str:
     if not name:
         return "—"
     return " ".join(str(name).strip().split()).title()
+
+def _fmt_dt(dt):
+    return dt.strftime("%Y-%m-%d %H:%M") if dt else "—"
+
+def _parse_first_last(search_times_str):
+    """
+    search_times lines like:
+      2025-10-24 13:04:12.123456
+      2025-10-24 15:42:09
+    Returns (first_str, last_str) in "%Y-%m-%d %H:%M"
+    """
+    if not search_times_str:
+        return None, None
+    parts = [p.strip() for p in str(search_times_str).splitlines() if p.strip()]
+    if not parts:
+        return None, None
+
+    from django.utils import timezone
+    from datetime import datetime
+    def _to_dt(s):
+        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+            try:
+                return timezone.make_aware(datetime.strptime(s, fmt))
+            except Exception:
+                pass
+        return None
+
+    dts = [dt for dt in (_to_dt(p) for p in parts) if dt]
+    if not dts:
+        return None, None
+
+    first = min(dts)
+    last  = max(dts)
+    return first.strftime("%Y-%m-%d %H:%M"), last.strftime("%Y-%m-%d %H:%M")
+
+def _normalize_book_count(log):
+    """
+    Derive the book result count from the log object without touching other views.
+    Preferred: a numeric field like total_book_results.
+    Fallbacks: books list/JSON/string/None.
+    """
+    # 1) Numeric cache field (adjust if your model uses a different name)
+    if hasattr(log, "total_book_results"):
+        try:
+            return int(getattr(log, "total_book_results") or 0)
+        except Exception:
+            pass
+
+    # 2) If your log has a 'books' attribute (list/JSON/string)
+    val = getattr(log, "books", None)
+    if val is None:
+        return 0
+    if isinstance(val, (list, tuple)):
+        return len(val)
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, str):
+        s = val.strip()
+        if not s:
+            return 0
+        if s.startswith('[') and s.endswith(']'):
+            import json
+            try:
+                arr = json.loads(s)
+                return len(arr) if isinstance(arr, list) else 0
+            except Exception:
+                return 0
+        # non-empty non-JSON string -> treat as “some results”
+        return 1
+    try:
+        return len(val)
+    except Exception:
+        return 1
 
 
 def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=None):
@@ -2124,15 +2200,96 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
       - TABLE: Keywords With No Book Results (aligned to selected time filter)
     """
     context = context or {}
-    meta   = context.get("meta", {})
-    stats  = context.get("stats", {})
-    chart  = context.get("chart", {})
+    meta    = context.get("meta", {})
+    stats   = context.get("stats", {})   # optional if not passing logs
+    chart   = context.get("chart", {})   # optional if not passing logs
     # second figure (new keywords)
-    stats2 = context.get("stats_new", {}) or stats
-    chart2 = context.get("chart_new", {}) or chart
+    stats2  = context.get("stats_new", {}) or stats
+    chart2  = context.get("chart_new", {}) or chart
 
-    # page 3 rows (time-filtered upstream)
-    no_results_rows = context.get("no_results_rows", []) or []
+    # NEW: optionally compute everything from time-filtered logs
+    logs = context.get("logs")  # can be a queryset or list of KeywordLog
+
+    # If logs provided, compute stats/charts/Page3 here to keep this self-contained
+    if logs is not None:
+        logs = list(logs)  # materialize queryset
+
+        from django.utils import timezone
+        now = timezone.now()
+
+        # --- Page 1 stats (derived) ---
+        total_searches = sum(int(getattr(l, "user_search_count", 0) or 0) for l in logs)
+
+        # bounds: use provided start/end if available, else infer from logs
+        start_date = stats.get("start_date")
+        end_date   = stats.get("end_date")
+        if not start_date:
+            try:
+                earliest = min(
+                    (getattr(l, "created_at", None) for l in logs if getattr(l, "created_at", None)),
+                    default=None
+                )
+                start_date = earliest.strftime("%Y-%m-%d") if earliest else "—"
+            except Exception:
+                start_date = "—"
+        if not end_date:
+            end_date = now.strftime("%Y-%m-%d")
+
+        # days calc (fallback 1)
+        days = int(stats.get("days") or 1)
+        if days == 1 and start_date not in (None, "—"):
+            try:
+                from datetime import datetime as _dt
+                d0 = _dt.strptime(start_date, "%Y-%m-%d")
+                d1 = _dt.strptime(end_date, "%Y-%m-%d")
+                delta = (d1 - d0).days or 1
+                days = max(1, delta)
+            except Exception:
+                days = 1
+
+        avg = round(total_searches / max(1, days), 2)
+
+        stats = {
+            "total_searches": total_searches,
+            "start_date": start_date,
+            "end_date": end_date,
+            "days": days,
+            "average_per_day": avg,
+        }
+
+        # --- Page 1 chart (top 10 as-is) ---
+        chart = {
+            "labels": [l.user_keyword_search for l in logs[:10]],
+            "counts": [int(getattr(l, "user_search_count", 0) or 0) for l in logs[:10]],
+        }
+
+        # --- Page 2 (keep incoming if you have special bucketing elsewhere) ---
+        stats2 = context.get("stats_new", {}) or stats
+        chart2 = context.get("chart_new", {}) or chart
+
+        # --- Page 3 rows: keywords with zero results ---
+        no_results_rows = []
+        for log in logs:
+            bc = _normalize_book_count(log)
+            if bc == 0:
+                first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
+                if not first_s:
+                    first_s = _fmt_dt(getattr(log, "created_at", None))
+                if not last_s:
+                    last_s = _fmt_dt(getattr(log, "updated_at", None))
+                no_results_rows.append({
+                    "keyword": log.user_keyword_search,
+                    "count": int(getattr(log, "user_search_count", 0) or 0),
+                    "first": first_s or "—",
+                    "last":  last_s or "—",
+                })
+
+        # Sort by Last desc then Keyword asc
+        no_results_rows.sort(key=lambda r: (r["last"], r["keyword"]), reverse=True)
+
+    else:
+        # If no logs passed, still support old behavior reading from context
+        no_results_rows = context.get("no_results_rows", []) or []
 
     title_text = meta.get("title", "Keyword Search History Report")
 
@@ -2169,13 +2326,12 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     flowables = []
 
     # ===== Page 1 =====
-    # Title
     flowables.append(Paragraph(title_text, title_header_style))
     flowables.append(Spacer(1, 12))
 
-    # Header table — prefer user_info values; Title Case for "Generated by"
-    generated_by_raw = (user_info or {}).get('full_name') or meta.get('generated_by', '—')
-    generated_by   = _title_case_name(generated_by_raw)
+    # Header table — Title Case for "Generated by"
+    gen_by_raw = (user_info or {}).get('full_name') or meta.get('generated_by', '—')
+    generated_by = _title_case_name(gen_by_raw)
     role           = (user_info or {}).get('role')           or meta.get('generated_by_role', '—')
     date_generated = (user_info or {}).get('date_generated') or '—'
     time_generated = (user_info or {}).get('time_generated') or meta.get('generated_at', '—')
@@ -2202,59 +2358,49 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     flowables.append(header_table)
     flowables.append(Spacer(1, 10))
 
-    # Figure 1
+    # ----- FIGURE 1 -----
     flowables.append(Paragraph("FIGURE 1: TOTAL AMOUNT OF KEYWORDS SEARCHED", title_topic_style))
     flowables.append(Spacer(1, 5))
 
-    labels = chart.get('labels') or ['All Time']
-    counts = chart.get('counts') or [stats.get('total_searches', 0)]
-    # ensure lengths match
+    labels = chart.get('labels') or ( [l.user_keyword_search for l in logs[:10]] if logs is not None else ['All Time'] )
+    counts = chart.get('counts') or ( [int(getattr(l, "user_search_count", 0) or 0) for l in logs[:10]] if logs is not None else [stats.get('total_searches', 0)] )
     if len(counts) != len(labels):
-        # pad or trim counts to match labels
         if len(counts) < len(labels):
             counts = list(counts) + [0] * (len(labels) - len(counts))
         else:
             counts = counts[:len(labels)]
-
     img_path1 = _generate_bar_image(labels, counts, ylabel='Searches')
-
     if img_path1 and os.path.exists(img_path1):
         flowables.append(Image(img_path1, width=6*inch, height=4*inch))
         flowables.append(Spacer(1, 10))
 
-    # Figure 1 description
     total = int(stats.get("total_searches") or 0)
     start_date = stats.get("start_date", "—")
     end_date   = stats.get("end_date", "—")
     days       = int(stats.get("days") or 1)
     avg        = stats.get("average_per_day", 0)
-
-    if total == 0:
-        desc1 = (
-            "Figure 1 bar graph represents the total keyword searches. "
-            f"The data shown covers the period from {start_date} to {end_date}. "
-            "No keywords were searched during this period yet."
-        )
-    else:
-        desc1 = (
-            "Figure 1 bar graph represents the total keyword searches. "
-            f"The data shown covers the period from {start_date} to {end_date}, "
-            f"with a total of {total} searches during this period. "
-            "The bar indicates the overall accumulated searches from the earliest log to the most recent log. "
-            f"The average searches per day during this period is {avg}. "
-            f"This is calculated by dividing the total searches ({total}) by the number of days in the period ({days}), "
-            f"resulting in {avg}. "
-            "This shows that, on average, the system recorded that many keyword searches per day throughout the period."
-        )
+    desc1 = (
+        "Figure 1 bar graph represents the total keyword searches. "
+        f"The data shown covers the period from {start_date} to {end_date}. "
+        "No keywords were searched during this period yet."
+        if total == 0 else
+        "Figure 1 bar graph represents the total keyword searches. "
+        f"The data shown covers the period from {start_date} to {end_date}, "
+        f"with a total of {total} searches during this period. "
+        "The bar indicates the overall accumulated searches from the earliest log to the most recent log. "
+        f"The average searches per day during this period is {avg}. "
+        f"This is calculated by dividing the total searches ({total}) by the number of days in the period ({days}), "
+        f"resulting in {avg}. "
+        "This shows that, on average, the system recorded that many keyword searches per day throughout the period."
+    )
     flowables.append(Paragraph(desc1, content_style))
 
     # ===== Page 2 =====
     flowables.append(PageBreak())
-
     flowables.append(Paragraph("FIGURE 2: TOTAL AMOUNT OF NEW KEYWORDS", title_topic_style))
     flowables.append(Spacer(1, 5))
 
-    labels2 = chart2.get('labels') or labels  # fallback to fig1 labels
+    labels2 = chart2.get('labels') or labels
     counts2 = chart2.get('counts')
     if not counts2:
         counts2 = [0] * len(labels2)
@@ -2263,37 +2409,30 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             counts2 = list(counts2) + [0] * (len(labels2) - len(counts2))
         else:
             counts2 = counts2[:len(labels2)]
-
     img_path2 = _generate_bar_image(labels2, counts2, ylabel='New Keywords')
-
     if img_path2 and os.path.exists(img_path2):
         flowables.append(Image(img_path2, width=6*inch, height=4*inch))
         flowables.append(Spacer(1, 10))
 
-    # Figure 2 summary — totals count NEW keywords (not searches)
     total2 = int(stats2.get("total_new_keywords") or sum(counts2))
     start_date2 = stats2.get("start_date", start_date)
     end_date2   = stats2.get("end_date", end_date)
     days2       = int(stats2.get("days") or days)
     avg2        = stats2.get("average_new_per_day", round(total2 / max(1, days2), 2))
-
-    if total2 == 0:
-        desc2 = (
-            "Figure 2 bar graph represents the total number of new keywords. "
-            f"The data shown covers the period from {start_date2} to {end_date2}. "
-            "No new keywords were added during this period yet."
-        )
-    else:
-        desc2 = (
-            "Figure 2 bar graph represents the total number of new keywords. "
-            f"The data shown covers the period from {start_date2} to {end_date2}, "
-            f"with a total of {total2} new keywords during this period. "
-            "Each bar indicates how many unique keywords were newly created within each time bucket. "
-            f"The average new keywords per day during this period is {avg2}. "
-            f"This is calculated by dividing the total new keywords ({total2}) by the number of days in the period ({days2}), "
-            f"resulting in {avg2}. "
-            "This shows that, on average, the system recorded that many newly created keywords per day throughout the period."
-        )
+    desc2 = (
+        "Figure 2 bar graph represents the total number of new keywords. "
+        f"The data shown covers the period from {start_date2} to {end_date2}. "
+        "No new keywords were added during this period yet."
+        if total2 == 0 else
+        "Figure 2 bar graph represents the total number of new keywords. "
+        f"The data shown covers the period from {start_date2} to {end_date2}, "
+        f"with a total of {total2} new keywords during this period. "
+        "Each bar indicates how many unique keywords were newly created within each time bucket. "
+        f"The average new keywords per day during this period is {avg2}. "
+        f"This is calculated by dividing the total new keywords ({total2}) by the number of days in the period ({days2}), "
+        f"resulting in {avg2}. "
+        "This shows that, on average, the system recorded that many newly created keywords per day throughout the period."
+    )
     flowables.append(Paragraph(desc2, content_style))
 
     # ===== Page 3 =====
