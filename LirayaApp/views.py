@@ -2295,8 +2295,6 @@ def generate_pdf(request, report_type):
         file_name = 'Liraya_KeywordSearchHistory_Report.pdf'
 
         
-
-
     else:
         return HttpResponse("Invalid report type.", status=400)
 
@@ -4082,5 +4080,3 @@ def first_login_view(request):
             return redirect('login')
 
     return render(request, 'force_change_password.html', {'account_id': account_id})
-
-)
