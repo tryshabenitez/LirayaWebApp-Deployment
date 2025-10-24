@@ -2262,9 +2262,13 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     Page 3:
       - TABLE: Keywords With No Book Results (aligned to selected time filter)
+        * Uses the SAME logic as librarian_search_history (HTML) to determine
+          whether a keyword had results: it searches Books by title/author/primary_keyword
+          using icontains and includes ONLY rows where the combined query returns 0.
     """
     from django.utils import timezone
-    from django.db.models import DateTimeField
+    from django.db.models import DateTimeField, Q
+    from datetime import timedelta
 
     context = context or {}
     meta   = context.get("meta", {})
@@ -2274,107 +2278,94 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     stats2 = context.get("stats_new", {}) or stats
     chart2 = context.get("chart_new", {}) or chart
 
-    # --- Helper that mirrors the HTML template's truthiness for `log.books` ---
-    def _has_results_like_html(log):
-        """
-        Jinja `{% if log.books %}`:
-          - None / empty list / empty string / 0 -> falsy (no results)
-          - non-empty list -> truthy (has results)
-          - non-empty string -> truthy (has results)
-          - numeric > 0 -> truthy (has results)
-          - JSON list string -> truthy if list length > 0
-        """
-        val = getattr(log, "books", None)
-
-        if val is None:
-            return False
-
-        if isinstance(val, (list, tuple)):
-            return len(val) > 0
-
-        if isinstance(val, (int, float)):
-            try:
-                return int(val) > 0
-            except Exception:
-                return False
-
-        if isinstance(val, str):
-            s = val.strip()
-            if not s:
-                return False
-            if s.startswith('[') and s.endswith(']'):
-                import json
-                try:
-                    arr = json.loads(s)
-                    return isinstance(arr, list) and len(arr) > 0
-                except Exception:
-                    # Non-JSON but non-empty string is truthy in template
-                    return True
-            return True
-
-        try:
-            return len(val) > 0
-        except Exception:
-            return bool(val)
-
-    # --- Page 3 rows: ALWAYS recompute from DB using the same time filter, to match HTML exactly ---
+    # --- Page 3 rows: recompute using the SAME logic as the HTML view ---
+    # HTML view: filters by updated_at window and determines "results" by querying Books with icontains.
+    # We mirror that here so PDF Page 3 matches exactly what the librarian sees.
     try:
-        tf = (meta.get("range_label") or "all").strip().lower()
-        # Neutralize 12 months -> act like "all"
-        if tf in ("last12months", "lasttwelvemonths", "12mo", "12months"):
-            tf = "all"
-
-        # choose activity field (prefer real DateTimeField)
-        field_map = {f.name: f for f in KeywordLog._meta.get_fields() if hasattr(f, 'get_internal_type')}
-        def _is_dt(name):
-            f = field_map.get(name)
-            return isinstance(f, DateTimeField) or (getattr(f, 'get_internal_type', lambda: '')() == 'DateTimeField')
-        activity_field = next((n for n in ('search_times', 'updated_at', 'created_at') if _is_dt(n)), 'created_at')
+        # Normalize/accept both our internal labels and the HTML's labels
+        tf_raw = (meta.get("range_label") or "all").strip()
+        tf_key = tf_raw.lower().replace(' ', '').replace('_', '').replace('-', '')
+        tf = (
+            'last24hours' if tf_key in ('last24hours', 'last24h', '24h') else
+            'last7days'   if tf_key in ('last7days', '7d') else
+            'last30days'  if tf_key in ('last30days', '30d') else
+            'lastmonth'   if tf_key in ('lastmonth', 'lastmonthhtml') else  # html used 'lastMonth'
+            'lastyear'    if tf_key in ('lastyear', 'lastyearhtml') else   # html used 'lastYear'
+            'all'
+        )
 
         end_dt = timezone.localtime(timezone.now())
-
-        # window
+        # Window per HTML (based on updated_at)
         if tf == 'last24hours':
             start_dt = end_dt - timedelta(hours=24)
         elif tf == 'last7days':
-            start_dt = (end_dt - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            start_dt = end_dt - timedelta(days=7)
         elif tf == 'last30days':
             start_dt = end_dt - timedelta(days=30)
         elif tf == 'lastmonth':
+            # HTML "lastMonth": previous calendar month (approx). We can approximate by:
             first_this_month = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             last_month_end = first_this_month - timedelta(seconds=1)
             start_dt = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             end_dt = last_month_end
         elif tf == 'lastyear':
-            year = end_dt.year - 1
-            start_dt = end_dt.replace(year=year, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_dt   = end_dt.replace(year=year, month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+            start_dt = end_dt - timedelta(days=365)
         else:
             start_dt = None  # all time
 
         logs_qs = KeywordLog.objects.all()
         if start_dt:
-            logs_qs = logs_qs.filter(**{f"{activity_field}__gte": start_dt, f"{activity_field}__lte": end_dt})
+            logs_qs = logs_qs.filter(updated_at__gte=start_dt, updated_at__lte=end_dt)
+        # HTML sorts by search count desc
+        logs_qs = logs_qs.order_by('-user_search_count')
 
+        # Build rows ONLY for keywords that yield ZERO book results using the same query as HTML
         no_results_rows = []
         for log in logs_qs:
-            # INCLUDE ONLY when the HTML would show "0" / "No results found"
-            if not _has_results_like_html(log):
+            kw = (getattr(log, 'user_keyword_search', '') or '').strip()
+            if not kw:
+                # Empty keyword -> treat as no results row with count
                 first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
                 if not first_s:
                     first_s = _fmt_dt(getattr(log, "created_at", None))
                 if not last_s:
                     last_s = _fmt_dt(getattr(log, "updated_at", None))
                 no_results_rows.append({
-                    "keyword": getattr(log, "user_keyword_search", "") or "",
+                    "keyword": "",
                     "count": int(getattr(log, "user_search_count", 0) or 0),
                     "first": first_s or "—",
                     "last":  last_s or "—",
                 })
-        # sort by Last desc then Keyword asc
+                continue
+
+            # Reproduce HTML: Books filtered by title/author/primary_keyword icontains
+            books_qs = (
+                Books.objects.filter(
+                    Q(title__icontains=kw) |
+                    Q(author__icontains=kw) |
+                    Q(primary_keyword__icontains=kw)
+                )
+            )
+            result_count = books_qs.count()
+
+            if result_count == 0:
+                first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
+                if not first_s:
+                    first_s = _fmt_dt(getattr(log, "created_at", None))
+                if not last_s:
+                    last_s = _fmt_dt(getattr(log, "updated_at", None))
+                no_results_rows.append({
+                    "keyword": kw,
+                    "count": int(getattr(log, "user_search_count", 0) or 0),
+                    "first": first_s or "—",
+                    "last":  last_s or "—",
+                })
+
+        # Sort like before: by Last desc then Keyword asc
         no_results_rows.sort(key=lambda r: (r["last"], r["keyword"]), reverse=True)
+
     except Exception:
-        # If anything fails, fall back to whatever context passed (but we tried)
+        # Fallback if something unexpected happens: use provided rows
         no_results_rows = list(context.get("no_results_rows", []) or [])
 
     title_text = meta.get("title", "Keyword Search History Report")
@@ -2541,8 +2532,8 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     # ===== Page 3 =====
     flowables.append(PageBreak())
-    flowables.append(Paragraph("KEYWORDS WITH NO BOOK RESULTS", title_topic_style))
-    flowables.append(Spacer(1, 6))
+    flowables.append(Paragraph("FIGURE 3: KEYWORDS WITH NO BOOK RESULTS", title_topic_style))
+    flowables.append(Spacer(1, 5))
 
     # Pull the same date range used in the charts for a clear, consistent description
     _s = stats.get("start_date", "—")
