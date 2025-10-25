@@ -2184,7 +2184,7 @@ function cleanUniversalOCR(text, type = "TOC") {
         // Normalize weird dashes into normal hyphen
         text = text.replace(/[–—−]/g, "-");
         // Index-specific cleaning rules
-        text = text.replace(/[^a-zA-Z0-9\s.,\/()-]/g, " ");   // remove weird symbols but keep commas
+        text = text.replace(/[^a-zA-Z0-9\s.,\/()-']/g, " ");   // remove weird symbols but keep commas
         text = text.replace(/\s+/g, " ");                // collapse spaces
         text = text.replace(/,(\d)/g, ", $1");           // ensure space after commas
         text = text.replace(/\n{2,}/g, "\n");
