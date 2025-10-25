@@ -819,7 +819,7 @@
 
 /* Book Title Styling */
 .book-title {
-  font-size: 48px; /* Big font size */
+  font-size: 30px; /* Big font size */
   font-weight: bold; /* Bold text */
   color: #000000; /* Black text color */
   margin-bottom: 10px; /* Space between title and synopsis */
