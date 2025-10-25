@@ -176,7 +176,14 @@
         <h2 class="book-title">{{ book.title }}</h2>
         <p><strong>Author:</strong> {{ book.author }}</p>
         <p><strong>Published Year:</strong> {{ book.year_of_publication }}</p>
-        <p><strong>Keywords:</strong> {{ book.primary_keyword }}</p>
+        <p><strong>Keywords:</strong> 
+          <div class="keywords-container">
+            <span class="keywords" id="keywords-{{ book.book_id }}">
+              {{ book.primary_keyword }}
+            </span>
+            <button class="kw_see_more" onclick="toggleKeywords({{ book.book_id }})">See More</button>
+          </div>
+        </p>
         <a href="{% url 'user_viewinfo' %}?book_id={{ book.book_id }}">
           <button class="view-info-btn">View Information</button>
         </a>
@@ -251,6 +258,22 @@ function toggleShelfCategory(event, category) {
   // Reload with new params
   window.location.search = params.toString();
 }
+
+function toggleKeywords(bookId) {
+  const keywords = document.getElementById('keywords-' + bookId);
+  const button = document.querySelector('.kw_see_more');
+
+  // Toggle the expanded class
+  keywords.classList.toggle('keywords-expanded');
+
+  // Change the button text based on state
+  if (keywords.classList.contains('keywords-expanded')) {
+    button.textContent = 'See Less';
+  } else {
+    button.textContent = 'See More';
+  }
+}
+
 </script>
 
 {% if books.paginator.count == 0 %}
