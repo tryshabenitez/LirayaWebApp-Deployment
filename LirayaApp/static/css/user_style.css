@@ -1237,18 +1237,19 @@
 /* Initially hide the full keywords and truncate the list */
 .keywords {
   display: flex;
-
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: inline-block;
   max-width: 600px;
+  color: black;
 }
 
 /* When expanded, show all keywords */
 .keywords-expanded {
   white-space: normal;
   overflow: visible;
+  color: black;
 }
 
 /* Styling for the See More button */
