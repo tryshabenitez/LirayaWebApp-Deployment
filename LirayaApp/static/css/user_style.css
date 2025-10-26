@@ -865,6 +865,8 @@ border-radius: 8px; /* Optional: rounded corners for image */
 
 /* First column (left side) - Make bold */
 .book-text-container .synopsis-table td:first-child {
+  width: 25%;
+  vertical-align: top; 
   font-weight: bold; /* Make text bold */
   text-align: left;
 }
