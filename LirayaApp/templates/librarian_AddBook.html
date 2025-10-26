@@ -2212,6 +2212,8 @@ function cleanUniversalOCR(text, type = "TOC") {
         text = text.replace(/\s+/g, ' ').trim();  
         // Preserve paragraph breaks (double newlines)
         text = text.replace(/\n{2,}/g, '\n\n');
+      // Remove excessive dots (e.g., "...." → "", but keep single periods)
+        text = text.replace(/\.{2,}/g, '');
         return text;
 
     }  else {
