@@ -783,8 +783,8 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  width: 70px;
-  height: 70px;
+  width: 50px;
+  height: 50px;
   align-self: flex-end; /* Align button to the right */
 }
 
@@ -863,20 +863,38 @@
 
 .book-text-container .synopsis-table {
   width: 100% !important; /* Ensure table spans full width */
-  font-size: 20px; /* Enlarge the text */
+  font-size: 16px; /* Enlarge the text */
   font-weight: bold; /* Make the text bold */
   box-sizing: border-box; /* Include padding/borders in width calculation */
   border-collapse: collapse; /* Collapse borders */
+  
 }
 
+/* First column (left side) - Make bold */
+.book-text-container .synopsis-table td:first-child {
+  font-weight: bold; /* Make text bold */
+  text-align: left;
+}
+
+/* Second column (right side) - Make normal */
+.book-text-container .synopsis-table td:nth-child(2) {
+  font-weight: normal; /* Remove boldness */
+  font-size: 16px; /* Adjust font size */
+}
+
+
+
 .book-text-container .synopsis-table td {
-  padding: 12px 15px; /* Padding for table cells */
+  padding: 8px 10px; /* Padding for table cells */
   border-left: 1px solid #ddd; /* Border for the left side */
   border-right: 1px solid #ddd; /* Border for the right side */
   border-top: 1px solid #ddd; /* Border for the top side */
   border-bottom: 1px solid #ddd; /* Border for the bottom side */
   font-weight: bold; /* Ensure table text is bold */
+  font-weight: normal; /* Reduce boldness */
+  font-size: 16px; /
 }
+
 
 .book-text-container .synopsis-table td:not(:last-child) {
   border-right: none; /* Remove right border for all columns except the last one */
