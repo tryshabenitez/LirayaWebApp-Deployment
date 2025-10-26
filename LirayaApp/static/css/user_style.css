@@ -738,42 +738,35 @@
 /* Right container (content-right) */
 /* replace .content-right with */
 .content-right {
-  width: calc(100% - 22% - 30px);
-  height: 100%;                 /* fill the border-container height */
-  margin-right: 30px;
-  border: 0;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-
-  /* ✨ critical for scroll inside a flex item */
-  min-width: 0;
-  min-height: 0;
-
-  /* make the right pane scrollable */
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-
-  /* small padding so content doesn’t hide under the scrollbar */
-  padding-right: 6px;
+width: calc(100% - 25% - 30px); /* Increase the width from 22% to 25% for the left container */
+height: 100%;
+margin-right: 30px;
+border: 0;
+box-sizing: border-box;
+display: flex;
+flex-direction: column;
+min-width: 0;
+min-height: 0;
+overflow-y: auto;
+overscroll-behavior: contain;
+-webkit-overflow-scrolling: touch;
+padding-right: 6px;
 }
 
-
-/* Book Photo Container Styling (Fixed aspect ratio of 1.5:1 - Vertical) */
+/* Adjust book-photo to make image smaller */
 .book-photo {
-  width: 100%;
-  aspect-ratio: 1 / 1.5;
-  overflow: hidden; /* Keep this or remove based on needs */
-  margin: 0 auto;
+width: 80%; /* Decrease width from 100% to 80% */
+aspect-ratio: 1 / 1.5;
+overflow: hidden;
+margin: 0 auto;
 }
 
-/* Image inside the container */
+/* Image inside the container (book photo) */
 .book-photo img {
-  width: 100%; /* Make the image fill the container width */
-  height: 100%; /* Ensure the image fills the container height */
-  object-fit: contain; /* Ensure the image maintains aspect ratio and fits inside */
-  border-radius: 8px; /* Optional: rounded corners for the image */
+width: 100%; /* Ensure the image fits within the container */
+height: auto; /* Allow height to adjust automatically */
+object-fit: contain; /* Maintain the aspect ratio */
+border-radius: 8px; /* Optional: rounded corners for image */
 }
 
 /* Button styling for the return button at bottom-right of image */
@@ -951,8 +944,8 @@
 
     /* Styling for the right section with the book cover */
     .book-cover-details {
-      width: 230px;
-      height: 330px;
+      width: 200px;
+      height: 300px;
       background-color: #f0f0f0;
       display: flex;
       justify-content: center;
