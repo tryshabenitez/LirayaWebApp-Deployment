@@ -52,7 +52,7 @@
       </a>
     {% endfor %}
   </div>
-  <button class="see-more-btn" onclick="toggleMenu(this)">See More</button>
+  <button class="see-all-btn" onclick="toggleMenu(this)">See All</button>
 
   <!-- Year of Publication Section -->
   <div class="section-title">Year of Publication</div>
@@ -80,7 +80,7 @@
     </a>
   {% endfor %}
 </div>
-<button class="see-more-btn" onclick="toggleMenu(this)">See More</button>
+<button class="see-all-btn" onclick="toggleMenu(this)">See All</button>
 
 
   <!-- Resource Type Section -->
@@ -273,7 +273,60 @@ function toggleKeywords(bookId) {
     button.textContent = 'See More';
   }
 }
+// Open the modal and show correct content
+function toggleMenu(button) {
+  const modal = document.getElementById("seeAllModal");
+  const modalTitle = document.getElementById("modal-title");
+  const modalBody = document.getElementById("seeAllList");
 
+  // Detect which section the button belongs to
+  const section = button.previousElementSibling.previousElementSibling.textContent.trim();
+
+  modal.style.display = "flex"; // Show modal
+
+  if (section === "Shelf Category") {
+    modalTitle.textContent = "All Shelf Categories";
+    modalBody.innerHTML = `
+      {% for category in shelf_categories %}
+        <a href="#"
+            class="menu-item {% if category.shelf_category in active_categories %}active{% endif %}"
+            data-category="{{ category.shelf_category }}"
+            onclick="toggleActive(this)">
+          {{ category.shelf_category }} ({{ category.count }})
+        </a>
+      {% endfor %}
+    `;
+  } else if (section === "Subjects / Keywords") {
+    modalTitle.textContent = "All Subjects / Keywords";
+    modalBody.innerHTML = `
+      {% for s in subjects %}
+        <a href="#"
+            class="menu-item {% if s.term in active_subjects %}active{% endif %}"
+            data-subject="{{ s.term }}"
+            onclick="toggleSubject(this)">
+          {{ s.display }} ({{ s.count }})
+        </a>
+      {% endfor %}
+    `;
+  }
+
+  document.body.style.overflow = "hidden"; // Disable background scroll
+}
+
+// Close modal
+function closeSeeAllModal() {
+  const modal = document.getElementById("seeAllModal");
+  modal.style.display = "none";
+  document.body.style.overflow = "auto";
+}
+
+// Optional: Close modal when clicking outside of the box
+window.addEventListener("click", function(event) {
+  const modal = document.getElementById("seeAllModal");
+  if (event.target === modal) {
+    closeSeeAllModal();
+  }
+});
 </script>
 
 {% if books.paginator.count == 0 %}
