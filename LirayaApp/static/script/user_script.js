@@ -341,26 +341,27 @@ function highlightMatchesBoldUpper(text, query) {
   return result;
 }
 
-// Simulate hover via click (and keyboard). Adds a class briefly, then removes.
+// Replace existing bindClickHover with this:
 function bindClickHover(el, {className = 'is-click-hover', duration = 900} = {}) {
   if (!el) return;
   let t;
-
   function activate() {
     el.classList.add(className);
     if (t) clearTimeout(t);
     t = setTimeout(() => el.classList.remove(className), duration);
   }
-
-  // Mouse/touch
+  // Mouse/touch click
   el.addEventListener('click', activate);
+
+  // Spinner/value change events
+  el.addEventListener('input', activate);
+  el.addEventListener('change', activate);
 
   // Keyboard accessibility (Enter / Space)
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       activate();
-      // also trigger action if it’s a button
       if (el.tagName === 'BUTTON') el.click?.();
     }
   }, { capture: true });
@@ -378,33 +379,40 @@ document.addEventListener('DOMContentLoaded', function () {
   const seeMoreBtn = document.querySelector('.see-more-btn');
   if (seeMoreBtn) seeMoreBtn.textContent = 'See More';
 
-  // Year inputs init (guards if not present on the page)
+  // Year inputs + UI bits
   const minYearInput = document.getElementById('min-year');
   const maxYearInput = document.getElementById('max-year');
-  const applyBtn     = document.querySelector('.year-button');   // "Apply Year Filter"
-  const refineHdr    = document.querySelector('.refine-search'); // "Refine Search Results"
+  const applyBtn     = document.querySelector('.year-button');    // "Apply Year Filter"
+  const refineHdr    = document.querySelector('.refine-search');  // "Refine Search Results"
 
-  // Simulate hover on click for min/max year inputs.
-  // Note: your disableTypingNumberInput keeps typing blocked; clicks on the spinner still work.
+  // Click-hover flash (requires bindClickHover to be defined)
   bindClickHover(minYearInput);
   bindClickHover(maxYearInput);
-
-  // Simulate hover on click for the Apply button & section header
   bindClickHover(applyBtn);
   bindClickHover(refineHdr);
-  
+
+  // Make the "Refine Search Results" header keyboard-focusable/clickable
+  if (refineHdr) {
+    refineHdr.setAttribute('tabindex', '0');
+    refineHdr.setAttribute('role', 'button');
+  }
+
   if (minYearInput && maxYearInput) {
     const currentYear = new Date().getFullYear();
+
+    // Set bounds + defaults based on current year
     minYearInput.setAttribute('min', 1900);
     minYearInput.setAttribute('max', currentYear);
     maxYearInput.setAttribute('min', 1900);
     maxYearInput.setAttribute('max', currentYear);
     if (!minYearInput.value) minYearInput.value = 1900;
     if (!maxYearInput.value) maxYearInput.value = currentYear;
+
+    // Disable typing; allow only spinner
     disableTypingNumberInput(minYearInput);
     disableTypingNumberInput(maxYearInput);
 
-
+    // Hide "See All" if a section has fewer than 4 items
     const sections = document.querySelectorAll('.section-title');
     sections.forEach(section => {
       const menuItemsWrap = section.nextElementSibling;
@@ -418,7 +426,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Year inputs: Enter key validation
     minYearInput.addEventListener('keydown', function (event) {
       if (event.key === 'Enter') {
-        const currentYear = new Date().getFullYear();
         const v = parseInt(this.value, 10);
         if (v > currentYear) {
           alert('Year cannot exceed the current year.');
@@ -432,7 +439,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     maxYearInput.addEventListener('keydown', function (event) {
       if (event.key === 'Enter') {
-        const currentYear = new Date().getFullYear();
         const v = parseInt(this.value, 10);
         if (v > currentYear) {
           alert('Year cannot exceed the current year.');
@@ -444,23 +450,24 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    // Prevent out-of-range years on input
+    // Prevent out-of-range years on input (handles spinner changes too)
     ['min-year', 'max-year'].forEach(function (id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', function () {
-        const currentYear = new Date().getFullYear();
-        let val = parseInt(this.value, 10);
-        if (val < 1900) {
+        const v = parseInt(this.value, 10);
+        if (v < 1900) {
           alert('Year cannot be earlier than 1900.');
           this.value = 1900;
-        } else if (val > currentYear) {
+        } else if (v > currentYear) {
           alert('Year cannot exceed the current year.');
           this.value = currentYear;
         }
       });
     });
   }
+});
+
 
   // Auto-open sidebar if present on this page
   const sidebar = document.querySelector('.sidebar');
