@@ -1416,11 +1416,12 @@ border-radius: 8px; /* Optional: rounded corners for image */
   box-shadow: 0 0 0 2px rgba(109, 41, 50, 0.12) inset;
 }
 
-/* DEBUG — raise the year button above anything */
-.year-button { position: relative !important; z-index: 999999 !important; }
-
-/* DEBUG — paint hovered elements so we can SEE hover firing */
-* :hover { outline: 2px dashed #0f0 !important; }
+/* Make Apply Year Filter show the hand cursor */
+.year-button,
+.year-button:hover,
+.year-button:active {
+  cursor: pointer !important;
+}
 
 /* DEBUG — if ANY full-screen blocker exists, give it a visible tint */
 [style*="position:fixed"][style*="inset:0"] { background-color: rgba(255,0,0,.05) !important; }
