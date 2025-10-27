@@ -143,7 +143,7 @@
       border: 3px solid #6d2932;
       margin-top: 10px;
       border-radius: 10px; /* Rounded corners for input fields */
-      background-color: #fff7f7 /* White background for the dropdown */
+      background-color: #fff7f7; /* White background for the dropdown */
       margin-bottom: 10px; /* Add spacing between the select box and other elements */
       box-sizing: border-box; /* Ensure padding and borders are included in the width */
     }
@@ -901,7 +901,7 @@ border-radius: 8px; /* Optional: rounded corners for image */
   border-bottom: 1px solid #ddd; /* Border for the bottom side */
   font-weight: bold; /* Ensure table text is bold */
   font-weight: normal; /* Reduce boldness */
-  font-size: 16px; /
+  font-size: 16px;
 }
 
 
@@ -977,7 +977,7 @@ border-radius: 8px; /* Optional: rounded corners for image */
       height: 200px;
       background-color: #f0f0f0;
       display: flex;
-      border-radius: px;
+      border-radius: 10px;
       justify-content: center;
       align-items: center;
       overflow: hidden;
@@ -1380,17 +1380,26 @@ border-radius: 8px; /* Optional: rounded corners for image */
     }
 }
 
-/* Year inputs: mimic a hover highlight on click */
-.year-input input.is-click-hover {
-  border: 3px solid #be0b23 !important;
-  box-shadow: 0 0 0 2px rgba(190, 11, 35, 0.12);
-  transition: border-color .15s ease, box-shadow .15s ease;
+/* Year button */
+.year-button:hover,
+.year-button.is-click-hover {
+  background-color: #6d2932 !important;
+  color: #fff7f7 !important;
+  border-color: #6d2932 !important;
 }
 
-/* button */
-.year-button.is-click-hover {
-  background-color: #6d2932;
-  color: #fff7f7;
+/* Refine header */
+.refine-search:hover,
+.refine-search.is-click-hover {
+  background-color: #f5ecee !important;
+  box-shadow: 0 0 0 2px rgba(109, 41, 50, 0.12) inset !important;
+}
+
+/* Year inputs */
+.year-input input:hover,
+.year-input input.is-click-hover {
+  border: 3px solid #be0b23 !important;
+  box-shadow: 0 0 0 2px rgba(190, 11, 35, 0.12) !important;
 }
 
 
