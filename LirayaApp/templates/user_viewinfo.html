@@ -97,7 +97,7 @@
       </div>
       <!-- Return Button positioned bottom-left relative to image -->
       <div style="width: 100%; text-align: left;">
-        <a href="{% url 'user_search' %}" title="Return">
+        <a href="{% url 'user_search' %}?{{ request.GET.urlencode }}" title="Return">
           <button class="return-btn" style="margin-top: 100px;">
             <img 
               src="{% static 'images/user_return.png' %}" 
