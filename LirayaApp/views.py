@@ -423,7 +423,9 @@ def user_search(request):
     # ===============================
     #           SORT
     # ===============================
-    if sort_option == 'Newest to Oldest':
+    if sort_option == 'Relevance':
+        books = books.order_by('-pk')  # ensures stable pagination
+    elif sort_option == 'Newest to Oldest':
         books = books.order_by('-year_of_publication')
     elif sort_option == 'Oldest to Newest':
         books = books.order_by('year_of_publication')
