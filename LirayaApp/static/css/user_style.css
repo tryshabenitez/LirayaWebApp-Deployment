@@ -289,6 +289,11 @@
       margin-bottom: 10px;
     }
 
+    .year-input input.is-click-hover {
+      border: 3px solid #be0b23 !important;
+      box-shadow: 0 0 0 2px rgba(190, 11, 35, 0.12);
+    }
+
     .year-input label {
       font-weight: bold; /* Bold label for Min and Max Year */
       margin-bottom: 5px;
@@ -1382,13 +1387,12 @@ border-radius: 8px; /* Optional: rounded corners for image */
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-/* Apply Year Filter button: same as your :hover */
+/* button */
 .year-button.is-click-hover {
   background-color: #6d2932;
   color: #fff7f7;
-  border-color: #6d2932; /* in case you later add a border here */
-  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
+
 
 /* “Refine Search Results” header: give it a visual hover-on-click */
 .refine-search {
@@ -1397,6 +1401,7 @@ border-radius: 8px; /* Optional: rounded corners for image */
   transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
 .refine-search:hover,
+/* header */
 .refine-search.is-click-hover {
   background-color: #f5ecee;
   box-shadow: 0 0 0 2px rgba(109, 41, 50, 0.12) inset;
