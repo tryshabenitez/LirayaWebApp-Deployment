@@ -481,7 +481,7 @@ def user_search(request):
     qs_no_book = request.GET.copy()
     qs_no_book.pop('book_id', None)           # remove if present
     qs_no_book = qs_no_book.urlencode()       # to string
-
+    current_year = timezone.now().year
     
     context = {
         'books': books_page,
@@ -496,6 +496,7 @@ def user_search(request):
         'active_resource_types': rtypes,
         'active_subjects': subs,
         'qs_no_book': qs_no_book,   # ViewInfo
+        'current_year': current_year,
     }
 
     return render(request, 'user_search.html', context)
