@@ -495,6 +495,7 @@ def user_search(request):
 
 
 
+# views.py
 def view_info(request):
     book_id = request.GET.get('book_id')
     if not book_id:
@@ -502,7 +503,7 @@ def view_info(request):
 
     book = get_object_or_404(Books, book_id=book_id)
 
-    # ----- Aggregate view counter per book -----
+    # view counter (unchanged)
     try:
         with transaction.atomic():
             rec, _ = BookViewLog.objects.select_for_update().get_or_create(
@@ -510,11 +511,18 @@ def view_info(request):
                 defaults={'book_count': 0},
             )
             rec.book_count = (rec.book_count or 0) + 1
-            rec.save()  # updated_at auto-updates
+            rec.save()
     except Exception:
         pass
 
-    return render(request, 'user_viewinfo.html', {'book': book})
+    # NEW: build a qs for "Return" WITHOUT book_id
+    qs = request.GET.copy()
+    qs.pop('book_id', None)
+    return render(request, 'user_viewinfo.html', {
+        'book': book,
+        'return_qs': qs.urlencode(),
+    })
+
 
 
 def user_suggestions(request):
