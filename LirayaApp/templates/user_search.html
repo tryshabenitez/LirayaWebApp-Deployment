@@ -194,7 +194,7 @@
             <button class="kw_see_more" onclick="toggleKeywords({{ book.book_id }})">See More</button>
           </div>
         </p>
-        <a href="{% url 'user_viewinfo' %}?book_id={{ book.book_id }}&{{ request.GET.urlencode }}">
+        <a href="{% url 'user_viewinfo' %}?book_id={{ book.book_id }}{% if qs_no_book %}&{{ qs_no_book }}{% endif %}">
           <button class="view-info-btn">View Information</button>
         </a>
       </div>
