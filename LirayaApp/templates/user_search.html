@@ -58,13 +58,13 @@
   <div class="section-title">Year of Publication</div>
   <div class="year-input">
     <label for="min-year">Min Year</label>
-    <input type="number" id="min-year" name="min_year" min="1900" max="2025"
+    <input type="number" id="min-year" name="min_year" min="1900" max="{{ current_year }}"
        value="{{ request.GET.min_year|default:1900 }}" class="year-stepper-only" inputmode="none">
   </div>
   <div class="year-input">
     <label for="max-year">Max Year</label>
-    <input type="number" id="max-year" name="max_year" min="1900" max="2025"
-       value="{{ request.GET.max_year|default:2025 }}" class="year-stepper-only" inputmode="none">
+    <input type="number" id="max-year" name="max_year" min="1900" max="{{ current_year }}"
+       value="{{ request.GET.max_year|default:current_year }}" class="year-stepper-only" inputmode="none">
   </div>
   <button type="button" class="year-button" onclick="applyYearFilter()">Apply Year Filter</button>
 
