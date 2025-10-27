@@ -1423,5 +1423,27 @@ border-radius: 8px; /* Optional: rounded corners for image */
   cursor: pointer !important;
 }
 
-/* DEBUG — if ANY full-screen blocker exists, give it a visible tint */
-[style*="position:fixed"][style*="inset:0"] { background-color: rgba(255,0,0,.05) !important; }
+/* Hand cursor for Min/Max year inputs */
+#min-year,
+#max-year,
+#min-year:hover,
+#max-year:hover,
+#min-year:focus,
+#max-year:focus {
+  cursor: pointer !important;
+}
+
+/* Hand cursor for the Refine Search Results dropdown (sidebar select) */
+.sidebar form select,
+.sidebar form select:hover,
+.sidebar form select:focus {
+  cursor: pointer !important;
+}
+
+/* (Optional) If you also want the header field dropdown to show a hand */
+header .dropdown,
+header .dropdown:hover,
+header .dropdown:focus {
+  cursor: pointer !important;
+}
+
