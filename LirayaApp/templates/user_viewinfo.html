@@ -18,11 +18,12 @@
   <button id="btn-qr" class="action-btn">Create QR Code</button>
 
   <div id="book-meta"
-      data-title="{{ book.title|default_if_none:'' }}"
-      data-author="{{ book.author|default_if_none:'' }}"
-      data-coauthor="{{ book.co_author|default_if_none:'' }}"
-      data-year="{{ book.year_of_publication|default_if_none:'' }}"
-      data-publisher="{{ book.publisher|default_if_none:'' }}">
+       data-title="{{ book.title|default_if_none:'' }}"
+       data-author="{{ book.author|default_if_none:'' }}"
+       data-coauthor="{{ book.co_author|default_if_none:'' }}"
+       data-year="{{ book.year_of_publication|default_if_none:'' }}"
+       data-publisher="{{ book.publisher|default_if_none:'' }}"
+       data-type="{{ book.book_type|default_if_none:'' }}">
   </div>
 
   <!-- About Us Button (Redirects to About Us Page) -->
