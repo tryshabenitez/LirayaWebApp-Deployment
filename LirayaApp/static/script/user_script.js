@@ -341,30 +341,37 @@ function highlightMatchesBoldUpper(text, query) {
   return result;
 }
 
-// Replace existing bindClickHover with this:
-function bindClickHover(el, {className = 'is-click-hover', duration = 900} = {}) {
+function bindClickHover(el, { className = 'is-click-hover', duration = 900 } = {}) {
   if (!el) return;
+
   let t;
-  function activate() {
+
+  const activate = () => {
+    // force a repaint to ensure the style shows even if rapidly toggled
+    // (helps on some browsers when the class is added/removed quickly)
+    // eslint-disable-next-line no-unused-expressions
+    el.offsetHeight;
     el.classList.add(className);
     if (t) clearTimeout(t);
     t = setTimeout(() => el.classList.remove(className), duration);
-  }
-  // Mouse/touch click
-  el.addEventListener('click', activate);
+  };
 
-  // Spinner/value change events
-  el.addEventListener('input', activate);
+  // 1) Pointer events—covers mouse/touch/pen reliably
+  el.addEventListener('pointerdown', activate, { capture: true });
+  el.addEventListener('pointerup',   activate);
+  el.addEventListener('pointercancel', activate);
+
+  // 2) Focus paths (e.g., via Tab key or programmatic focus)
+  el.addEventListener('focusin', activate);
+
+  // 3) Value changes (good for number spinners)
+  el.addEventListener('input',  activate);
   el.addEventListener('change', activate);
 
-  // Keyboard accessibility (Enter / Space)
+  // 4) Keyboard “action” keys
   el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      activate();
-      if (el.tagName === 'BUTTON') el.click?.();
-    }
-  }, { capture: true });
+    if (e.key === 'Enter' || e.key === ' ') activate();
+  });
 }
 
 
@@ -611,36 +618,23 @@ function toggleSubject(element) {
 function disableTypingNumberInput(el) {
   if (!el) return;
 
-  // 1) Block keyboard typing (but allow Tab to move focus)
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') return;
-    e.preventDefault();
-  });
+  // keep your existing listeners …
 
-  // 2) Block typing-related events
-  el.addEventListener('keypress', (e) => e.preventDefault());
-  el.addEventListener('paste',   (e) => e.preventDefault());
-  el.addEventListener('drop',    (e) => e.preventDefault());
-
-  // 3) Prevent mouse wheel value changes
-  el.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
-
-  // 4) Let ONLY the spinner zone be clickable
-  //    Approximate the spinner as the rightmost 24px of the input.
   function allowOnlySpinnerPointer(e) {
     const rect = el.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const isSpinnerZone = x >= rect.width - 24; // right-most 24px
+    const isSpinnerZone = x >= rect.width - 24;
     if (!isSpinnerZone) {
-      e.preventDefault();  // no focusing/caret on text area
-      // Keep it unfocused so no caret shows up
+      e.preventDefault();
+      // 🔽 still show the visual feedback even if we block the click
+      el.classList.add('is-click-hover');
+      setTimeout(() => el.classList.remove('is-click-hover'), 900);
       el.blur();
     }
   }
 
   el.addEventListener('mousedown', allowOnlySpinnerPointer);
   el.addEventListener('touchstart', (e) => {
-    // For touch, use the first touch point
     if (!e.touches || !e.touches.length) return;
     const touch = e.touches[0];
     const rect = el.getBoundingClientRect();
@@ -648,12 +642,15 @@ function disableTypingNumberInput(el) {
     const isSpinnerZone = x >= rect.width - 24;
     if (!isSpinnerZone) {
       e.preventDefault();
+      // 🔽 same visual feedback on touch
+      el.classList.add('is-click-hover');
+      setTimeout(() => el.classList.remove('is-click-hover'), 900);
       el.blur();
     }
   }, { passive: false });
 
-  // 5) Cosmetic: hide the caret & disable text selection to reduce UI noise
   el.style.caretColor = 'transparent';
   el.style.userSelect = 'none';
 }
+
 
