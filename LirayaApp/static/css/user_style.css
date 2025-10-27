@@ -1422,3 +1422,11 @@ border-radius: 8px; /* Optional: rounded corners for image */
   box-shadow: 0 0 0 2px rgba(190, 11, 35, 0.12);
 }
 
+/* Let hover/click pass through the dim background… */
+#no-results-overlay { pointer-events: none; }
+
+/* …but keep the white dialog clickable */
+#no-results-overlay > div { pointer-events: auto; }
+
+/* If you also want the sidebar to sit above the overlay */
+.sidebar { z-index: 10000; }  /* higher than overlay's 9999 */
