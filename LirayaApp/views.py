@@ -476,6 +476,13 @@ def user_search(request):
     # ===============================
     #           CONTEXT
     # ===============================
+
+    # Build a preserved querystring WITHOUT any previous book_id
+    qs_no_book = request.GET.copy()
+    qs_no_book.pop('book_id', None)           # remove if present
+    qs_no_book = qs_no_book.urlencode()       # to string
+
+    
     context = {
         'books': books_page,
         'current_page': current_page,
@@ -488,6 +495,7 @@ def user_search(request):
         'active_categories': cats,
         'active_resource_types': rtypes,
         'active_subjects': subs,
+        'qs_no_book': qs_no_book,   # ViewInfo
     }
 
     return render(request, 'user_search.html', context)
