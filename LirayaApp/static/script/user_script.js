@@ -341,6 +341,31 @@ function highlightMatchesBoldUpper(text, query) {
   return result;
 }
 
+// Simulate hover via click (and keyboard). Adds a class briefly, then removes.
+function bindClickHover(el, {className = 'is-click-hover', duration = 900} = {}) {
+  if (!el) return;
+  let t;
+
+  function activate() {
+    el.classList.add(className);
+    if (t) clearTimeout(t);
+    t = setTimeout(() => el.classList.remove(className), duration);
+  }
+
+  // Mouse/touch
+  el.addEventListener('click', activate);
+
+  // Keyboard accessibility (Enter / Space)
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      activate();
+      // also trigger action if it’s a button
+      if (el.tagName === 'BUTTON') el.click?.();
+    }
+  }, { capture: true });
+}
+
 
 document.addEventListener('DOMContentLoaded', function () {
   // Init pagination UI if present
@@ -356,6 +381,18 @@ document.addEventListener('DOMContentLoaded', function () {
   // Year inputs init (guards if not present on the page)
   const minYearInput = document.getElementById('min-year');
   const maxYearInput = document.getElementById('max-year');
+  const applyBtn     = document.querySelector('.year-button');   // "Apply Year Filter"
+  const refineHdr    = document.querySelector('.refine-search'); // "Refine Search Results"
+
+  // Simulate hover on click for min/max year inputs.
+  // Note: your disableTypingNumberInput keeps typing blocked; clicks on the spinner still work.
+  bindClickHover(minYearInput);
+  bindClickHover(maxYearInput);
+
+  // Simulate hover on click for the Apply button & section header
+  bindClickHover(applyBtn);
+  bindClickHover(refineHdr);
+  
   if (minYearInput && maxYearInput) {
     const currentYear = new Date().getFullYear();
     minYearInput.setAttribute('min', 1900);
