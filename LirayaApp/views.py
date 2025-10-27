@@ -464,7 +464,7 @@ def user_search(request):
     # ===============================
     #         PAGINATION
     # ===============================
-    paginator = Paginator(books, 5)  # 5 per page
+    paginator = Paginator(books, 10)  # 5 per page
     page = request.GET.get('page')
     books_page = paginator.get_page(page)
 
