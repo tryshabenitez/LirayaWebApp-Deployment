@@ -369,38 +369,37 @@ function bindClickHover(el, {className = 'is-click-hover', duration = 900} = {})
 
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Init pagination UI if present
+  // --- Pagination + summary ---
   if (paginationDataEl) updatePagination();
-
-  // Init results summary on first load
   updateResultsSummary();
 
-  // Initial "See More" button label (if present)
+  // --- "See More" label (if present) ---
   const seeMoreBtn = document.querySelector('.see-more-btn');
   if (seeMoreBtn) seeMoreBtn.textContent = 'See More';
 
-  // Year inputs + UI bits
+  // --- Year inputs + UI bits ---
   const minYearInput = document.getElementById('min-year');
   const maxYearInput = document.getElementById('max-year');
   const applyBtn     = document.querySelector('.year-button');    // "Apply Year Filter"
   const refineHdr    = document.querySelector('.refine-search');  // "Refine Search Results"
 
-  // Click-hover flash (requires bindClickHover to be defined)
+  // Click→hover flash (bindClickHover must be defined above)
   bindClickHover(minYearInput);
   bindClickHover(maxYearInput);
   bindClickHover(applyBtn);
   bindClickHover(refineHdr);
 
-  // Make the "Refine Search Results" header keyboard-focusable/clickable
+  // Make "Refine Search Results" accessible
   if (refineHdr) {
     refineHdr.setAttribute('tabindex', '0');
     refineHdr.setAttribute('role', 'button');
   }
 
+  // Year inputs wiring
   if (minYearInput && maxYearInput) {
     const currentYear = new Date().getFullYear();
 
-    // Set bounds + defaults based on current year
+    // Bounds + defaults (dynamic current year)
     minYearInput.setAttribute('min', 1900);
     minYearInput.setAttribute('max', currentYear);
     maxYearInput.setAttribute('min', 1900);
@@ -408,11 +407,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!minYearInput.value) minYearInput.value = 1900;
     if (!maxYearInput.value) maxYearInput.value = currentYear;
 
-    // Disable typing; allow only spinner
+    // Disable typing; spinner only
     disableTypingNumberInput(minYearInput);
     disableTypingNumberInput(maxYearInput);
 
-    // Hide "See All" if a section has fewer than 4 items
+    // Hide "See All" buttons when < 4 items
     const sections = document.querySelectorAll('.section-title');
     sections.forEach(section => {
       const menuItemsWrap = section.nextElementSibling;
@@ -423,53 +422,36 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    // Year inputs: Enter key validation
+    // Enter key validation
     minYearInput.addEventListener('keydown', function (event) {
       if (event.key === 'Enter') {
         const v = parseInt(this.value, 10);
-        if (v > currentYear) {
-          alert('Year cannot exceed the current year.');
-          this.value = currentYear;
-        } else if (v < 1900) {
-          alert('Year cannot be earlier than 1900.');
-          this.value = 1900;
-        }
+        if (v > currentYear) { alert('Year cannot exceed the current year.'); this.value = currentYear; }
+        else if (v < 1900)   { alert('Year cannot be earlier than 1900.');   this.value = 1900; }
       }
     });
 
     maxYearInput.addEventListener('keydown', function (event) {
       if (event.key === 'Enter') {
         const v = parseInt(this.value, 10);
-        if (v > currentYear) {
-          alert('Year cannot exceed the current year.');
-          this.value = currentYear;
-        } else if (v < 1900) {
-          alert('Year cannot be earlier than 1900.');
-          this.value = 1900;
-        }
+        if (v > currentYear) { alert('Year cannot exceed the current year.'); this.value = currentYear; }
+        else if (v < 1900)   { alert('Year cannot be earlier than 1900.');   this.value = 1900; }
       }
     });
 
-    // Prevent out-of-range years on input (handles spinner changes too)
+    // Guard out-of-range when spinner changes
     ['min-year', 'max-year'].forEach(function (id) {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', function () {
         const v = parseInt(this.value, 10);
-        if (v < 1900) {
-          alert('Year cannot be earlier than 1900.');
-          this.value = 1900;
-        } else if (v > currentYear) {
-          alert('Year cannot exceed the current year.');
-          this.value = currentYear;
-        }
+        if (v < 1900)        { alert('Year cannot be earlier than 1900.');   this.value = 1900; }
+        else if (v > currentYear) { alert('Year cannot exceed the current year.'); this.value = currentYear; }
       });
     });
   }
-});
 
-
-  // Auto-open sidebar if present on this page
+  // --- Auto-open sidebar ---
   const sidebar = document.querySelector('.sidebar');
   const mainContent = document.querySelector('.main-content');
   const paginationEl = document.querySelector('.pagination');
@@ -479,12 +461,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (paginationEl) paginationEl.style.marginLeft = '270px';
   }
 
-  // Typeahead init
+  // --- Typeahead init (safe on both pages) ---
   const forms = document.querySelectorAll('form.search-form');
   forms.forEach(form => {
     if (form.__typeaheadInit) return;
 
-    let suggestUrl = form.getAttribute('data-suggest-url') || '/suggest/';
+    const suggestUrl = form.getAttribute('data-suggest-url') || '/suggest/';
     const input = form.querySelector('.search-box');
     if (!input) return;
 
@@ -508,6 +490,7 @@ document.addEventListener('DOMContentLoaded', function () {
     form.__typeaheadInit = true;
   });
 });
+
 
 
 function initTypeaheadForForm({ form, input, fieldSelect, wrap, dropdown, suggestUrl }) {
