@@ -2218,8 +2218,40 @@ function cleanUniversalOCR(text, type = "TOC") {
 
     }  else {
         // 🔹 TOC-specific cleaning rules
+        text = text.replace(/[^a-zA-Z0-9\s.,\/()-]/g, " ");  // Remove unwanted symbols but preserve commas
+        text = text.replace(/\s+/g, " ");                    // Normalize spaces
         text = text.replace(/\.{2,}/g, ''); //remove excess dots
-        return text;
+
+        // 1) Newline before Lesson/Chapter/Unit headings (keep whole line together)
+        text = text.replace(/\s*(?=(Lesson|Chapter|Unit)\s+\d+)/gi, "\n");
+
+        // 2) NEW: Also newline before any "topic + page number" IF it is NOT already a Chapter/Lesson/Unit line
+        text = text.replace(/(?<!Lesson|Chapter|Unit)\s+([A-Za-z0-9][A-Za-z0-9\s,'\-()\/]+?\s+\d{1,4})(?=\s|$)/gi, "\n$1");
+
+        // Ensure topic + page number formatting
+        text = text.replace(/([A-Za-z0-9][A-Za-z0-9\s,'\-()\/]+)\s+(\d{1,4})(?=\s|$)/g, "$1 $2");
+
+        // Insert space after commas in numbers
+        text = text.replace(/,(\d)/g, ", $1");
+
+        // Remove duplicate blank lines
+        text = text.replace(/\n{2,}/g, "\n");
+
+        // 🔹 Force only the last page number per line
+        text = text.replace(/(\d+)(?:\s+\d+)+/g, (match) => {
+            let nums = match.trim().split(/\s+/);
+            return nums[nums.length - 1]; // keep only the last number
+        });
+
+        // 🔹 Cut off stray words after the last page number
+        text = text.replace(/(\d{1,4})\s+\S+$/gm, "$1");
+
+        // Capitalize Lesson/Chapter/Unit properly
+        text = text.replace(/\b(lesson|chapter|unit)\b/gi, (match) =>
+            match.charAt(0).toUpperCase() + match.slice(1).toLowerCase()
+        );
+
+        return text.trim();
     }
 }
 
