@@ -1415,18 +1415,3 @@ border-radius: 8px; /* Optional: rounded corners for image */
   background-color: #f5ecee;
   box-shadow: 0 0 0 2px rgba(109, 41, 50, 0.12) inset;
 }
-
-/* Optional: if you want the dropdown select in the sidebar to also flash on click */
-.sidebar form select.is-click-hover {
-  border: 3px solid #be0b23 !important;
-  box-shadow: 0 0 0 2px rgba(190, 11, 35, 0.12);
-}
-
-/* Let hover/click pass through the dim background… */
-#no-results-overlay { pointer-events: none; }
-
-/* …but keep the white dialog clickable */
-#no-results-overlay > div { pointer-events: auto; }
-
-/* If you also want the sidebar to sit above the overlay */
-.sidebar { z-index: 10000; }  /* higher than overlay's 9999 */
