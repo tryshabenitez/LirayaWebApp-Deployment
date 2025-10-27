@@ -584,17 +584,49 @@ function toggleSubject(element) {
 function disableTypingNumberInput(el) {
   if (!el) return;
 
-  // Block all keyboard input (except Tab to move focus)
+  // 1) Block keyboard typing (but allow Tab to move focus)
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') return;
     e.preventDefault();
   });
 
-  // Block typing-related events
+  // 2) Block typing-related events
   el.addEventListener('keypress', (e) => e.preventDefault());
   el.addEventListener('paste',   (e) => e.preventDefault());
   el.addEventListener('drop',    (e) => e.preventDefault());
 
-  // Optional: prevent mouse wheel from changing the value
+  // 3) Prevent mouse wheel value changes
   el.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+
+  // 4) Let ONLY the spinner zone be clickable
+  //    Approximate the spinner as the rightmost 24px of the input.
+  function allowOnlySpinnerPointer(e) {
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const isSpinnerZone = x >= rect.width - 24; // right-most 24px
+    if (!isSpinnerZone) {
+      e.preventDefault();  // no focusing/caret on text area
+      // Keep it unfocused so no caret shows up
+      el.blur();
+    }
+  }
+
+  el.addEventListener('mousedown', allowOnlySpinnerPointer);
+  el.addEventListener('touchstart', (e) => {
+    // For touch, use the first touch point
+    if (!e.touches || !e.touches.length) return;
+    const touch = e.touches[0];
+    const rect = el.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const isSpinnerZone = x >= rect.width - 24;
+    if (!isSpinnerZone) {
+      e.preventDefault();
+      el.blur();
+    }
+  }, { passive: false });
+
+  // 5) Cosmetic: hide the caret & disable text selection to reduce UI noise
+  el.style.caretColor = 'transparent';
+  el.style.userSelect = 'none';
 }
+
