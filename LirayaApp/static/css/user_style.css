@@ -1388,12 +1388,6 @@ border-radius: 8px; /* Optional: rounded corners for image */
   border-color: #6d2932 !important;
 }
 
-/* Refine header */
-.refine-search:hover,
-.refine-search.is-click-hover {
-  background-color: #f5ecee !important;
-  box-shadow: 0 0 0 2px rgba(109, 41, 50, 0.12) inset !important;
-}
 
 /* Year inputs */
 .year-input input:hover,
@@ -1403,18 +1397,6 @@ border-radius: 8px; /* Optional: rounded corners for image */
 }
 
 
-/* “Refine Search Results” header: give it a visual hover-on-click */
-.refine-search {
-  cursor: pointer; /* makes it feel interactive */
-  border-radius: 8px;
-  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
-}
-.refine-search:hover,
-/* header */
-.refine-search.is-click-hover {
-  background-color: #f5ecee;
-  box-shadow: 0 0 0 2px rgba(109, 41, 50, 0.12) inset;
-}
 
 /* Make Apply Year Filter show the hand cursor */
 .year-button,
