@@ -326,7 +326,8 @@
     }
 
     /* See More Button */
-    .see-more-btn {
+    /* See More Button */
+    .see-all-btn {
       background-color: transparent;
       border: none;
       color: #6d2932;
@@ -334,6 +335,14 @@
       cursor: pointer;
       padding: 10px;
       font-weight: bold;
+      text-decoration: underline; /* 👈 adds the underline */
+      text-underline-offset: 3px; /* spacing between text and underline */
+    }
+
+    /* Optional: subtle hover effect */
+    .see-all-btn:hover {
+      color: #a33b45; /* slightly darker on hover */
+      text-decoration-thickness: 2px; /* make underline bolder when hovered */
     }
 
   
@@ -1281,4 +1290,89 @@ border-radius: 8px; /* Optional: rounded corners for image */
 .kw_see_more:hover {
   text-decoration: underline;
 }
+
+
+/****** FOR SEE ALL ON THE SIDEBAR OF THE SEARCH PAGE ******/
+
+/* See All Modal Background */
+#seeAllModal {
+    display: none;
+    justify-content: center;
+    align-items: flex-start; /* Align at the top instead of exact center */
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    overflow: auto; /* Allow modal to scroll if needed */
+    padding-top: 100px; /* 👈 pushes modal down below navbar */
+}
+
+/* See All Modal Content Box */
+#seeAllModal .modal-content {
+    background-color: #fff;
+    padding: 20px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: left;
+    position: relative;
+    margin: 0 auto; /* Center horizontally */
+}
+
+/* Modal Header Title */
+#seeAllModal #modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 16px;
+}
+
+/* Close Button */
+#seeAllModal .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+#seeAllModal .close-btn:hover {
+    color: #000;
+}
+
+/* Modal Body */
+#seeAllModal .modal-body {
+    margin-top: 4px;
+}
+
+/* Menu Items */
+#seeAllModal .modal-body a.menu-item {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: #333;
+    text-decoration: none;
+    margin-bottom: 4px;
+    transition: background 0.2s ease;
+}
+#seeAllModal .modal-body a.menu-item:hover {
+    background: #f5f5f5;
+}
+
+/* Optional: Responsive Fix for Small Screens */
+@media (max-width: 768px) {
+    #seeAllModal {
+        padding-top: 80px;
+    }
+    #seeAllModal .modal-content {
+        width: 90%;
+        max-width: none;
+        border-radius: 6px;
+    }
+}
+
 
