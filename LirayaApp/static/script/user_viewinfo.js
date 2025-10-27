@@ -245,12 +245,16 @@ document.addEventListener('DOMContentLoaded', function () {
       .replace(/\\u/g, ' '); // any stray "\u" without 4 hex digits -> space
   }
 
-  const raw = decodeJsUnicodeEscapes(rawAttr);
-  // If this looks like a thesis ABSTRACT, hide the button and bail out early
-  if (/\babstract\b/i.test(raw)) {
+  // Hide Show Pages for Thesis types (do not wire up modal at all)
+  const meta = document.getElementById('book-meta');
+  const bookType = (meta?.dataset?.type || '').trim().toLowerCase();
+  if (bookType === 'thesis') {
     if (btn) btn.style.display = 'none';
     return; // do not wire up modal at all
   }
+  
+  const raw = decodeJsUnicodeEscapes(rawAttr);
+
 
 
   const modal      = document.getElementById('pages-modal');
@@ -812,28 +816,18 @@ function initQrCode() {
 document.addEventListener('DOMContentLoaded', initQrCode);
 
 (function () {
-  // Hide "Show Pages" if scanned content contains the word "Abstract" (case-insensitive)
-  function decodeJsUnicodeEscapes(s) {
-    if (!s) return '';
-    return s
-      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-      .replace(/\\u/g, ' ');
-  }
-
   document.addEventListener('DOMContentLoaded', function () {
-    const holder = document.getElementById('scanned-content-holder');
-    const btn    = document.getElementById('show-pages-btn');
-    if (!holder || !btn) return;
+    const meta = document.getElementById('book-meta');
+    const btn  = document.getElementById('show-pages-btn');
+    if (!meta || !btn) return;
 
-    const rawAttr  = holder.dataset.content || '';
-    const decoded  = decodeJsUnicodeEscapes(rawAttr);
-
-    // Case-insensitive whole-word match for "abstract"
-    if (/\babstract\b/i.test(decoded)) {
+    const bookType = (meta.dataset.type || '').trim().toLowerCase();
+    if (bookType === 'thesis') {
       btn.style.display = 'none';
     }
   });
 })();
+
 
 
 // === Add-only: strip numbered prefixes like "1.", "1.1", "1.1.2", "3.1,3" ===
