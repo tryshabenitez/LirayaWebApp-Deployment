@@ -2527,22 +2527,22 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
         no_results_rows = []
         for log in logs_qs:
-        kw = (getattr(log, 'user_keyword_search', '') or '').strip()
-        # WRONG: cnt = compute_book_results_count_same_as_user(kw)
-        cnt = book_results_count_for_keyword(kw)  # <-- use the helper you defined above
-    
-        if cnt == 0:
-            first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
-            if not first_s:
-                first_s = _fmt_dt_local(getattr(log, "created_at", None))
-            if not last_s:
-                last_s = _fmt_dt_local(getattr(log, "updated_at", None))
-            no_results_rows.append({
-                "keyword": kw,
-                "count": int(getattr(log, "user_search_count", 0) or 0),
-                "first": first_s or "—",
-                "last":  last_s or "—",
-            })
+            kw = (getattr(log, 'user_keyword_search', '') or '').strip()
+            # WRONG: cnt = compute_book_results_count_same_as_user(kw)
+            cnt = book_results_count_for_keyword(kw)  # <-- use the helper you defined above
+        
+            if cnt == 0:
+                first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
+                if not first_s:
+                    first_s = _fmt_dt_local(getattr(log, "created_at", None))
+                if not last_s:
+                    last_s = _fmt_dt_local(getattr(log, "updated_at", None))
+                no_results_rows.append({
+                    "keyword": kw,
+                    "count": int(getattr(log, "user_search_count", 0) or 0),
+                    "first": first_s or "—",
+                    "last":  last_s or "—",
+                })
 
 
         # Alphabetical by keyword (case-insensitive), empty last
