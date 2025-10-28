@@ -3721,33 +3721,35 @@ def librarian_search_history(request):
     # Build the payload used by the HTML
     logs_data = []
     for log in page_obj:
-        # Same matching logic as before
-        books = (
-            Books.objects.filter(title__icontains=log.user_keyword_search) |
-            Books.objects.filter(author__icontains=log.user_keyword_search) |
-            Books.objects.filter(primary_keyword__icontains=log.user_keyword_search)
-        )
-        formatted_books = [
-            f"{book.title.upper()} (title) - {log.user_keyword_search.lower()} (keyword)"
-            for book in books
-        ]
+        kw = (getattr(log, 'user_keyword_search', '') or '').strip()
+
+        # Compute "Total Book Results" count like user_search result total
+        if kw:
+            q_or = (
+                Q(title__icontains=kw) |
+                Q(author__icontains=kw) |
+                Q(primary_keyword__icontains=kw)
+            )
+            book_results_count = Books.objects.filter(q_or, is_archived=False).count()
+        else:
+            book_results_count = 0
 
         logs_data.append({
             'user_keyword_search': log.user_keyword_search,
             'user_search_count': log.user_search_count,
             'updated_at': log.updated_at.strftime('%Y-%m-%d %H:%M:%S') if log.updated_at else '',
-            'books': formatted_books,
-            'user_info': user_info,  # preserved
+            'book_results_count': book_results_count,   # <-- added
+            'user_info': user_info,                     # preserved
         })
 
-    # AJAX: return JSON for in-page refresh
+    # AJAX: return JSON for in-page refresh (if you keep any JS using it)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'keyword_logs': logs_data,
             'currentPage': page_obj.number,
             'totalPages': paginator.num_pages,
             'timeFilter': time_filter,  # echo back for the dropdown
-            'anchor': latest_ts.strftime('%Y-%m-%d %H:%M:%S'),  # optional: debug
+            'anchor': latest_ts.strftime('%Y-%m-%d %H:%M:%S'),
         })
 
     # Non-AJAX: render template
@@ -3761,7 +3763,7 @@ def librarian_search_history(request):
             'timeFilter': time_filter,  # keep dropdown in sync
         }
     )
-    
+ 
 def logout_view(request):
     # Log the user out
     logout(request)
