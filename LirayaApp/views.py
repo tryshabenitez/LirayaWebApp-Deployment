@@ -3761,7 +3761,7 @@ def librarian_search_history(request):
             'timeFilter': time_filter,  # keep dropdown in sync
         }
     )
-
+    
 def logout_view(request):
     # Log the user out
     logout(request)
