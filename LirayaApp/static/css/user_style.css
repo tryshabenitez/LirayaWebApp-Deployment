@@ -1008,8 +1008,21 @@ border-radius: 8px; /* Optional: rounded corners for image */
       transition: margin-left 0.3s ease-in-out; /* Smooth transition */
     }
 
+
+
+    .search-results-label {
+      text-align: left;
+      font-size: 18px;
+      font-weight: 600;
+      color: #3e151a;
+      margin: 20px 0 10px 300px; /* start further right so not covered */
+      position: relative;
+      transition: margin-left 0.3s ease-in-out;
+    }
+
+
     /* Adjust the pagination when sidebar is open */
-    .sidebar.open + .main-content + .pagination {
+    .sidebar.open + .main-content + .pagination + .search-results-label{
       margin-left: 270px; /* Same as the main content margin shift */
     }
 
