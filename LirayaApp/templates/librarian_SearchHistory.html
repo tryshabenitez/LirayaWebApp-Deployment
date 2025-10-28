@@ -32,16 +32,23 @@
         </button>
     </div>
 
-    <!-- Filter Dropdown -->
-    <div class="admin-dropdown-section">
-        <label for="timeFilter">Filter by:</label>
-        <select id="timeFilter" name="timeFilter" data-current="{{ timeFilter|default:'all' }}" onchange="filterSearchHistory()">
-            <option value="all">All time</option>
-            <option value="last24hours">24 hours</option>
-            <option value="last7days">Last 7 days</option>
-            <option value="last30days">Last 30 days</option>
-        </select>
-    </div>
+    <!-- Filter Dropdown and Search Form -->
+    <form method="GET" action="" id="searchForm">
+        <div class="admin-dropdown-section">
+            <label for="timeFilter">Filter by:</label>
+            <select id="timeFilter" name="timeFilter" data-current="{{ timeFilter|default:'all' }}">
+                <option value="all">All time</option>
+                <option value="last24hours">24 hours</option>
+                <option value="last7days">Last 7 days</option>
+                <option value="last30days">Last 30 days</option>
+            </select>
+        </div>
+
+        <div class="admin-search-section">
+            <input type="text" name="q" placeholder="Search keywords..." value="{{ query|default:'' }}">
+            <button type="submit">Search</button>
+        </div>
+    </form>
 
     <!-- Search History Table -->
     <div class="table-container">
@@ -73,16 +80,47 @@
 
     <div class="pagination">
         {% if page_obj.has_previous %}
+            <a href="?page=1{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">First</a>
             <a href="?page={{ page_obj.previous_page_number }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">&lt; Previous</a>
         {% endif %}
 
-        {% for page_num in page_obj.paginator.page_range %}
-            <a href="?page={{ page_num }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
-            {% if page_obj.number == page_num %}class="active"{% endif %}>{{ page_num }}</a>
-        {% endfor %}
+        {% with current_page=page_obj.number total_pages=page_obj.paginator.num_pages %}
+            {% if total_pages <= 10 %}
+                {% for page_num in page_obj.paginator.page_range %}
+                    {% if page_num <= total_pages %}
+                        <a href="?page={{ page_num }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+                            {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                {% if current_page <= 6 %}
+                    {% for page_num in page_obj.paginator.page_range %}
+                        {% if page_num <= 10 %}
+                            <a href="?page={{ page_num }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+                                {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                {% elif current_page >= total_pages|add:"-5" %}
+                    {% for page_num in page_obj.paginator.page_range %}
+                        {% if page_num > total_pages|add:"-10" and page_num <= total_pages %}
+                            <a href="?page={{ page_num }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+                                {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    {% for page_num in page_obj.paginator.page_range %}
+                        {% if page_num >= current_page|add:"-5" and page_num <= current_page|add:"4" %}
+                            <a href="?page={{ page_num }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+                                {% if current_page == page_num %}class="active"{% endif %}>{{ page_num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endif %}
+        {% endwith %}
 
         {% if page_obj.has_next %}
             <a href="?page={{ page_obj.next_page_number }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">Next &gt;</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if timeFilter %}&timeFilter={{ timeFilter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">Last</a>
         {% endif %}
     </div>
 
@@ -97,12 +135,18 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selectEl = document.getElementById('timeFilter');
-
+    const searchForm = document.getElementById('searchForm');
+      
     // Initialize the dropdown from URL (?timeFilter=...) or the server-provided data-current
     const urlParams  = new URLSearchParams(window.location.search);
     const fromUrl    = urlParams.get('timeFilter');
     const fromServer = selectEl.getAttribute('data-current') || 'all';
     selectEl.value = fromUrl || fromServer;
+
+    // Handle time filter changes
+    selectEl.addEventListener('change', () => {
+        searchForm.submit(); // This will submit the form with all current values
+    });
 
     // PDF button uses the current dropdown value
     const btn = document.querySelector('.add-btn');
