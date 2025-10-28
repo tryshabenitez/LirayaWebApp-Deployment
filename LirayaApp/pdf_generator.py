@@ -2528,7 +2528,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         no_results_rows = []
         for log in logs_qs:
             kw = (getattr(log, 'user_keyword_search', '') or '').strip()
-            cnt = book_results_count_for_keyword(kw)
+            cnt = compute_book_results_count_same_as_user(kw)
 
             if cnt == 0:
                 first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
