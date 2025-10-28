@@ -3671,6 +3671,73 @@ def librarian_profile(request):
 
 @login_checker
 @role_required('LIBRARIAN')
+
+def _split_words_same_as_user(s: str):
+    raw = (s or '').replace(',', ' ').split()
+    out = []
+    for w in raw:
+        w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
+        if not w or w in {'-', '–', '_'}:
+            continue
+        wl = w.lower()
+        if wl not in STOPWORDS:
+            out.append(wl)
+    return out
+
+def _build_reference_vocab(row_limit=20000):
+    vocab = set()
+    for title, keywords in Books.objects.only('title', 'primary_keyword') \
+                                       .values_list('title', 'primary_keyword')[:row_limit]:
+        if title:
+            for w in title.replace(',', ' ').split():
+                wl = w.strip().lower()
+                if len(wl) >= 3 and wl not in STOPWORDS:
+                    vocab.add(wl)
+        if keywords:
+            for w in keywords.replace(',', ' ').split():
+                wl = w.strip().lower()
+                if len(wl) >= 3 and wl not in STOPWORDS:
+                    vocab.add(wl)
+    return list(vocab)
+
+# cache per process (optional); rebuild fast enough if you prefer per-request
+_REFERENCE_VOCAB = None
+def _get_vocab():
+    global _REFERENCE_VOCAB
+    if _REFERENCE_VOCAB is None:
+        _REFERENCE_VOCAB = _build_reference_vocab()
+    return _REFERENCE_VOCAB
+
+def _fuzzy_variants_same_as_user(token, n=7, cutoff=0.68):
+    base = (token or "").lower()
+    if not base:
+        return []
+    vocab = _get_vocab()
+    matches = difflib.get_close_matches(base, vocab, n=n, cutoff=cutoff)
+    if base not in matches:
+        matches.insert(0, base)
+    return matches
+
+def compute_book_results_count_same_as_user(query_str: str) -> int:
+    """
+    Rebuild the Books queryset exactly like user_search does for q=<single term>.
+    AND across tokens; within each token, OR across (title|author|primary_keyword) for fuzzy variants.
+    """
+    tokens = _split_words_same_as_user(query_str)
+    if not tokens:
+        return 0
+
+    qs = Books.objects.filter(is_archived=False)
+    for t in tokens:
+        variants = _fuzzy_variants_same_as_user(t, n=7, cutoff=0.68) or [t]
+        q_or = Q()
+        for v in variants:
+            q_or |= (Q(title__icontains=v) |
+                     Q(author__icontains=v) |
+                     Q(primary_keyword__icontains=v))
+        qs = qs.filter(q_or)
+    return qs.count()
+
 def librarian_search_history(request):
     account_id = request.session.get('account_id')
     user_info = get_user_info(account_id)
