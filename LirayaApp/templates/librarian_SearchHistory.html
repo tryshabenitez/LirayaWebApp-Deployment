@@ -50,7 +50,7 @@
                 <tr>
                     <th>Searched Keyword</th>
                     <th>Search Count</th>
-                    <th>Total Book Results</th>
+                    <th>Book Results Count</th> <!-- renamed -->
                     <th>Last Searched</th>
                 </tr>
             </thead>
@@ -59,13 +59,7 @@
                     <tr>
                         <td>{{ log.user_keyword_search }}</td>
                         <td>{{ log.user_search_count }}</td>
-                        <td>
-                            {% if log.books %}
-                                {{ log.books|length }}
-                            {% else %}
-                                0
-                            {% endif %}
-                        </td>
+                        <td>{{ log.book_results_count }}</td>
                         <td>{{ log.updated_at }}</td>
                     </tr>
                 {% empty %}
@@ -105,7 +99,7 @@
     const selectEl = document.getElementById('timeFilter');
 
     // Initialize the dropdown from URL (?timeFilter=...) or the server-provided data-current
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams  = new URLSearchParams(window.location.search);
     const fromUrl    = urlParams.get('timeFilter');
     const fromServer = selectEl.getAttribute('data-current') || 'all';
     selectEl.value = fromUrl || fromServer;
@@ -129,10 +123,8 @@
     url.searchParams.set('timeFilter', tf);
     url.searchParams.delete('page'); // reset to first page on filter change
 
-    // Perform a full page load so Django renders fresh data and pagination
-    window.location.href = url.toString(); // or window.location.replace(url) if you don't want a back button step
+    // Full page load so Django renders fresh data + pagination
+    window.location.href = url.toString();
   }
 </script>
 {% endblock %}
-
-
