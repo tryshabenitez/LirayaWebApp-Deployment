@@ -178,6 +178,14 @@
 </div>
 
 
+<!-- Always render the div, so it can be styled properly -->
+<div class="search-results-label">
+  {% if request.GET.q %}
+    Results for: "<strong>{{ request.GET.q }}</strong>"
+  {% endif %}
+</div>
+
+
 <!-- Main Content -->
 <div class="main-content">
   {% for book in books %}
