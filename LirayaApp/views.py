@@ -3672,6 +3672,13 @@ def librarian_profile(request):
 @login_checker
 @role_required('LIBRARIAN')
 
+STOPWORDS = {
+    'the','or','at','and','of','to','a','an','in','on','by','for','with','from',
+    'is','are','as','that','this','these','those','be','was','were','been','it',
+    'its','into','than','then','over','under','between','among','via','per','vs'
+}
+
+
 def _split_words_same_as_user(s: str):
     raw = (s or '').replace(',', ' ').split()
     out = []
@@ -3789,6 +3796,7 @@ def librarian_search_history(request):
     logs_data = []
     for log in page_obj:
         kw = (getattr(log, 'user_keyword_search', '') or '').strip()
+        book_results_count = compute_book_results_count_same_as_user(kw)
 
         # Compute "Total Book Results" count like user_search result total
         if kw:
@@ -3802,7 +3810,7 @@ def librarian_search_history(request):
             book_results_count = 0
 
         logs_data.append({
-            'user_keyword_search': log.user_keyword_search,
+            'user_keyword_search': kw,
             'user_search_count': log.user_search_count,
             'updated_at': log.updated_at.strftime('%Y-%m-%d %H:%M:%S') if log.updated_at else '',
             'book_results_count': book_results_count,   # <-- added
