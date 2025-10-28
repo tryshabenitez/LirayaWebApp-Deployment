@@ -2596,7 +2596,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
         header_row = [
             Paragraph("Keyword", header_cell_style),
-            Paragraph("Amount of<br/>Times Searched", header_cell_style),
+            Paragraph("Amount Of<br/>Times Searched", header_cell_style),
             Paragraph("First Searched", header_cell_style),
             Paragraph("Last Searched", header_cell_style),
         ]
