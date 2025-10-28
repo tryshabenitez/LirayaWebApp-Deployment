@@ -3671,81 +3671,80 @@ def librarian_profile(request):
 
 @login_checker
 @role_required('LIBRARIAN')
-
-STOPWORDS = {
-    'the','or','at','and','of','to','a','an','in','on','by','for','with','from',
-    'is','are','as','that','this','these','those','be','was','were','been','it',
-    'its','into','than','then','over','under','between','among','via','per','vs'
-}
-
-
-def _split_words_same_as_user(s: str):
-    raw = (s or '').replace(',', ' ').split()
-    out = []
-    for w in raw:
-        w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
-        if not w or w in {'-', '–', '_'}:
-            continue
-        wl = w.lower()
-        if wl not in STOPWORDS:
-            out.append(wl)
-    return out
-
-def _build_reference_vocab(row_limit=20000):
-    vocab = set()
-    for title, keywords in Books.objects.only('title', 'primary_keyword') \
-                                       .values_list('title', 'primary_keyword')[:row_limit]:
-        if title:
-            for w in title.replace(',', ' ').split():
-                wl = w.strip().lower()
-                if len(wl) >= 3 and wl not in STOPWORDS:
-                    vocab.add(wl)
-        if keywords:
-            for w in keywords.replace(',', ' ').split():
-                wl = w.strip().lower()
-                if len(wl) >= 3 and wl not in STOPWORDS:
-                    vocab.add(wl)
-    return list(vocab)
-
-# cache per process (optional); rebuild fast enough if you prefer per-request
-_REFERENCE_VOCAB = None
-def _get_vocab():
-    global _REFERENCE_VOCAB
-    if _REFERENCE_VOCAB is None:
-        _REFERENCE_VOCAB = _build_reference_vocab()
-    return _REFERENCE_VOCAB
-
-def _fuzzy_variants_same_as_user(token, n=7, cutoff=0.68):
-    base = (token or "").lower()
-    if not base:
-        return []
-    vocab = _get_vocab()
-    matches = difflib.get_close_matches(base, vocab, n=n, cutoff=cutoff)
-    if base not in matches:
-        matches.insert(0, base)
-    return matches
-
-def compute_book_results_count_same_as_user(query_str: str) -> int:
-    """
-    Rebuild the Books queryset exactly like user_search does for q=<single term>.
-    AND across tokens; within each token, OR across (title|author|primary_keyword) for fuzzy variants.
-    """
-    tokens = _split_words_same_as_user(query_str)
-    if not tokens:
-        return 0
-
-    qs = Books.objects.filter(is_archived=False)
-    for t in tokens:
-        variants = _fuzzy_variants_same_as_user(t, n=7, cutoff=0.68) or [t]
-        q_or = Q()
-        for v in variants:
-            q_or |= (Q(title__icontains=v) |
-                     Q(author__icontains=v) |
-                     Q(primary_keyword__icontains=v))
-        qs = qs.filter(q_or)
-    return qs.count()
-
 def librarian_search_history(request):
+    from functools import lru_cache
+
+    STOPWORDS = {
+        'the','or','at','and','of','to','a','an','in','on','by','for','with','from',
+        'is','are','as','that','this','these','those','be','was','were','been','it',
+        'its','into','than','then','over','under','between','among','via','per','vs'
+    }
+
+    def _split_words_same_as_user(s: str):
+        raw = (s or '').replace(',', ' ').split()
+        out = []
+        for w in raw:
+            w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
+            if not w or w in {'-', '–', '_'}:
+                continue
+            wl = w.lower()
+            if wl not in STOPWORDS:
+                out.append(wl)
+        return out
+
+    def _build_reference_vocab(row_limit=20000):
+        vocab = set()
+        for title, keywords in Books.objects.only('title', 'primary_keyword') \
+                                           .values_list('title', 'primary_keyword')[:row_limit]:
+            if title:
+                for w in title.replace(',', ' ').split():
+                    wl = w.strip().lower()
+                    if len(wl) >= 3 and wl not in STOPWORDS:
+                        vocab.add(wl)
+            if keywords:
+                for w in keywords.replace(',', ' ').split():
+                    wl = w.strip().lower()
+                    if len(wl) >= 3 and wl not in STOPWORDS:
+                        vocab.add(wl)
+        return list(vocab)
+
+    @lru_cache(maxsize=1)
+    def _get_vocab():
+        return _build_reference_vocab()
+
+    def _fuzzy_variants_same_as_user(token, n=7, cutoff=0.68):
+        base = (token or "").lower()
+        if not base:
+            return []
+        vocab = _get_vocab()
+        matches = difflib.get_close_matches(base, vocab, n=n, cutoff=cutoff)
+        if base not in matches:
+            matches.insert(0, base)
+        return matches
+
+    def compute_book_results_count_same_as_user(query_str: str) -> int:
+        """
+        Mirror user_search for q=<string>:
+        - split to tokens (stopwords removed)
+        - for each token, OR fuzzy variants across (title|author|primary_keyword)
+        - AND tokens together
+        """
+        tokens = _split_words_same_as_user(query_str)
+        if not tokens:
+            return 0
+
+        qs = Books.objects.filter(is_archived=False)
+        for t in tokens:
+            variants = _fuzzy_variants_same_as_user(t, n=7, cutoff=0.68) or [t]
+            q_or = Q()
+            for v in variants:
+                q_or |= (Q(title__icontains=v) |
+                         Q(author__icontains=v) |
+                         Q(primary_keyword__icontains=v))
+            qs = qs.filter(q_or)
+        return qs.count()
+
+    # --- original logic (unchanged) ---
     account_id = request.session.get('account_id')
     user_info = get_user_info(account_id)
 
@@ -3787,47 +3786,36 @@ def librarian_search_history(request):
     # Sort by search count after applying the time filter
     keyword_logs_qs = keyword_logs_qs.order_by('-user_search_count')
 
-    # Paginate the result
-    paginator = Paginator(keyword_logs_qs, 10)  # Show 10 logs per page
+    # Paginate
+    paginator = Paginator(keyword_logs_qs, 10)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
-    # Build the payload used by the HTML
+    # Build payload
     logs_data = []
     for log in page_obj:
         kw = (getattr(log, 'user_keyword_search', '') or '').strip()
         book_results_count = compute_book_results_count_same_as_user(kw)
 
-        # Compute "Total Book Results" count like user_search result total
-        if kw:
-            q_or = (
-                Q(title__icontains=kw) |
-                Q(author__icontains=kw) |
-                Q(primary_keyword__icontains=kw)
-            )
-            book_results_count = Books.objects.filter(q_or, is_archived=False).count()
-        else:
-            book_results_count = 0
-
         logs_data.append({
             'user_keyword_search': kw,
             'user_search_count': log.user_search_count,
             'updated_at': log.updated_at.strftime('%Y-%m-%d %H:%M:%S') if log.updated_at else '',
-            'book_results_count': book_results_count,   # <-- added
-            'user_info': user_info,                     # preserved
+            'book_results_count': book_results_count,  # used by template
+            'user_info': user_info,
         })
 
-    # AJAX: return JSON for in-page refresh (if you keep any JS using it)
+    # AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'keyword_logs': logs_data,
             'currentPage': page_obj.number,
             'totalPages': paginator.num_pages,
-            'timeFilter': time_filter,  # echo back for the dropdown
+            'timeFilter': time_filter,
             'anchor': latest_ts.strftime('%Y-%m-%d %H:%M:%S'),
         })
 
-    # Non-AJAX: render template
+    # Render
     return render(
         request,
         'librarian_SearchHistory.html',
@@ -3835,7 +3823,7 @@ def librarian_search_history(request):
             'keyword_logs': logs_data,
             'user_info': user_info,
             'page_obj': page_obj,
-            'timeFilter': time_filter,  # keep dropdown in sync
+            'timeFilter': time_filter,
         }
     )
  
