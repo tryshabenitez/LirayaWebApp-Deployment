@@ -3783,6 +3783,13 @@ def librarian_search_history(request):
         start_date = start_a if start_a >= start_b else start_b
         keyword_logs_qs = KeywordLog.objects.filter(updated_at__gte=start_date, updated_at__lte=latest_ts)
 
+    # Get search query
+    query = request.GET.get('q', '').strip()
+    
+    # Apply search filter if query exists
+    if query:
+        keyword_logs_qs = keyword_logs_qs.filter(user_keyword_search__icontains=query)
+
     # Sort by search count after applying the time filter
     keyword_logs_qs = keyword_logs_qs.order_by('-user_search_count')
 
@@ -3824,6 +3831,7 @@ def librarian_search_history(request):
             'user_info': user_info,
             'page_obj': page_obj,
             'timeFilter': time_filter,
+            'query': query,  
         }
     )
  
