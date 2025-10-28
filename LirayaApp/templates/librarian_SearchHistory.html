@@ -33,19 +33,21 @@
     </div>
 
     <!-- Filter Dropdown and Search Form -->
-    <form method="GET" action="" id="searchForm">
-        <div class="admin-dropdown-section">
-            <label for="timeFilter">Filter by:</label>
-            <select id="timeFilter" name="timeFilter" data-current="{{ timeFilter|default:'all' }}">
-                <option value="all">All time</option>
-                <option value="last24hours">24 hours</option>
-                <option value="last7days">Last 7 days</option>
-                <option value="last30days">Last 30 days</option>
-            </select>
-        </div>
+    <div class="admin-dropdown-section">
+        <label for="timeFilter">Filter by:</label>
+        <select id="timeFilter" name="timeFilter" data-current="{{ timeFilter|default:'all' }}" onchange="filterSearchHistory()">
+            <option value="all">All time</option>
+            <option value="last24hours">24 hours</option>
+            <option value="last7days">Last 7 days</option>
+            <option value="last30days">Last 30 days</option>
+        </select>
+    </div>
 
+
+    <form method="GET" action="" id="searchForm">
         <div class="admin-search-section">
             <input type="text" name="q" placeholder="Search keywords..." value="{{ query|default:'' }}">
+            <input type="hidden" name="timeFilter" value="{{ timeFilter|default:'all' }}">
             <button type="submit">Search</button>
         </div>
     </form>
@@ -135,18 +137,13 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const selectEl = document.getElementById('timeFilter');
-    const searchForm = document.getElementById('searchForm');
+    
       
     // Initialize the dropdown from URL (?timeFilter=...) or the server-provided data-current
     const urlParams  = new URLSearchParams(window.location.search);
     const fromUrl    = urlParams.get('timeFilter');
     const fromServer = selectEl.getAttribute('data-current') || 'all';
     selectEl.value = fromUrl || fromServer;
-
-    // Handle time filter changes
-    selectEl.addEventListener('change', () => {
-        searchForm.submit(); // This will submit the form with all current values
-    });
 
     // PDF button uses the current dropdown value
     const btn = document.querySelector('.add-btn');
@@ -162,10 +159,15 @@
   function filterSearchHistory() {
     const selectEl = document.getElementById('timeFilter');
     const tf = selectEl.value || 'all';
-
     const url = new URL(window.location.href);
     url.searchParams.set('timeFilter', tf);
     url.searchParams.delete('page'); // reset to first page on filter change
+
+    // Preserve search query if it exists
+    const currentQuery = url.searchParams.get('q');
+    if (currentQuery) {
+        url.searchParams.set('q', currentQuery);
+    }
 
     // Full page load so Django renders fresh data + pagination
     window.location.href = url.toString();
