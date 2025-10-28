@@ -2260,13 +2260,16 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     Page 3:
       - TABLE: Keywords With No Book Results (aligned to selected time filter)
-        * Uses the SAME logic as librarian_search_history (HTML) to determine
-          whether a keyword had results: it searches Books by title/author/primary_keyword
-          using icontains and includes ONLY rows where the combined query returns 0.
+        * Computes "Book Results Count" the same way the user_search page derives the
+          result total (mirrors fuzzy matching across title/author/primary_keyword),
+          and only lists keywords with zero book results.
+        * Sorted alphabetically by keyword (case-insensitive), empty strings last.
     """
     from django.utils import timezone
-    from django.db.models import DateTimeField, Q
+    from django.db.models import Q
     from datetime import timedelta
+    import unicodedata
+    import difflib as _difflib
 
     context = context or {}
     meta   = context.get("meta", {})
@@ -2276,103 +2279,9 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     stats2 = context.get("stats_new", {}) or stats
     chart2 = context.get("chart_new", {}) or chart
 
-    # --- Page 3 rows: recompute using the SAME logic as the HTML view ---
-    # HTML view: filters by updated_at window and determines "results" by querying Books with icontains.
-    # We mirror that here so PDF Page 3 matches exactly what the librarian sees.
-    try:
-        # Normalize/accept both our internal labels and the HTML's labels
-        tf_raw = (meta.get("range_label") or "all").strip()
-        tf_key = tf_raw.lower().replace(' ', '').replace('_', '').replace('-', '')
-        tf = (
-            'last24hours' if tf_key in ('last24hours', 'last24h', '24h') else
-            'last7days'   if tf_key in ('last7days', '7d') else
-            'last30days'  if tf_key in ('last30days', '30d') else
-            'lastmonth'   if tf_key in ('lastmonth', 'lastmonthhtml') else  # html used 'lastMonth'
-            'lastyear'    if tf_key in ('lastyear', 'lastyearhtml') else   # html used 'lastYear'
-            'all'
-        )
-
-        end_dt = timezone.localtime(timezone.now())
-        # Window per HTML (based on updated_at)
-        if tf == 'last24hours':
-            start_dt = end_dt - timedelta(hours=24)
-        elif tf == 'last7days':
-            start_dt = end_dt - timedelta(days=7)
-        elif tf == 'last30days':
-            start_dt = end_dt - timedelta(days=30)
-        elif tf == 'lastmonth':
-            # HTML "lastMonth": previous calendar month (approx). We can approximate by:
-            first_this_month = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            last_month_end = first_this_month - timedelta(seconds=1)
-            start_dt = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            end_dt = last_month_end
-        elif tf == 'lastyear':
-            start_dt = end_dt - timedelta(days=365)
-        else:
-            start_dt = None  # all time
-
-        logs_qs = KeywordLog.objects.all()
-        if start_dt:
-            logs_qs = logs_qs.filter(updated_at__gte=start_dt, updated_at__lte=end_dt)
-        # HTML sorts by search count desc
-        logs_qs = logs_qs.order_by('-user_search_count')
-
-        # Build rows ONLY for keywords that yield ZERO book results using the same query as HTML
-        no_results_rows = []
-        for log in logs_qs:
-            kw = (getattr(log, 'user_keyword_search', '') or '').strip()
-            if not kw:
-                # Empty keyword -> treat as no results row with count
-                first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
-                if not first_s:
-                    first_s = _fmt_dt(getattr(log, "created_at", None))
-                if not last_s:
-                    last_s = _fmt_dt(getattr(log, "updated_at", None))
-                no_results_rows.append({
-                    "keyword": "",
-                    "count": int(getattr(log, "user_search_count", 0) or 0),
-                    "first": first_s or "—",
-                    "last":  last_s or "—",
-                })
-                continue
-
-            # Reproduce HTML: Books filtered by title/author/primary_keyword icontains
-            books_qs = (
-                Books.objects.filter(
-                    Q(title__icontains=kw) |
-                    Q(author__icontains=kw) |
-                    Q(primary_keyword__icontains=kw)
-                )
-            )
-            result_count = books_qs.count()
-
-            if result_count == 0:
-                first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
-                if not first_s:
-                    first_s = _fmt_dt(getattr(log, "created_at", None))
-                if not last_s:
-                    last_s = _fmt_dt(getattr(log, "updated_at", None))
-                no_results_rows.append({
-                    "keyword": kw,
-                    "count": int(getattr(log, "user_search_count", 0) or 0),
-                    "first": first_s or "—",
-                    "last":  last_s or "—",
-                })
-
-        # Sort like before: by Last desc then Keyword asc
-        import unicodedata
-
-        def _kw_sort_key(r):
-            kw = str(r.get("keyword", ""))
-            norm = unicodedata.normalize("NFKD", kw).strip().lower()
-            # (False < True) -> non-empty first; then alphabetical
-            return (norm == "", norm)
-        
-        no_results_rows.sort(key=_kw_sort_key)
-
-    except Exception:
-        # Fallback if something unexpected happens: use provided rows
-        no_results_rows = list(context.get("no_results_rows", []) or [])
+    # ======================
+    # ===== Page 1/2 =======
+    # ======================
 
     title_text = meta.get("title", "Keyword Search History Report")
 
@@ -2387,11 +2296,11 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     styles = getSampleStyleSheet()
     style_normal = styles['Normal']; style_normal.fontSize = 10
 
-    # Smaller title now (was 35)
+    # Smaller title
     title_header_style = ParagraphStyle(
         name='TitleHeaderStyle',
         fontName='Helvetica-Bold',
-        fontSize=24,  # smaller
+        fontSize=24,
         alignment=1,
         spaceAfter=16
     )
@@ -2409,11 +2318,9 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
     flowables = []
 
     # ===== Page 1 =====
-    # Title
     flowables.append(Paragraph(title_text, title_header_style))
     flowables.append(Spacer(1, 12))
 
-    # Header table — prefer user_info values; Title Case for "Generated by"
     generated_by_raw = (user_info or {}).get('full_name') or meta.get('generated_by', '—')
     generated_by   = _title_case_name(generated_by_raw)
     role           = (user_info or {}).get('role')           or meta.get('generated_by_role', '—')
@@ -2448,21 +2355,17 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     labels = chart.get('labels') or ['All Time']
     counts = chart.get('counts') or [stats.get('total_searches', 0)]
-    # ensure lengths match
     if len(counts) != len(labels):
-        # pad or trim counts to match labels
         if len(counts) < len(labels):
             counts = list(counts) + [0] * (len(labels) - len(counts))
         else:
             counts = counts[:len(labels)]
 
     img_path1 = _generate_bar_image(labels, counts, ylabel='Searches')
-
     if img_path1 and os.path.exists(img_path1):
         flowables.append(Image(img_path1, width=6*inch, height=4*inch))
         flowables.append(Spacer(1, 10))
 
-    # Figure 1 description
     total = int(stats.get("total_searches") or 0)
     start_date = stats.get("start_date", "—")
     end_date   = stats.get("end_date", "—")
@@ -2490,11 +2393,10 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
 
     # ===== Page 2 =====
     flowables.append(PageBreak())
-
     flowables.append(Paragraph("FIGURE 2: TOTAL AMOUNT OF NEW KEYWORDS", title_topic_style))
     flowables.append(Spacer(1, 5))
 
-    labels2 = chart2.get('labels') or labels  # fallback to fig1 labels
+    labels2 = chart2.get('labels') or labels
     counts2 = chart2.get('counts')
     if not counts2:
         counts2 = [0] * len(labels2)
@@ -2505,12 +2407,10 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             counts2 = counts2[:len(labels2)]
 
     img_path2 = _generate_bar_image(labels2, counts2, ylabel='New Keywords')
-
     if img_path2 and os.path.exists(img_path2):
         flowables.append(Image(img_path2, width=6*inch, height=4*inch))
         flowables.append(Spacer(1, 10))
 
-    # Figure 2 summary — totals count NEW keywords (not searches)
     total2 = int(stats2.get("total_new_keywords") or sum(counts2))
     start_date2 = stats2.get("start_date", start_date)
     end_date2   = stats2.get("end_date", end_date)
@@ -2536,12 +2436,124 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         )
     flowables.append(Paragraph(desc2, content_style))
 
-    # ===== Page 3 =====
+    # ======================
+    # ===== Page 3 =========
+    # ======================
     flowables.append(PageBreak())
     flowables.append(Paragraph("FIGURE 3: KEYWORDS WITH NO BOOK RESULTS", title_topic_style))
     flowables.append(Spacer(1, 5))
 
-    # Pull the same date range used in the charts for a clear, consistent description
+    # ---------- Page 3: compute true "Book Results Count" ----------
+    try:
+        # Normalize/accept labels coming from UI
+        tf_raw = (meta.get("range_label") or "all").strip()
+        tf_key = tf_raw.lower().replace(' ', '').replace('_', '').replace('-', '')
+        tf = (
+            'last24hours' if tf_key in ('last24hours', 'last24h', '24h') else
+            'last7days'   if tf_key in ('last7days', '7d') else
+            'last30days'  if tf_key in ('last30days', '30d') else
+            'lastmonth'   if tf_key in ('lastmonth', 'lastmonthhtml') else
+            'lastyear'    if tf_key in ('lastyear', 'lastyearhtml') else
+            'all'
+        )
+
+        end_dt = timezone.localtime(timezone.now())
+        if tf == 'last24hours':
+            start_dt = end_dt - timedelta(hours=24)
+        elif tf == 'last7days':
+            start_dt = end_dt - timedelta(days=7)
+        elif tf == 'last30days':
+            start_dt = end_dt - timedelta(days=30)
+        elif tf == 'lastmonth':
+            first_this_month = end_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_month_end = first_this_month - timedelta(seconds=1)
+            start_dt = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end_dt = last_month_end
+        elif tf == 'lastyear':
+            start_dt = end_dt - timedelta(days=365)
+        else:
+            start_dt = None
+
+        logs_qs = KeywordLog.objects.all()
+        if start_dt:
+            logs_qs = logs_qs.filter(updated_at__gte=start_dt, updated_at__lte=end_dt)
+        logs_qs = logs_qs.order_by('-user_search_count')
+
+        # Mirror user_search fuzzy
+        STOPWORDS = {
+            'the','or','at','and','of','to','a','an','in','on','by','for','with','from',
+            'is','are','as','that','this','these','those','be','was','were','been','it',
+            'its','into','than','then','over','under','between','among','via','per','vs'
+        }
+
+        def build_reference_vocab(row_limit=20000):
+            vocab = set()
+            for title, keywords in Books.objects.only('title', 'primary_keyword') \
+                                               .values_list('title', 'primary_keyword')[:row_limit]:
+                if title:
+                    for w in title.replace(',', ' ').split():
+                        wl = w.strip().lower()
+                        if len(wl) >= 3 and wl not in STOPWORDS:
+                            vocab.add(wl)
+                if keywords:
+                    for w in keywords.replace(',', ' ').split():
+                        wl = w.strip().lower()
+                        if len(wl) >= 3 and wl not in STOPWORDS:
+                            vocab.add(wl)
+            return list(vocab)
+
+        REFERENCE_VOCAB = build_reference_vocab()
+
+        def fuzzy_variants(token, n=7, cutoff=0.68):
+            base = (token or "").lower().strip()
+            if not base:
+                return []
+            matches = _difflib.get_close_matches(base, REFERENCE_VOCAB, n=n, cutoff=cutoff)
+            if base not in matches:
+                matches.insert(0, base)
+            return matches
+
+        def book_results_count_for_keyword(kw: str) -> int:
+            kw = (kw or '').strip()
+            if not kw or kw.lower() in STOPWORDS:
+                return 0
+            variants = fuzzy_variants(kw, n=7, cutoff=0.68) or [kw.lower()]
+            q_or = Q()
+            for v in variants:
+                q_or |= (Q(title__icontains=v) | Q(author__icontains=v) | Q(primary_keyword__icontains=v))
+            if not q_or:
+                return 0
+            return Books.objects.filter(q_or, is_archived=False).count()
+
+        no_results_rows = []
+        for log in logs_qs:
+            kw = (getattr(log, 'user_keyword_search', '') or '').strip()
+            cnt = book_results_count_for_keyword(kw)
+
+            if cnt == 0:
+                first_s, last_s = _parse_first_last(getattr(log, "search_times", ""))
+                if not first_s:
+                    first_s = _fmt_dt_local(getattr(log, "created_at", None))
+                if not last_s:
+                    last_s = _fmt_dt_local(getattr(log, "updated_at", None))
+                no_results_rows.append({
+                    "keyword": kw,
+                    "count": int(getattr(log, "user_search_count", 0) or 0),
+                    "first": first_s or "—",
+                    "last":  last_s or "—",
+                })
+
+        # Alphabetical by keyword (case-insensitive), empty last
+        def _kw_sort_key(r):
+            kw = str(r.get("keyword", ""))
+            norm = unicodedata.normalize("NFKD", kw).strip().lower()
+            return (norm == "", norm)
+        no_results_rows.sort(key=_kw_sort_key)
+
+    except Exception:
+        no_results_rows = list(context.get("no_results_rows", []) or [])
+
+    # Pull the same date range used in the charts for description
     _s = stats.get("start_date", "—")
     _e = stats.get("end_date", "—")
 
@@ -2555,7 +2567,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
         )
         flowables.append(Paragraph(desc3, content_style))
     else:
-        # --- Styles for better wrapping/fit ---
+        # Styles for the table
         header_cell_style = ParagraphStyle(
             name='HeaderCell',
             parent=styles['Normal'],
@@ -2563,7 +2575,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             fontSize=9,
             leading=11,
             alignment=1,
-            textColor=colors.white,   # <-- make header text white
+            textColor=colors.white,
         )
         body_keyword_style = ParagraphStyle(
             name='BodyKeyword',
@@ -2571,7 +2583,7 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             fontName='Helvetica',
             fontSize=10,
             leading=12,
-            wordWrap='CJK'        # allows wrapping even for long/unspaced tokens
+            wordWrap='CJK'
         )
         body_center_style = ParagraphStyle(
             name='BodyCenter',
@@ -2579,10 +2591,9 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             fontName='Helvetica',
             fontSize=10,
             leading=12,
-            alignment=1           # center
+            alignment=1
         )
 
-        # Two-line header for the long column name
         header_row = [
             Paragraph("Keyword", header_cell_style),
             Paragraph("Total Amount of<br/>Times Searched", header_cell_style),
@@ -2590,7 +2601,6 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             Paragraph("Last Searched", header_cell_style),
         ]
 
-        # Build table data with wrapped cells
         tdata = [header_row]
         for row in no_results_rows:
             tdata.append([
@@ -2600,18 +2610,14 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                 Paragraph(str(row.get("last", "—")),  body_center_style),
             ])
 
-        # Column widths that fit the printable area (~6.5")
-        # 3.0 + 1.1 + 1.2 + 1.2 = 6.5 inches
         table = Table(
             tdata,
             colWidths=[3.0*inch, 1.1*inch, 1.2*inch, 1.2*inch],
             repeatRows=1
         )
-
         table.setStyle(TableStyle([
             # Header styling
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3e151a')),
-            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
             ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE',   (0, 0), (-1, 0), 9),
             ('TOPPADDING', (0, 0), (-1, 0), 8),
@@ -2629,21 +2635,21 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
             ('RIGHTPADDING',(0,0), (-1,-1), 6),
             ('TOPPADDING', (0, 1), (-1, -1), 6),
             ('BOTTOMPADDING',(0,1),(-1,-1), 6),
+
+            # Ensure header text white (kept last for precedence)
+            ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
         ]))
         flowables.append(table)
 
-        # Page 3 description — main sentence + italic note
+        # Description + italic note
         flowables.append(Spacer(1, 10))
-        
         desc3_main = (
             "This table surfaces keywords that returned no book results in the selected period "
             f"from <b>{_s}</b> to <b>{_e}</b>. Use it to understand what students are searching for but cannot find. "
             "Treat these entries as an actionable recommendations list for acquisitions and/or metadata improvements."
         )
         flowables.append(Paragraph(desc3_main, content_style))
-        
         flowables.append(Spacer(1, 6))
-        
         desc3_note = (
             "<i>Note: misspellings and variations are recorded exactly as entered and are still counted "
             "as keywords by the system.</i>"
