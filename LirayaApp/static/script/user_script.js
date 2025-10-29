@@ -1,9 +1,108 @@
 // ------------------------------
-// Corrected JS: Pagination + Filters + Typeahead (no extra CSS)
+// Corrected JS: Pagination + Filters + Typeahead + Year dropdown
 // ------------------------------
 
-// Safely read pagination data if present
-// Safely read pagination data if present
+// ===== Year config & helpers =====
+const YEAR_MIN = 1900;
+const YEAR_MAX = new Date().getFullYear();
+
+function filterYearKeydown(e) {
+  // Allow navigation/edit keys
+  const allowedKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'];
+  if (allowedKeys.includes(e.key)) return;
+
+  // Allow Ctrl/Cmd combos
+  if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','A','C','V','X'].includes(e.key)) return;
+
+  // Digits only
+  if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+}
+
+function sanitizeYearInput(e) {
+  const v = (e.target.value || '').replace(/\D+/g, '');
+  e.target.value = v;
+}
+
+function sanitizeYearPaste(e) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+  const digits = text.replace(/\D+/g, '');
+  document.execCommand('insertText', false, digits);
+}
+
+// Build a small dropdown of years around the current input value (±2)
+function showYearDropdown(inputEl) {
+  const rect = inputEl.getBoundingClientRect();
+  const root = document.getElementById('year-dd-root') || (() => {
+    const d = document.createElement('div');
+    d.id = 'year-dd-root';
+    document.body.appendChild(d);
+    return d;
+  })();
+
+  let cur = parseInt(inputEl.value, 10);
+  if (isNaN(cur)) cur = YEAR_MAX;
+
+  const years = [];
+  for (let y = cur - 2; y <= cur + 2; y++) {
+    if (y >= YEAR_MIN && y <= YEAR_MAX) years.push(y);
+  }
+
+  root.innerHTML = `
+    <div class="year-dropdown" data-for="${inputEl.id}"
+         style="top:${rect.bottom + window.scrollY + 4}px; left:${rect.left + window.scrollX}px; width:${rect.width}px">
+      <div class="year-dropdown-header">min ${YEAR_MIN} &nbsp; max ${YEAR_MAX}</div>
+      <div class="year-dropdown-list">
+        ${years.map(y => `
+          <button type="button" class="year-dd-item ${y===cur?'is-current':''}" data-year="${y}">
+            ${y}
+          </button>`).join('')}
+      </div>
+    </div>
+  `;
+
+  root.querySelectorAll('.year-dd-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      inputEl.value = btn.dataset.year;
+      closeYearDropdown();
+      inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+
+  setTimeout(() => {
+    const closer = (ev) => {
+      const dd = document.querySelector('.year-dropdown');
+      if (!dd) return document.removeEventListener('mousedown', closer);
+      if (!dd.contains(ev.target)) closeYearDropdown();
+    };
+    document.addEventListener('mousedown', closer, { once: true });
+
+    const esc = (ev) => { if (ev.key === 'Escape') { closeYearDropdown(); document.removeEventListener('keydown', esc); } };
+    document.addEventListener('keydown', esc);
+  }, 0);
+}
+
+function closeYearDropdown() {
+  const root = document.getElementById('year-dd-root');
+  if (root) root.innerHTML = '';
+}
+
+// Intercept clicks on the native spinner zone and show our dropdown
+function attachSpinnerDropdown(inputEl) {
+  inputEl.addEventListener('mousedown', (e) => {
+    const r = inputEl.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const spinnerZone = x >= r.width - 24; // last ~24px
+    if (spinnerZone) {
+      e.preventDefault();
+      e.stopPropagation();
+      inputEl.blur();
+      showYearDropdown(inputEl);
+    }
+  });
+}
+
+// ===== Pagination state =====
 const paginationDataEl = document.getElementById('pagination-data');
 let currentPage = 1;
 let totalPages  = 1;
@@ -139,7 +238,6 @@ function fetchBooks(page) {
     });
 }
 
-
 // Sidebar toggle (guards for nulls)
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
@@ -233,33 +331,30 @@ function toggleResourceType(event, resourceType) {
   window.location.search = params.toString();
 }
 
-// Year filter + validation
+// Year filter — VALIDATE ONLY WHEN BUTTON CLICKED
 function applyYearFilter() {
   const minYearInput = document.getElementById('min-year');
   const maxYearInput = document.getElementById('max-year');
-
   if (!minYearInput || !maxYearInput) return;
 
-  const currentYear = new Date().getFullYear();
-  let minYear = parseInt(minYearInput.value, 10);
-  let maxYear = parseInt(maxYearInput.value, 10);
+  let minYear = parseInt((minYearInput.value || '').replace(/\D+/g, ''), 10);
+  let maxYear = parseInt((maxYearInput.value || '').replace(/\D+/g, ''), 10);
 
-  if (isNaN(minYear) || minYear < 1900 || minYear > currentYear) {
-    alert('Min Year must be between 1900 and ' + currentYear + '.');
-    minYear = Math.max(1900, Math.min(minYear || 1900, currentYear));
-    minYearInput.value = minYear;
-    return;
-  }
-  if (isNaN(maxYear) || maxYear < 1900 || maxYear > currentYear) {
-    alert('Max Year must be between 1900 and ' + currentYear + '.');
-    maxYear = Math.max(1900, Math.min(maxYear || currentYear, currentYear));
-    maxYearInput.value = maxYear;
-    return;
-  }
+  if (isNaN(minYear)) minYear = YEAR_MIN;
+  if (isNaN(maxYear)) maxYear = YEAR_MAX;
+
+  // clamp
+  if (minYear < YEAR_MIN) minYear = YEAR_MIN;
+  if (maxYear > YEAR_MAX) maxYear = YEAR_MAX;
+
   if (minYear > maxYear) {
     alert('Min Year cannot be greater than Max Year.');
     return;
   }
+
+  // write back clean values
+  minYearInput.value = String(minYear);
+  maxYearInput.value = String(maxYear);
 
   const params = new URLSearchParams(window.location.search);
   params.set('min_year', minYear);
@@ -268,6 +363,7 @@ function applyYearFilter() {
   window.location.search = params.toString();
 }
 
+// Incremental "See All" reveal (kept)
 function toggleMenu(button) {
   const list = button.previousElementSibling;
   if (!list) return;
@@ -275,16 +371,13 @@ function toggleMenu(button) {
   const items = Array.from(list.querySelectorAll('.menu-item'));
   if (!items.length) { button.style.display = 'none'; return; }
 
-  // how many are currently visible?
   const visibleCount = items.filter(it => window.getComputedStyle(it).display !== 'none').length;
   const nextEnd = Math.min(visibleCount + 4, items.length);
 
-  // reveal the next 4
   for (let i = visibleCount; i < nextEnd; i++) {
     items[i].style.display = 'block';
   }
 
-  // hide button if nothing left to reveal
   if (nextEnd >= items.length) {
     button.style.display = 'none';
   }
@@ -293,7 +386,6 @@ function toggleMenu(button) {
 // ------------------------------
 // Typeahead Suggestions (works on both pages)
 // ------------------------------
-
 function debounce(fn, delay) {
   let t;
   return function (...args) {
@@ -329,26 +421,21 @@ function highlightMatchesBoldUpper(text, query) {
   while ((m = re.exec(text)) !== null) {
     const start = m.index;
     const end = start + m[0].length;
-    // non-matching chunk
     result += escapeHtml(text.slice(last, start));
-    // matched chunk: UPPERCASE + <strong>
     const upper = m[0].toUpperCase();
     result += `<strong>${escapeHtml(upper)}</strong>`;
     last = end;
   }
-  // tail
   result += escapeHtml(text.slice(last));
   return result;
 }
 
 function bindClickHover(el, { className = 'is-click-hover', duration = 900 } = {}) {
   if (!el) return;
-
   let t;
 
   const activate = () => {
-    // force a repaint to ensure the style shows even if rapidly toggled
-    // (helps on some browsers when the class is added/removed quickly)
+    // force repaint
     // eslint-disable-next-line no-unused-expressions
     el.offsetHeight;
     el.classList.add(className);
@@ -356,24 +443,16 @@ function bindClickHover(el, { className = 'is-click-hover', duration = 900 } = {
     t = setTimeout(() => el.classList.remove(className), duration);
   };
 
-  // 1) Pointer events—covers mouse/touch/pen reliably
   el.addEventListener('pointerdown', activate, { capture: true });
   el.addEventListener('pointerup',   activate);
   el.addEventListener('pointercancel', activate);
-
-  // 2) Focus paths (e.g., via Tab key or programmatic focus)
   el.addEventListener('focusin', activate);
-
-  // 3) Value changes (good for number spinners)
   el.addEventListener('input',  activate);
   el.addEventListener('change', activate);
-
-  // 4) Keyboard “action” keys
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') activate();
   });
 }
-
 
 document.addEventListener('DOMContentLoaded', function () {
   // --- Pagination + summary ---
@@ -390,73 +469,46 @@ document.addEventListener('DOMContentLoaded', function () {
   const applyBtn     = document.querySelector('.year-button');    // "Apply Year Filter"
   const refineHdr    = document.querySelector('.refine-search');  // "Refine Search Results"
 
-  // Click→hover flash (bindClickHover must be defined above)
   bindClickHover(minYearInput);
   bindClickHover(maxYearInput);
   bindClickHover(applyBtn);
   bindClickHover(refineHdr);
 
-  // Make "Refine Search Results" accessible
   if (refineHdr) {
     refineHdr.setAttribute('tabindex', '0');
     refineHdr.setAttribute('role', 'button');
   }
 
-  // Year inputs wiring
-  if (minYearInput && maxYearInput) {
-    const currentYear = new Date().getFullYear();
-
-    // Bounds + defaults (dynamic current year)
-    minYearInput.setAttribute('min', 1900);
-    minYearInput.setAttribute('max', currentYear);
-    maxYearInput.setAttribute('min', 1900);
-    maxYearInput.setAttribute('max', currentYear);
-    if (!minYearInput.value) minYearInput.value = 1900;
-    if (!maxYearInput.value) maxYearInput.value = currentYear;
-
-    // Disable typing; spinner only
-    disableTypingNumberInput(minYearInput);
-    disableTypingNumberInput(maxYearInput);
-
-    // Hide "See All" buttons when < 4 items
-    const sections = document.querySelectorAll('.section-title');
-    sections.forEach(section => {
-      const menuItemsWrap = section.nextElementSibling;
-      const seeMoreButton = menuItemsWrap ? menuItemsWrap.nextElementSibling : null;
-      const menuItems = menuItemsWrap ? menuItemsWrap.querySelectorAll('.menu-item') : [];
-      if (menuItems.length < 4 && seeMoreButton) {
-        seeMoreButton.style.display = 'none';
-      }
-    });
-
-    // Enter key validation
-    minYearInput.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter') {
-        const v = parseInt(this.value, 10);
-        if (v > currentYear) { alert('Year cannot exceed the current year.'); this.value = currentYear; }
-        else if (v < 1900)   { alert('Year cannot be earlier than 1900.');   this.value = 1900; }
-      }
-    });
-
-    maxYearInput.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter') {
-        const v = parseInt(this.value, 10);
-        if (v > currentYear) { alert('Year cannot exceed the current year.'); this.value = currentYear; }
-        else if (v < 1900)   { alert('Year cannot be earlier than 1900.');   this.value = 1900; }
-      }
-    });
-
-    // Guard out-of-range when spinner changes
-    ['min-year', 'max-year'].forEach(function (id) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('input', function () {
-        const v = parseInt(this.value, 10);
-        if (v < 1900)        { alert('Year cannot be earlier than 1900.');   this.value = 1900; }
-        else if (v > currentYear) { alert('Year cannot exceed the current year.'); this.value = currentYear; }
-      });
-    });
+  // Allow typing; validate only on Apply; hook spinner dropdown
+  if (minYearInput) {
+    minYearInput.setAttribute('min', YEAR_MIN);
+    minYearInput.setAttribute('max', YEAR_MAX);
+    if (!minYearInput.value) minYearInput.value = YEAR_MIN;
+    minYearInput.addEventListener('keydown', filterYearKeydown);
+    minYearInput.addEventListener('paste', sanitizeYearPaste);
+    minYearInput.addEventListener('input', sanitizeYearInput);
+    attachSpinnerDropdown(minYearInput);
   }
+  if (maxYearInput) {
+    maxYearInput.setAttribute('min', YEAR_MIN);
+    maxYearInput.setAttribute('max', YEAR_MAX);
+    if (!maxYearInput.value) maxYearInput.value = YEAR_MAX;
+    maxYearInput.addEventListener('keydown', filterYearKeydown);
+    maxYearInput.addEventListener('paste', sanitizeYearPaste);
+    maxYearInput.addEventListener('input', sanitizeYearInput);
+    attachSpinnerDropdown(maxYearInput);
+  }
+
+  // Hide "See All" buttons when < 4 items
+  const sections = document.querySelectorAll('.section-title');
+  sections.forEach(section => {
+    const menuItemsWrap = section.nextElementSibling;
+    const seeMoreButton = menuItemsWrap ? menuItemsWrap.nextElementSibling : null;
+    const menuItems = menuItemsWrap ? menuItemsWrap.querySelectorAll('.menu-item') : [];
+    if (menuItems.length < 4 && seeMoreButton) {
+      seeMoreButton.style.display = 'none';
+    }
+  });
 
   // --- Auto-open sidebar ---
   const sidebar = document.querySelector('.sidebar');
@@ -498,6 +550,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// Per-book Keywords: See More / See Less
 function toggleKeywords(bookId, btnEl) {
   const el = document.getElementById('keywords-' + bookId);
   if (!el) return;
@@ -600,6 +653,7 @@ function initTypeaheadForForm({ form, input, fieldSelect, wrap, dropdown, sugges
     activeIndex = -1;
   }
 }
+
 function toggleSubject(element) {
   element.classList.toggle('active');
 
@@ -619,43 +673,3 @@ function toggleSubject(element) {
   params.set('page', 1); // reset to first page on filter change
   window.location.search = params.toString();
 }
-
-function disableTypingNumberInput(el) {
-  if (!el) return;
-
-  // keep your existing listeners …
-
-  function allowOnlySpinnerPointer(e) {
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const isSpinnerZone = x >= rect.width - 24;
-    if (!isSpinnerZone) {
-      e.preventDefault();
-      // 🔽 still show the visual feedback even if we block the click
-      el.classList.add('is-click-hover');
-      setTimeout(() => el.classList.remove('is-click-hover'), 900);
-      el.blur();
-    }
-  }
-
-  el.addEventListener('mousedown', allowOnlySpinnerPointer);
-  el.addEventListener('touchstart', (e) => {
-    if (!e.touches || !e.touches.length) return;
-    const touch = e.touches[0];
-    const rect = el.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const isSpinnerZone = x >= rect.width - 24;
-    if (!isSpinnerZone) {
-      e.preventDefault();
-      // 🔽 same visual feedback on touch
-      el.classList.add('is-click-hover');
-      setTimeout(() => el.classList.remove('is-click-hover'), 900);
-      el.blur();
-    }
-  }, { passive: false });
-
-  el.style.caretColor = 'transparent';
-  el.style.userSelect = 'none';
-}
-
-
