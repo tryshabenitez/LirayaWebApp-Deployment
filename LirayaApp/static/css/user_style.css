@@ -1460,7 +1460,7 @@ header .dropdown:focus {
   background: #fff7f7;
   border-bottom: 1px solid #e9d9dc;
 }
-.year-dropdown-list { max-height: 220px; overflow-y: auto; }
+.year-dropdown-list { max-height: 260px; overflow-y: auto; }
 .year-dd-item {
   display: block;
   width: 100%;
@@ -1472,7 +1472,4 @@ header .dropdown:focus {
   font-size: 14px;
 }
 .year-dd-item:hover { background: #feecec; }
-.year-dd-item.is-current {
-  font-weight: 700;
-  background: #f8eef0;
-}
+.year-dd-item.is-current { font-weight: 700; background: #f8eef0; }
