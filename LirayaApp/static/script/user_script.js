@@ -6,57 +6,67 @@
 const YEAR_MIN = 1900;
 const YEAR_MAX = new Date().getFullYear();
 
+let yearDDActive = null; // { inputEl, reposition, teardown }
+
 function filterYearKeydown(e) {
-  // Allow navigation/edit keys
   const allowedKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'];
   if (allowedKeys.includes(e.key)) return;
-
-  // Allow Ctrl/Cmd combos
   if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','A','C','V','X'].includes(e.key)) return;
-
-  // Digits only
   if (!/^[0-9]$/.test(e.key)) e.preventDefault();
 }
-
 function sanitizeYearInput(e) {
-  const v = (e.target.value || '').replace(/\D+/g, '');
-  e.target.value = v;
+  e.target.value = (e.target.value || '').replace(/\D+/g, '');
 }
-
 function sanitizeYearPaste(e) {
   e.preventDefault();
   const text = (e.clipboardData || window.clipboardData).getData('text') || '';
-  const digits = text.replace(/\D+/g, '');
-  document.execCommand('insertText', false, digits);
+  document.execCommand('insertText', false, text.replace(/\D+/g, ''));
+}
+function clearYearOnFocus(e) { e.target.value = ''; }
+
+// Create/fetch root
+function ensureYearRoot() {
+  let root = document.getElementById('year-dd-root');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'year-dd-root';
+    document.body.appendChild(root);
+  }
+  return root;
 }
 
-function clearYearOnFocus(e) {
-  // Clear the field when clicked/focused so user can type fresh
-  e.target.value = '';
+function closeYearDropdown() {
+  const root = document.getElementById('year-dd-root');
+  if (yearDDActive && yearDDActive.teardown) yearDDActive.teardown();
+  yearDDActive = null;
+  if (root) root.innerHTML = '';
 }
 
-// Build a scrollable dropdown of ALL years (1900…current), scroll to current value
-function showYearDropdown(inputEl) {
+function positionForInput(inputEl, ddEl) {
   const rect = inputEl.getBoundingClientRect();
-  const root = document.getElementById('year-dd-root') || (() => {
-    const d = document.createElement('div');
-    d.id = 'year-dd-root';
-    document.body.appendChild(d);
-    return d;
-  })();
+  // Use fixed positioning so we set viewport coords directly:
+  ddEl.style.position = 'fixed';
+  ddEl.style.top = `${rect.bottom + 4}px`;
+  ddEl.style.left = `${rect.left}px`;
+  ddEl.style.width = `${rect.width}px`;
+}
+
+function showYearDropdown(inputEl) {
+  const root = ensureYearRoot();
 
   let cur = parseInt(inputEl.value, 10);
   if (isNaN(cur)) cur = YEAR_MAX;
-  if (cur < YEAR_MIN) cur = YEAR_MIN;
-  if (cur > YEAR_MAX) cur = YEAR_MAX;
+  cur = Math.min(Math.max(cur, YEAR_MIN), YEAR_MAX);
 
   const years = [];
   for (let y = YEAR_MIN; y <= YEAR_MAX; y++) years.push(y);
 
   root.innerHTML = `
-    <div class="year-dropdown" data-for="${inputEl.id}"
-         style="top:${rect.bottom + window.scrollY + 4}px; left:${rect.left + window.scrollX}px; width:${rect.width}px">
-      <div class="year-dropdown-header">min ${YEAR_MIN} &nbsp; max ${YEAR_MAX}</div>
+    <div class="year-dropdown" data-for="${inputEl.id}">
+      <div class="year-dropdown-header">
+        <span>min ${YEAR_MIN}&nbsp;&nbsp;max ${YEAR_MAX}</span>
+        <button type="button" class="year-dd-close" aria-label="Close">×</button>
+      </div>
       <div class="year-dropdown-list">
         ${years.map(y => `
           <button type="button" class="year-dd-item ${y===cur?'is-current':''}" data-year="${y}">
@@ -66,9 +76,18 @@ function showYearDropdown(inputEl) {
     </div>
   `;
 
-  // Select & wire items
-  const listEl = root.querySelector('.year-dropdown-list');
-  root.querySelectorAll('.year-dd-item').forEach(btn => {
+  const dd = root.querySelector('.year-dropdown');
+  const listEl = dd.querySelector('.year-dropdown-list');
+  const closeBtn = dd.querySelector('.year-dd-close');
+
+  // Initial position
+  positionForInput(inputEl, dd);
+
+  // Wire close
+  closeBtn.addEventListener('click', closeYearDropdown);
+
+  // Select year
+  dd.querySelectorAll('.year-dd-item').forEach(btn => {
     btn.addEventListener('click', () => {
       inputEl.value = btn.dataset.year;
       closeYearDropdown();
@@ -76,46 +95,52 @@ function showYearDropdown(inputEl) {
     });
   });
 
-  // Scroll currently-selected year into view
-  const curBtn = root.querySelector('.year-dd-item.is-current');
-  if (curBtn && listEl) {
-    const top = curBtn.offsetTop - 6;
-    listEl.scrollTop = top - listEl.clientHeight / 2 + curBtn.offsetHeight / 2;
+  // Scroll selected into view
+  const curBtn = dd.querySelector('.year-dd-item.is-current');
+  if (curBtn) {
+    listEl.scrollTop = curBtn.offsetTop - listEl.clientHeight / 2 + curBtn.offsetHeight / 2;
   }
 
-  // close on outside click / escape
-  setTimeout(() => {
-    const closer = (ev) => {
-      const dd = document.querySelector('.year-dropdown');
-      if (!dd) return document.removeEventListener('mousedown', closer);
-      if (!dd.contains(ev.target)) closeYearDropdown();
-    };
-    document.addEventListener('mousedown', closer, { once: true });
+  // Reposition on any scroll (capture=true catches nested scroll containers) and on resize
+  const reposition = () => positionForInput(inputEl, dd);
+  const onScroll = () => reposition();
+  const onResize = () => reposition();
 
-    const esc = (ev) => { if (ev.key === 'Escape') { closeYearDropdown(); document.removeEventListener('keydown', esc); } };
-    document.addEventListener('keydown', esc);
-  }, 0);
+  window.addEventListener('resize', onResize);
+  document.addEventListener('scroll', onScroll, true);
+
+  // Outside click closes
+  const outside = (ev) => {
+    if (!dd.contains(ev.target)) closeYearDropdown();
+  };
+  setTimeout(() => document.addEventListener('mousedown', outside, { once: true }), 0);
+
+  yearDDActive = {
+    inputEl,
+    reposition,
+    teardown() {
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('scroll', onScroll, true);
+    }
+  };
 }
 
-function closeYearDropdown() {
-  const root = document.getElementById('year-dd-root');
-  if (root) root.innerHTML = '';
-}
-
-// Intercept clicks on the native spinner zone and show our dropdown
 function attachSpinnerDropdown(inputEl) {
   inputEl.addEventListener('mousedown', (e) => {
     const r = inputEl.getBoundingClientRect();
     const x = e.clientX - r.left;
-    const spinnerZone = x >= r.width - 24; // last ~24px
+    const spinnerZone = x >= r.width - 24;
     if (spinnerZone) {
       e.preventDefault();
       e.stopPropagation();
       inputEl.blur();
+      // Close any existing then open
+      closeYearDropdown();
       showYearDropdown(inputEl);
     }
   });
 }
+
 
 // ===== Pagination state =====
 const paginationDataEl = document.getElementById('pagination-data');
