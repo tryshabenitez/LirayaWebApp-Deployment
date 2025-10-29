@@ -30,7 +30,12 @@ function sanitizeYearPaste(e) {
   document.execCommand('insertText', false, digits);
 }
 
-// Build a small dropdown of years around the current input value (±2)
+function clearYearOnFocus(e) {
+  // Clear the field when clicked/focused so user can type fresh
+  e.target.value = '';
+}
+
+// Build a scrollable dropdown of ALL years (1900…current), scroll to current value
 function showYearDropdown(inputEl) {
   const rect = inputEl.getBoundingClientRect();
   const root = document.getElementById('year-dd-root') || (() => {
@@ -42,11 +47,11 @@ function showYearDropdown(inputEl) {
 
   let cur = parseInt(inputEl.value, 10);
   if (isNaN(cur)) cur = YEAR_MAX;
+  if (cur < YEAR_MIN) cur = YEAR_MIN;
+  if (cur > YEAR_MAX) cur = YEAR_MAX;
 
   const years = [];
-  for (let y = cur - 2; y <= cur + 2; y++) {
-    if (y >= YEAR_MIN && y <= YEAR_MAX) years.push(y);
-  }
+  for (let y = YEAR_MIN; y <= YEAR_MAX; y++) years.push(y);
 
   root.innerHTML = `
     <div class="year-dropdown" data-for="${inputEl.id}"
@@ -61,6 +66,8 @@ function showYearDropdown(inputEl) {
     </div>
   `;
 
+  // Select & wire items
+  const listEl = root.querySelector('.year-dropdown-list');
   root.querySelectorAll('.year-dd-item').forEach(btn => {
     btn.addEventListener('click', () => {
       inputEl.value = btn.dataset.year;
@@ -69,6 +76,14 @@ function showYearDropdown(inputEl) {
     });
   });
 
+  // Scroll currently-selected year into view
+  const curBtn = root.querySelector('.year-dd-item.is-current');
+  if (curBtn && listEl) {
+    const top = curBtn.offsetTop - 6;
+    listEl.scrollTop = top - listEl.clientHeight / 2 + curBtn.offsetHeight / 2;
+  }
+
+  // close on outside click / escape
   setTimeout(() => {
     const closer = (ev) => {
       const dd = document.querySelector('.year-dropdown');
@@ -479,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function () {
     refineHdr.setAttribute('role', 'button');
   }
 
-  // Allow typing; validate only on Apply; hook spinner dropdown
+  // Allow typing; validate only on Apply; hook spinner dropdown; clear on focus/click
   if (minYearInput) {
     minYearInput.setAttribute('min', YEAR_MIN);
     minYearInput.setAttribute('max', YEAR_MAX);
@@ -487,6 +502,8 @@ document.addEventListener('DOMContentLoaded', function () {
     minYearInput.addEventListener('keydown', filterYearKeydown);
     minYearInput.addEventListener('paste', sanitizeYearPaste);
     minYearInput.addEventListener('input', sanitizeYearInput);
+    minYearInput.addEventListener('focus', clearYearOnFocus);
+    minYearInput.addEventListener('click', clearYearOnFocus);
     attachSpinnerDropdown(minYearInput);
   }
   if (maxYearInput) {
@@ -496,6 +513,8 @@ document.addEventListener('DOMContentLoaded', function () {
     maxYearInput.addEventListener('keydown', filterYearKeydown);
     maxYearInput.addEventListener('paste', sanitizeYearPaste);
     maxYearInput.addEventListener('input', sanitizeYearInput);
+    maxYearInput.addEventListener('focus', clearYearOnFocus);
+    maxYearInput.addEventListener('click', clearYearOnFocus);
     attachSpinnerDropdown(maxYearInput);
   }
 
