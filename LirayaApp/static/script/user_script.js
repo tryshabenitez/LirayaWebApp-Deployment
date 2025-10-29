@@ -170,24 +170,24 @@ document.addEventListener('DOMContentLoaded', () => {
   const steps = [
     {
       id:'sorting', title:'Sorting options', target:'#sidebar-sort',
-      message:'Pick how results are ordered: Relevance, Title (Alphabetical), Author, Newest→Oldest, or Oldest→Newest. Your current search & filters are kept.',
+      message:'Pick how results are ordered: Relevance, Title (Alphabetical), Author (Alphabetical), Newest→Oldest, or Oldest→Newest. Your current search & filters are kept.',
       placement:'right'
     },
     {
       id:'shelf', title:'Shelf Category', target:'#sec-shelf',
-      message:'Filter results by shelf category. Click items to toggle; selected items get highlighted.',
+      message:'Filter results by shelf category. Click items to toggle: Search results will be filtered based on selected items.',
       placement:'right',
       highlightTarget: (anchor)=> anchor?.nextElementSibling || anchor
     },
     {
       id:'subjects', title:'Subjects / Keywords', target:'#sec-subjects',
-      message:'Narrow by subjects/keywords. Use “See All” to expand, click to toggle multiple subjects.',
+      message:'Narrow by subjects/keywords. Use “See All” to expand, click to toggle subjects or keywords.',
       placement:'right',
       highlightTarget: (anchor)=> anchor?.nextElementSibling || anchor
     },
     {
       id:'year', title:'Year range', target:'#sec-year',
-      message:'Type Min/Max year (1900…current year) or open the scrollable picker. Click “Apply Year Filter” to apply.',
+      message:'Type Min/Max year (1900 - Current Year) or open the arrow picker. Click “Apply Year Filter” to apply.',
       placement:'right',
       // Special: highlight union of min + max rows if present
       getCustomRect: () => {
