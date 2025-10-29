@@ -141,6 +141,30 @@ function attachSpinnerDropdown(inputEl) {
   });
 }
 
+function toggleSortTutorial(forceHide = false) {
+  const box = document.getElementById('sort-tutorial');
+  if (!box) return;
+
+  // respect "Don't show again"
+  const hideKey = 'liraya_hide_sort_tutorial';
+  const cb = document.getElementById('hide-sort-tutorial');
+  if (forceHide) {
+    if (cb && cb.checked) localStorage.setItem(hideKey, '1');
+    box.hidden = true;
+    return;
+  }
+  // toggle
+  box.hidden = !box.hidden;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const hideKey = 'liraya_hide_sort_tutorial';
+  const box = document.getElementById('sort-tutorial');
+  if (box && localStorage.getItem(hideKey) === '1') {
+    box.hidden = true; // keep hidden
+  }
+});
+
 
 // ===== Pagination state =====
 const paginationDataEl = document.getElementById('pagination-data');
