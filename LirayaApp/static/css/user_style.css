@@ -1443,10 +1443,9 @@ header .dropdown:focus {
 }
 
 
-/* Year dropdown */
-#year-dd-root { position: absolute; z-index: 3000; }
-.year-dropdown {
-  position: absolute;
+#year-dd-root { position: fixed; z-index: 3000; inset: 0 auto auto 0; pointer-events: none; }
+#year-dd-root .year-dropdown {
+  pointer-events: auto;
   background: #fff;
   border: 2px solid #6d2932;
   border-radius: 10px;
@@ -1454,22 +1453,32 @@ header .dropdown:focus {
   overflow: hidden;
 }
 .year-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* text left, X right */
+  gap: 12px;
   padding: 6px 10px;
   font-size: 12px;
   color: #6d2932;
   background: #fff7f7;
   border-bottom: 1px solid #e9d9dc;
 }
+.year-dd-close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6d2932;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.year-dd-close:hover { background: #feecec; }
 .year-dropdown-list { max-height: 260px; overflow-y: auto; }
 .year-dd-item {
-  display: block;
-  width: 100%;
-  padding: 8px 10px;
-  background: #fff;
-  border: 0;
-  text-align: left;
-  cursor: pointer;
-  font-size: 14px;
+  display: block; width: 100%; padding: 8px 10px;
+  background: #fff; border: 0; text-align: left; cursor: pointer; font-size: 14px;
 }
 .year-dd-item:hover { background: #feecec; }
 .year-dd-item.is-current { font-weight: 700; background: #f8eef0; }
