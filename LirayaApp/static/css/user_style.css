@@ -1598,3 +1598,6 @@ header .dropdown:focus {
   position: absolute; top: 6px; right: 6px;
 }
 .liraya-tour-close:hover { background: #feecec; }
+
+
+.pagination { visibility: hidden; }
