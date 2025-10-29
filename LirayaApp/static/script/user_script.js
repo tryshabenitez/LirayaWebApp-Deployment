@@ -498,7 +498,12 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-
+function toggleKeywords(bookId, btnEl) {
+  const el = document.getElementById('keywords-' + bookId);
+  if (!el) return;
+  const expanded = el.classList.toggle('keywords-expanded');
+  if (btnEl) btnEl.textContent = expanded ? 'See Less' : 'See More';
+}
 
 function initTypeaheadForForm({ form, input, fieldSelect, wrap, dropdown, suggestUrl }) {
   let items = [];
