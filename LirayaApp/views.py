@@ -187,7 +187,6 @@ def user_homepage(request):
 def user_aboutus(request):
     return render(request, 'user_aboutus.html')
 
-
 def user_search(request):
     # ------- Base queryset -------
     books = Books.objects.filter(is_archived=False)
@@ -199,8 +198,14 @@ def user_search(request):
     active_categories = request.GET.get('active_categories', '')
     active_resource_types = request.GET.get('active_resource_types', '')
     active_subjects = request.GET.get('active_subjects', '')
-    min_year = request.GET.get('min_year')
-    max_year = request.GET.get('max_year')
+    # cast years defensively
+    def _to_int_or_none(v):
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None
+    min_year = _to_int_or_none(request.GET.get('min_year'))
+    max_year = _to_int_or_none(request.GET.get('max_year'))
 
     # ------- Stopwords (connecting words) -------
     STOPWORDS = {
@@ -210,7 +215,7 @@ def user_search(request):
     }
 
     # ===============================
-    #        FUZZY (difflib) — ONLINE
+    #        FUZZY (difflib)
     # ===============================
     def split_words(s):
         """
@@ -220,7 +225,6 @@ def user_search(request):
         raw = (s or '').replace(',', ' ').split()
         out = []
         for w in raw:
-            # remove non-alphanumeric chars except inside words
             w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
             if not w or w in {'-', '–', '_'}:
                 continue
@@ -248,7 +252,6 @@ def user_search(request):
                     out.append(wl)
         return out
 
-
     def build_reference_vocab(row_limit=20000):
         """
         Build a small in-memory vocabulary from titles and primary_keyword.
@@ -269,20 +272,36 @@ def user_search(request):
                         vocab.add(wl)
         return list(vocab)
 
-    # Build per-request (no persistent cache as requested)
+    # Build per-request (kept as in your original)
     REFERENCE_VOCAB = build_reference_vocab()
 
-    def fuzzy_variants(token, n=7, cutoff=0.68):
+    def fuzzy_variants(token, n=5, cutoff=None):
         """
-        Return up to 'n' close matches from in-memory vocab using difflib.
-        Always includes the original token.
+        Safer fuzzy variants to reduce false positives:
+        - No fuzz for very short tokens (<=3 chars).
+        - Dynamic cutoff: stricter for short/medium tokens.
+        - Limit length drift (±2 chars).
+        Always returns a list with the original token first.
         """
-        base = (token or "").lower()
+        base = (token or "").strip().lower()
         if not base:
             return [base]
+
+        if len(base) <= 3:
+            return [base]
+
+        if cutoff is None:
+            cutoff = 0.82 if len(base) <= 6 else 0.78
+
         matches = difflib.get_close_matches(base, REFERENCE_VOCAB, n=n, cutoff=cutoff)
+        matches = [m for m in matches if abs(len(m) - len(base)) <= 2]
+
         if base not in matches:
             matches.insert(0, base)
+        else:
+            matches.remove(base)
+            matches.insert(0, base)
+
         return matches
 
     # ===============================
@@ -306,47 +325,49 @@ def user_search(request):
         try:
             corrected_terms = []
             for token in split_words(q):
-                variants = fuzzy_variants(token, n=1, cutoff=0.75)
-                # Only log corrected version (skip the misspelled one)
+                variants = fuzzy_variants(token, n=1, cutoff=0.85)  # a bit stricter for logging
                 if variants:
                     corrected = variants[0].lower()
-                    # if token is already correct, log it normally
-                    if corrected == token.lower():
-                        term = corrected
-                    else:
-                        term = corrected  # log only corrected term
+                    term = corrected
+                    if corrected != token.lower():
                         corrected_terms.append(f"{token}→{corrected}")
-    
+
                     obj, _ = KeywordLog.objects.get_or_create(user_keyword_search=term)
                     KeywordLog.objects.filter(pk=obj.pk).update(
                         user_search_count=F('user_search_count') + 1,
                         updated_at=timezone.now(),
                     )
                     _append_time(obj.pk)
-    
-            # Optional: keep a record of corrections like "compter→computer"
+
             if corrected_terms:
                 KeywordLog.objects.create(
                     user_keyword_search="; ".join(corrected_terms),
                     user_search_count=1,
                     updated_at=timezone.now()
                 )
-    
-        except Exception:
-            pass  # Never block search if logging fails
 
+        except Exception:
+            # Never block search if logging fails
+            pass
 
     # ===============================
     #           SEARCH
     # ===============================
+    also_terms = []  # collect fuzzy extras to show in the UI
+
     if q:
         tokens = split_words(q)
         kw_tokens = split_keywords(q)
 
         def apply_field_filters(qs, field_name, toks):
-            """Apply icontains across fuzzy variants per token (title/author/keywords)."""
+            """Apply icontains across (safer) fuzzy variants per token."""
             for t in toks:
-                variants = fuzzy_variants(t, n=7, cutoff=0.68)  # includes original first
+                variants = fuzzy_variants(t, n=5)  # original first
+                # remember extras for "Also searching for"
+                for v in variants[1:]:
+                    if v not in also_terms:
+                        also_terms.append(v)
+
                 q_or = Q()
                 for v in variants:
                     if field_name == 'keywords':
@@ -383,9 +404,9 @@ def user_search(request):
     # ===============================
     #         YEAR FILTERS
     # ===============================
-    if min_year:
+    if min_year is not None:
         books = books.filter(year_of_publication__gte=min_year)
-    if max_year:
+    if max_year is not None:
         books = books.filter(year_of_publication__lte=max_year)
 
     # ===============================
@@ -406,14 +427,14 @@ def user_search(request):
         rtypes = []
 
     # ===============================
-    #   SUBJECTS FACET FILTER (fuzzy via difflib too)
+    #   SUBJECTS FACET FILTER (still fuzzy, but safer variants)
     # ===============================
     if active_subjects:
         subs = [s for s in active_subjects.split(',') if s]
         if subs:
             q_or = Q()
             for s_term in subs:
-                for v in fuzzy_variants(s_term, n=7, cutoff=0.68):
+                for v in fuzzy_variants(s_term, n=5):
                     q_or |= Q(primary_keyword__icontains=v)
             if q_or:
                 books = books.filter(q_or)
@@ -466,7 +487,7 @@ def user_search(request):
     # ===============================
     #         PAGINATION
     # ===============================
-    paginator = Paginator(books, 10)  # 5 per page
+    paginator = Paginator(books, 10)  # 10 per page
     page = request.GET.get('page')
     books_page = paginator.get_page(page)
 
@@ -476,13 +497,11 @@ def user_search(request):
     # ===============================
     #           CONTEXT
     # ===============================
-
-    # Build a preserved querystring WITHOUT any previous book_id
     qs_no_book = request.GET.copy()
-    qs_no_book.pop('book_id', None)           # remove if present
-    qs_no_book = qs_no_book.urlencode()       # to string
+    qs_no_book.pop('book_id', None)
+    qs_no_book = qs_no_book.urlencode()
     current_year = timezone.now().year
-    
+
     context = {
         'books': books_page,
         'current_page': current_page,
@@ -497,9 +516,11 @@ def user_search(request):
         'active_subjects': subs,
         'qs_no_book': qs_no_book,   # ViewInfo
         'current_year': current_year,
+        'also_searching': also_terms,  # NEW: for "Also searching for: …"
     }
 
     return render(request, 'user_search.html', context)
+
 
 
 
