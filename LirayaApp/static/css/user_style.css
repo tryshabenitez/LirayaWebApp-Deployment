@@ -1482,3 +1482,49 @@ header .dropdown:focus {
 }
 .year-dd-item:hover { background: #feecec; }
 .year-dd-item.is-current { font-weight: 700; background: #f8eef0; }
+
+
+.tutorial-toggle {
+  margin-top: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6d2932;
+  background: transparent;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.tutorial-toggle:hover { color: #a33b45; }
+
+.tutorial-card {
+  margin-top: 8px;
+  background: #fff;
+  border: 2px solid #6d2932;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  padding: 10px 10px 12px;
+}
+
+.tutorial-header {
+  display: flex; align-items: center; justify-content: space-between;
+  font-weight: 800; color: #3e151a; margin-bottom: 8px;
+}
+.tutorial-close {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  font-size: 18px; color: #6d2932; border-radius: 6px; padding: 0 6px;
+}
+.tutorial-close:hover { background: #feecec; }
+
+.tutorial-steps { margin: 0 0 8px 18px; padding: 0; color: #000; }
+.tutorial-steps li { margin: 6px 0; line-height: 1.35; }
+
+.tutorial-actions {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.tutorial-remember { font-size: 13px; color: #3e151a; }
+.tutorial-ok {
+  background: #6d2932; color: #fff7f7; border: none; border-radius: 8px;
+  padding: 6px 10px; font-weight: 700; cursor: pointer;
+}
+.tutorial-ok:hover { background: #541e29; }
