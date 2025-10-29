@@ -1101,7 +1101,7 @@ def admin_createaccount(request):
                     </p>
                   </div>
 
-                  <a href="https://liraya.up.railway.app/login/" style="display:inline-block; margin-top:10px; padding:10px 20px; background-color:#561c24; color:white; text-decoration:none; border-radius:5px;">Log in Now</a>
+                  <a href="https://www.tupcliraya.site/login/" style="display:inline-block; margin-top:10px; padding:10px 20px; background-color:#561c24; color:white; text-decoration:none; border-radius:5px;">Log in Now</a>
 
                   <hr style="margin:30px 0;">
                   <p style="font-size:12px; color:#777;">
