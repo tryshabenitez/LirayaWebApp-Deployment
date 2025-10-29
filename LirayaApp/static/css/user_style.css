@@ -1534,7 +1534,7 @@ header .dropdown:focus {
 #liraya-tour-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.25);
+  background: rgba(0,0,0,0.05);
   z-index: 4000;
   pointer-events: auto;
 }
