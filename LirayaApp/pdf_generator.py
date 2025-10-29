@@ -455,7 +455,7 @@ def generate_book_details(output_pdf_path, dynamic_data=None, file_name="Unknown
                 [Paragraph("Label", tableheader_style), Paragraph("Description", tableheader_style)],  # Centered header
                 [Paragraph("Uploaded by:", titletable_style), Paragraph(f"{data['uploaded_account_full_name']}", content_style)],
                 [Paragraph("Date Uploaded:", titletable_style), Paragraph(f"{data['date_uploaded']}", content_style)],
-                [Paragraph("Book ID:", titletable_style), Paragraph(f"{data['book_id']}", content_style)],
+                [Paragraph("Database_ID:", titletable_style), Paragraph(f"{data['book_id']}", content_style)],
                 [Paragraph("Title:", titletable_style), Paragraph(f"{data['title']}", content_style)],
                 [Paragraph("Book Type:", titletable_style), Paragraph(f"{data['book_type']}", content_style)],  
                 [Paragraph("Scanned Type:", titletable_style), Paragraph(f"{data['scanned_type']}", content_style)],
