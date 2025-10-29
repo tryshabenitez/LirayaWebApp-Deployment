@@ -728,7 +728,6 @@ function bindClickHover(el, { className = 'is-click-hover', duration = 900 } = {
 
 document.addEventListener('DOMContentLoaded', function () {
   // --- Pagination + summary ---
-  if (paginationDataEl) updatePagination();
   updateResultsSummary();
 
   // --- "See More" label (if present) ---
