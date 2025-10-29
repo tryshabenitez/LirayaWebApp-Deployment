@@ -191,3 +191,5 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 LANGUAGETOOL_URL = os.getenv("LANGUAGETOOL_URL", "https://api.languagetool.org/v2/check")
+
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
