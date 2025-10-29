@@ -186,7 +186,7 @@ SESSION_COOKIE_AGE = 18000
 SESSION_SAVE_EVERY_REQUEST = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://liraya.up.railway.app",
+    "https://www.tupcliraya.site",
 ]
 
 LANGUAGETOOL_URL = os.getenv("LANGUAGETOOL_URL", "https://api.languagetool.org/v2/check")
