@@ -430,7 +430,7 @@ function updatePagination() {
     // Clear
     paginationElement.innerHTML = '';
 
-    // Prev button
+    // Prev
     const prevButton = document.createElement('button');
     prevButton.className = 'nav-button';
     prevButton.textContent = '<';
@@ -441,7 +441,7 @@ function updatePagination() {
     });
     paginationElement.appendChild(prevButton);
 
-    // Page links (current +/- 2)
+    // Pages (±2)
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, currentPage + 2);
     for (let page = startPage; page <= endPage; page++) {
@@ -457,7 +457,7 @@ function updatePagination() {
       paginationElement.appendChild(a);
     }
 
-    // Next button
+    // Next
     const nextButton = document.createElement('button');
     nextButton.className = 'nav-button';
     nextButton.textContent = '>';
@@ -468,7 +468,13 @@ function updatePagination() {
     });
     paginationElement.appendChild(nextButton);
   });
+
+  // ✅ Reveal only after JS finished rendering
+  document.querySelectorAll('.pagination').forEach(el => {
+    el.style.visibility = 'visible';
+  });
 }
+
 
 // Fetch new page via AJAX while preserving current query params
 function fetchBooks(page) {
@@ -508,10 +514,6 @@ function fetchBooks(page) {
     .catch(error => {
       console.error('Error fetching books:', error);
     });
-  
-  document.querySelectorAll('.pagination').forEach(el => {
-    el.style.visibility = 'visible';
-  });
 }
 
 // Sidebar toggle (guards for nulls)
