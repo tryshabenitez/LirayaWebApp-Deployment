@@ -508,6 +508,10 @@ function fetchBooks(page) {
     .catch(error => {
       console.error('Error fetching books:', error);
     });
+  
+  document.querySelectorAll('.pagination').forEach(el => {
+    el.style.visibility = 'visible';
+  });
 }
 
 // Sidebar toggle (guards for nulls)
@@ -728,6 +732,7 @@ function bindClickHover(el, { className = 'is-click-hover', duration = 900 } = {
 
 document.addEventListener('DOMContentLoaded', function () {
   // --- Pagination + summary ---
+  if (paginationDataEl) updatePagination();
   updateResultsSummary();
 
   // --- "See More" label (if present) ---
