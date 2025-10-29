@@ -41,6 +41,41 @@
     {% endif %}
   </div>
 
+  <div id="results-summary" class="results-summary">
+    {% if books.paginator.count %}
+      <strong>Showing <em>{{ books.start_index }}</em>–<em>{{ books.end_index }}</em> out of <em>{{ books.paginator.count }}</em> results</strong>
+    {% else %}
+      <strong>Showing <em>0</em> out of <em>0</em> results</strong>
+    {% endif %}
+  </div>
+  
+  <!-- ▼ Add this block right below results-summary ▼ -->
+  <button type="button" class="tutorial-toggle" onclick="toggleSortTutorial()">
+    Show tutorial
+  </button>
+  
+  <div id="sort-tutorial" class="tutorial-card" hidden>
+    <div class="tutorial-header">
+      <span>Sorting tutorial</span>
+      <button type="button" class="tutorial-close" aria-label="Close" onclick="toggleSortTutorial(true)">×</button>
+    </div>
+    <ol class="tutorial-steps">
+      <li><strong>Pick a sort option</strong> in the dropdown above (e.g., Relevance, Alphabetical/Title, Author, Newest to Oldest, Oldest to Newest).</li>
+      <li>Sorting <strong>keeps your current search & filters</strong> (query, categories, resource types, years).</li>
+      <li>After you choose, the list <strong>updates automatically</strong>—no need to press any button.</li>
+      <li>Need different results? <strong>Adjust filters</strong> (Shelf Category, Subjects/Keywords, Year range) then change sorting again.</li>
+      <li>Use the <strong>pagination</strong> to browse more results with the same sort order.</li>
+    </ol>
+    <div class="tutorial-actions">
+      <label class="tutorial-remember">
+        <input type="checkbox" id="hide-sort-tutorial"> Don’t show again
+      </label>
+      <button type="button" class="tutorial-ok" onclick="toggleSortTutorial(true)">Got it</button>
+    </div>
+  </div>
+  <!-- ▲ End tutorial block ▲ -->
+
+
   <!-- Shelf Category Section -->
   <div class="section-title">Shelf Category</div>
   <div class="menu-items">
