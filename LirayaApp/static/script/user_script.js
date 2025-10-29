@@ -165,6 +165,245 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ===== LIRAYA Guided Tour =====
+(function() {
+  const HIDE_KEY = 'liraya_hide_sort_tour'; // if you want a “don’t show again” later
+
+  // Steps config
+  const steps = [
+    {
+      id: 'sorting',
+      title: 'Sorting options',
+      target: '#sidebar-sort',
+      message: 'Pick how results are ordered: Relevance, Title (Alphabetical), Author, Newest→Oldest, or Oldest→Newest. Your current search & filters are kept.',
+      placement: 'right'
+    },
+    {
+      id: 'shelf',
+      title: 'Shelf Category',
+      target: '#sec-shelf',
+      message: 'Filter results by shelf category. Click items to toggle; selected items get highlighted.',
+      placement: 'right',
+      // highlight the list under the title
+      getHighlightEl: (anchor) => anchor?.nextElementSibling
+    },
+    {
+      id: 'subjects',
+      title: 'Subjects / Keywords',
+      target: '#sec-subjects',
+      message: 'Narrow by subjects/keywords. Use “See All” to expand, click to toggle multiple subjects.',
+      placement: 'right',
+      getHighlightEl: (anchor) => anchor?.nextElementSibling
+    },
+    {
+      id: 'year',
+      title: 'Year range',
+      target: '#sec-year',
+      message: 'Type Min/Max year (1900…current year), or use the spinner to open a scrollable list. Click “Apply Year Filter” to apply.',
+      placement: 'right',
+      getHighlightEl: (anchor) => {
+        // highlight both Min & Max rows if present
+        const wrap = document.createElement('div');
+        const min = anchor?.nextElementSibling;
+        const max = min?.nextElementSibling;
+        if (!min) return anchor;
+        wrap.style.position = 'relative';
+        // temporary wrapper to highlight two blocks together
+        min.parentNode.insertBefore(wrap, min);
+        wrap.appendChild(min);
+        if (max) wrap.appendChild(max);
+        wrap.__lirayaTempWrap = true;
+        return wrap;
+      },
+      cleanup: (anchor, hl) => {
+        // unwrap temporary highlight wrapper
+        if (hl && hl.__lirayaTempWrap) {
+          while (hl.firstChild) anchor.parentNode.insertBefore(hl.firstChild, hl);
+          hl.remove();
+        }
+      }
+    },
+    {
+      id: 'resource',
+      title: 'Resource Type',
+      target: '#sec-resource',
+      message: 'Filter by resource type (e.g., Book, Thesis, etc.). You can select multiple.',
+      placement: 'right',
+      getHighlightEl: (anchor) => anchor?.nextElementSibling
+    },
+    {
+      id: 'pagination',
+      title: 'Pagination',
+      target: '#pagination-top',
+      message: 'Use these controls to move between result pages. The current sorting and filters remain applied.',
+      placement: 'bottom'
+    }
+  ];
+
+  let current = -1;
+  let overlayEl = null;
+  let tooltipEl = null;
+  let highlighted = null;
+  let highlightedCleanup = null;
+
+  // Public entry
+  window.startLirayaTour = function() {
+    // if (localStorage.getItem(HIDE_KEY) === '1') return; // enable if you add a checkbox later
+    buildChrome();
+    nextStep();
+  };
+
+  function buildChrome() {
+    if (!overlayEl) {
+      overlayEl = document.createElement('div');
+      overlayEl.id = 'liraya-tour-overlay';
+      overlayEl.style.display = 'none';
+      document.body.appendChild(overlayEl);
+    }
+    if (!tooltipEl) {
+      tooltipEl = document.createElement('div');
+      tooltipEl.id = 'liraya-tour-tooltip';
+      tooltipEl.innerHTML = `
+        <button class="liraya-tour-close" aria-label="Close" type="button">×</button>
+        <div class="liraya-tour-title"></div>
+        <div class="liraya-tour-body"></div>
+        <div class="liraya-tour-actions">
+          <div class="left">
+            <button class="liraya-tour-btn liraya-tour-secondary" type="button" data-act="prev">Back</button>
+          </div>
+          <div class="right">
+            <button class="liraya-tour-btn" type="button" data-act="next">Next</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(tooltipEl);
+
+      tooltipEl.querySelector('.liraya-tour-close').addEventListener('click', endTour);
+      tooltipEl.querySelector('[data-act="prev"]').addEventListener('click', prevStep);
+      tooltipEl.querySelector('[data-act="next"]').addEventListener('click', nextStep);
+
+      // Keep tooltip aligned on scroll/resize
+      window.addEventListener('resize', reposition, { passive: true });
+      document.addEventListener('scroll', reposition, true);
+    }
+  }
+
+  function endTour() {
+    if (highlighted) highlighted.classList.remove('liraya-tour-highlight');
+    if (highlightedCleanup) {
+      highlightedCleanup();
+      highlightedCleanup = null;
+    }
+    highlighted = null;
+
+    if (overlayEl) overlayEl.style.display = 'none';
+    if (tooltipEl) tooltipEl.style.display = 'none';
+    current = -1;
+  }
+
+  function prevStep() {
+    showStep(current - 1);
+  }
+
+  function nextStep() {
+    showStep(current + 1);
+  }
+
+  function showStep(i) {
+    // cleanup previous
+    if (highlighted) highlighted.classList.remove('liraya-tour-highlight');
+    if (highlightedCleanup) { highlightedCleanup(); highlightedCleanup = null; }
+    highlighted = null;
+
+    if (i < 0) return endTour();
+    if (i >= steps.length) return endTour();
+    current = i;
+
+    const s = steps[i];
+    const anchor = document.querySelector(s.target);
+    if (!anchor) {
+      // skip missing targets gracefully
+      return nextStep();
+    }
+
+    // compute highlight element
+    let hlEl = anchor;
+    if (typeof s.getHighlightEl === 'function') {
+      const maybe = s.getHighlightEl(anchor);
+      if (maybe) hlEl = maybe;
+    }
+
+    // mark highlight
+    hlEl.classList.add('liraya-tour-highlight');
+    highlighted = hlEl;
+
+    // allow a custom cleanup (like unwrap) later
+    if (typeof s.cleanup === 'function') {
+      highlightedCleanup = () => s.cleanup(anchor, hlEl);
+    }
+
+    // ensure in view
+    hlEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // overlay & tooltip visible
+    overlayEl.style.display = 'block';
+    tooltipEl.style.display = 'block';
+
+    // set content
+    tooltipEl.querySelector('.liraya-tour-title').textContent = s.title;
+    tooltipEl.querySelector('.liraya-tour-body').textContent = s.message;
+
+    // prev/next button states
+    tooltipEl.querySelector('[data-act="prev"]').disabled = (i === 0);
+    tooltipEl.querySelector('[data-act="next"]').textContent = (i === steps.length - 1) ? 'Finish' : 'Next';
+
+    // position tooltip
+    positionTooltipAround(hlEl, s.placement || 'bottom');
+  }
+
+  function reposition() {
+    if (current < 0) return;
+    const s = steps[current];
+    const anchor = document.querySelector(s.target);
+    if (!anchor || !tooltipEl) return;
+
+    let hlEl = anchor;
+    if (typeof s.getHighlightEl === 'function') {
+      const maybe = s.getHighlightEl(anchor);
+      if (maybe) hlEl = maybe;
+    }
+    positionTooltipAround(hlEl, s.placement || 'bottom');
+  }
+
+  function positionTooltipAround(el, placement) {
+    const r = el.getBoundingClientRect();
+    const t = tooltipEl.getBoundingClientRect();
+
+    // default: below centered
+    let top = r.bottom + 8;
+    let left = r.left + (r.width - t.width) / 2;
+
+    if (placement === 'right') {
+      top = r.top + (r.height - t.height) / 2;
+      left = r.right + 12;
+    } else if (placement === 'left') {
+      top = r.top + (r.height - t.height) / 2;
+      left = r.left - t.width - 12;
+    } else if (placement === 'top') {
+      top = r.top - t.height - 8;
+      left = r.left + (r.width - t.width) / 2;
+    } // 'bottom' default
+
+    // keep on screen a bit
+    const pad = 8;
+    top = Math.max(pad, Math.min(top, window.innerHeight - t.height - pad));
+    left = Math.max(pad, Math.min(left, window.innerWidth - t.width - pad));
+
+    tooltipEl.style.top = `${top}px`;
+    tooltipEl.style.left = `${left}px`;
+  }
+})();
+
 
 // ===== Pagination state =====
 const paginationDataEl = document.getElementById('pagination-data');
