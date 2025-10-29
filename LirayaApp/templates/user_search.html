@@ -6,7 +6,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LIRAYA - Library Information Resource and Access</title>
-  <link rel="stylesheet" href="{% static 'css/user_style.css' %}"> <!-- Link to the CSS file -->
+  <link rel="stylesheet" href="{% static 'css/user_style.css' %}">
 </head>
 <body>
 
@@ -28,6 +28,7 @@
     <input type="hidden" name="field" value="{{ request.GET.field|default:'allFields' }}">
     <input type="hidden" name="active_categories" value="{{ request.GET.active_categories }}">
     <input type="hidden" name="active_resource_types" value="{{ request.GET.active_resource_types }}">
+    <input type="hidden" name="active_subjects" value="{{ request.GET.active_subjects }}">
     <input type="hidden" name="min_year" value="{{ request.GET.min_year }}">
     <input type="hidden" name="max_year" value="{{ request.GET.max_year }}">
   </form>
@@ -52,7 +53,7 @@
       </a>
     {% endfor %}
   </div>
-  <button class="see-all-btn" onclick="toggleMenu(this)">See All</button>
+  <button class="see-all-btn" onclick="openSeeAllModal(this)">See All</button>
 
   <!-- Year of Publication Section -->
   <div class="section-title">Year of Publication</div>
@@ -68,30 +69,28 @@
   </div>
   <button type="button" class="year-button" onclick="applyYearFilter()">Apply Year Filter</button>
 
-<!-- Subjects / Keywords Section -->
-<div class="section-title">Subjects / Keywords</div>
-<div class="menu-items">
-  {% for s in subjects %}
-    <a href="#"
-       class="menu-item {% if s.term in active_subjects %}active{% endif %}"
-       data-subject="{{ s.term }}"
-       onclick="toggleSubject(this)">
-      {{ s.display }} ({{ s.count }})
-    </a>
-  {% endfor %}
-</div>
-<button class="see-all-btn" onclick="toggleMenu(this)">See All</button>
-
-
-  
-<!-- See All Modal -->
-<div id="seeAllModal">
-  <div class="modal-content">
-    <span class="close-btn" onclick="closeSeeAllModal()">&times;</span>
-    <div id="modal-title">All Items</div>
-    <div class="modal-body" id="seeAllList"></div>
+  <!-- Subjects / Keywords Section -->
+  <div class="section-title">Subjects / Keywords</div>
+  <div class="menu-items">
+    {% for s in subjects %}
+      <a href="#"
+         class="menu-item {% if s.term in active_subjects %}active{% endif %}"
+         data-subject="{{ s.term }}"
+         onclick="toggleSubject(this)">
+        {{ s.display }} ({{ s.count }})
+      </a>
+    {% endfor %}
   </div>
-</div>
+  <button class="see-all-btn" onclick="openSeeAllModal(this)">See All</button>
+
+  <!-- See All Modal -->
+  <div id="seeAllModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeSeeAllModal()">&times;</span>
+      <div id="modal-title">All Items</div>
+      <div class="modal-body" id="seeAllList"></div>
+    </div>
+  </div>
 
   <!-- Resource Type Section -->
   <div class="section-title">Resource Type</div>
@@ -125,37 +124,37 @@
   <!-- Search Container -->
   <div class="search-container">
     <form action="{% url 'user_search' %}" method="get" class="search-form" data-suggest-url="/suggest/" autocomplete="off">
-    <div class="search-box-wrap">
-      <input type="text" class="search-box" name="q" placeholder="Search Here...." value="{{ request.GET.q|default:'' }}">
-      <div class="typeahead" aria-live="polite"></div>
-    </div>
+      <div class="search-box-wrap">
+        <input type="text" class="search-box" name="q" placeholder="Search Here...." value="{{ request.GET.q|default:'' }}">
+        <div class="typeahead" aria-live="polite"></div>
+      </div>
 
-    <select class="dropdown" name="field">
-      <option value="allFields" {% if request.GET.field|default:'allFields' == 'allFields' %}selected{% endif %}>All Fields</option>
-      <option value="title"     {% if request.GET.field == 'title' %}selected{% endif %}>Title</option>
-      <option value="author"    {% if request.GET.field == 'author' %}selected{% endif %}>Author</option>
-      <option value="keywords"  {% if request.GET.field == 'keywords' %}selected{% endif %}>Keywords</option>
-    </select>
-
+      <select class="dropdown" name="field">
+        <option value="allFields" {% if request.GET.field|default:'allFields' == 'allFields' %}selected{% endif %}>All Fields</option>
+        <option value="title"     {% if request.GET.field == 'title' %}selected{% endif %}>Title</option>
+        <option value="author"    {% if request.GET.field == 'author' %}selected{% endif %}>Author</option>
+        <option value="keywords"  {% if request.GET.field == 'keywords' %}selected{% endif %}>Keywords</option>
+      </select>
 
       <!-- Preserve current sort and filters -->
       <input type="hidden" name="sort" value="{{ request.GET.sort|default:sort_option }}">
       <input type="hidden" name="active_categories" value="{{ request.GET.active_categories }}">
       <input type="hidden" name="active_resource_types" value="{{ request.GET.active_resource_types }}">
+      <input type="hidden" name="active_subjects" value="{{ request.GET.active_subjects }}">
       <input type="hidden" name="min_year" value="{{ request.GET.min_year }}">
       <input type="hidden" name="max_year" value="{{ request.GET.max_year }}">
 
       <button class="search-button" type="submit">
-      <img src="{% static 'images/user_search_homepage2.png' %}" alt="Search Icon">
-    </button>
-  </form>
-</div>
+        <img src="{% static 'images/user_search_homepage2.png' %}" alt="Search Icon">
+      </button>
+    </form>
+  </div>
 </header>
 
 <!-- Pagination Above -->
 <div class="pagination" id="pagination-top">
   {% if books.has_previous %}
-    <a href="?page={{ books.previous_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+    <a href="?page={{ books.previous_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
       <strong>&lt;</strong>
     </a>
   {% else %}
@@ -163,13 +162,13 @@
   {% endif %}
 
   {% for i in books.paginator.page_range %}
-    <a href="?page={{ i }}&sort={{ sort_option }}&q={{ request.GET.q }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="page-item {% if i == books.number %}active{% endif %}">
+    <a href="?page={{ i }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="page-item {% if i == books.number %}active{% endif %}">
       {{ i }}
     </a>
   {% endfor %}
 
   {% if books.has_next %}
-    <a href="?page={{ books.next_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+    <a href="?page={{ books.next_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
       <strong>&gt;</strong>
     </a>
   {% else %}
@@ -177,14 +176,24 @@
   {% endif %}
 </div>
 
-
-<!-- Always render the div, so it can be styled properly -->
+<!-- Results label -->
 <div class="search-results-label">
   {% if request.GET.q %}
     Results for: "<strong>{{ request.GET.q }}</strong>"
   {% endif %}
 </div>
 
+{% if also_searching and also_searching|length %}
+<div class="also-searching" style="margin: 6px 0 14px 300px;">
+  Also searching for:
+  {% for t in also_searching|slice:":5" %}
+    <span class="also-term">{{ t }}</span>{% if not forloop.last %}, {% endif %}
+  {% endfor %}
+  {% if also_searching|length > 5 %}
+    , <a href="#" class="also-see-all" onclick="openAlsoSearchAll(event)"><strong><u>see all</u></strong></a>
+  {% endif %}
+</div>
+{% endif %}
 
 <!-- Main Content -->
 <div class="main-content">
@@ -194,14 +203,15 @@
         <h2 class="book-title">{{ book.title }}</h2>
         <p><strong>Author:</strong> {{ book.author }}</p>
         <p><strong>Published Year:</strong> {{ book.year_of_publication }}</p>
-        <p><strong>Keywords:</strong> 
-          <div class="keywords-container">
-            <span class="keywords" id="keywords-{{ book.book_id }}">
-              {{ book.primary_keyword }}
-            </span>
-            <button class="kw_see_more" onclick="toggleKeywords({{ book.book_id }})">See More</button>
-          </div>
-        </p>
+
+        <p><strong>Keywords:</strong></p>
+        <div class="keywords-container">
+          <span class="keywords" id="keywords-{{ book.book_id }}">
+            {{ book.primary_keyword }}
+          </span>
+          <button class="kw_see_more" onclick="toggleKeywords({{ book.book_id }}, this)">See More</button>
+        </div>
+
         <a href="{% url 'user_viewinfo' %}?book_id={{ book.book_id }}{% if qs_no_book %}&{{ qs_no_book }}{% endif %}">
           <button class="view-info-btn">View Information</button>
         </a>
@@ -217,7 +227,30 @@
   {% endfor %}
 </div>
 
+<!-- Pagination Below (NEW) -->
+<div class="pagination" id="pagination-bottom">
+  {% if books.has_previous %}
+    <a href="?page={{ books.previous_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+      <strong>&lt;</strong>
+    </a>
+  {% else %}
+    <span class="nav-button disabled"><strong>&lt;</strong></span>
+  {% endif %}
 
+  {% for i in books.paginator.page_range %}
+    <a href="?page={{ i }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="page-item {% if i == books.number %}active{% endif %}">
+      {{ i }}
+    </a>
+  {% endfor %}
+
+  {% if books.has_next %}
+    <a href="?page={{ books.next_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+      <strong>&gt;</strong>
+    </a>
+  {% else %}
+    <span class="nav-button disabled"><strong>&gt;</strong></span>
+  {% endif %}
+</div>
 
 <!-- ✅ Add this hidden div to pass data to JavaScript -->
 <div id="pagination-data"
@@ -228,88 +261,44 @@
      style="display: none;">
 </div>
 
-
 <!-- Footer -->
 <footer>
   <p class="footer-text">LIRAYA: Library Information Resource and Access</p>
   <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
 </footer>
-<script src="{% static 'script/user_script.js' %}"></script>
-<script>
-// Ensure active categories are applied on page load
-document.addEventListener('DOMContentLoaded', function() {
-  // Safely handle the active categories in the URL
-  const activeCategories = "{{ request.GET.active_categories|default:'' }}".split(',').filter(Boolean);
 
-  // Loop through the menu items and add the active class to the selected categories
-  const menuItems = document.querySelectorAll('.menu-item');
-  menuItems.forEach(function(item) {
-    const category = item.textContent.trim().split(' ')[0];
-    if (activeCategories.includes(category)) {
-      item.classList.add('active');
-    }
+<script src="{% static 'script/user_script.js' %}"></script>
+
+<script>
+// Active categories on load (use data attribute, not text split)
+document.addEventListener('DOMContentLoaded', function() {
+  const params = new URLSearchParams(window.location.search);
+  const activeCategories = (params.get('active_categories') || '').split(',').filter(Boolean);
+  document.querySelectorAll('.menu-item[data-category]').forEach(function(item) {
+    const val = item.getAttribute('data-category');
+    if (activeCategories.includes(val)) item.classList.add('active');
   });
 });
 </script>
+
 <script>
-function toggleShelfCategory(event, category) {
-  event.preventDefault();
-
-  // Get current active categories from URL
-  const params = new URLSearchParams(window.location.search);
-  let active = params.get('active_categories');
-  let activeList = active ? active.split(',').filter(Boolean) : [];
-
-  // Toggle the clicked category
-  if (activeList.includes(category)) {
-    activeList = activeList.filter(cat => cat !== category);
-  } else {
-    activeList.push(category);
-  }
-
-  // Update the URL parameter
-  params.set('active_categories', activeList.join(','));
-
-  // Always reset to page 1 when changing filters
-  params.set('page', 1);
-
-  // Reload with new params
-  window.location.search = params.toString();
-}
-
-function toggleKeywords(bookId) {
-  const keywords = document.getElementById('keywords-' + bookId);
-  const button = document.querySelector('.kw_see_more');
-
-  // Toggle the expanded class
-  keywords.classList.toggle('keywords-expanded');
-
-  // Change the button text based on state
-  if (keywords.classList.contains('keywords-expanded')) {
-    button.textContent = 'See Less';
-  } else {
-    button.textContent = 'See More';
-  }
-}
-// Open the modal and show correct content
-function toggleMenu(button) {
+// Modal opener (no conflict with user_script.js helpers)
+function openSeeAllModal(button) {
   const modal = document.getElementById("seeAllModal");
   const modalTitle = document.getElementById("modal-title");
   const modalBody = document.getElementById("seeAllList");
 
-  // Detect which section the button belongs to
   const section = button.previousElementSibling.previousElementSibling.textContent.trim();
-
-  modal.style.display = "flex"; // Show modal
+  modal.style.display = "flex";
 
   if (section === "Shelf Category") {
     modalTitle.textContent = "All Shelf Categories";
     modalBody.innerHTML = `
       {% for category in shelf_categories %}
         <a href="#"
-            class="menu-item {% if category.shelf_category in active_categories %}active{% endif %}"
-            data-category="{{ category.shelf_category }}"
-            onclick="toggleActive(this)">
+           class="menu-item {% if category.shelf_category in active_categories %}active{% endif %}"
+           data-category="{{ category.shelf_category }}"
+           onclick="toggleActive(this)">
           {{ category.shelf_category }} ({{ category.count }})
         </a>
       {% endfor %}
@@ -319,32 +308,44 @@ function toggleMenu(button) {
     modalBody.innerHTML = `
       {% for s in subjects %}
         <a href="#"
-            class="menu-item {% if s.term in active_subjects %}active{% endif %}"
-            data-subject="{{ s.term }}"
-            onclick="toggleSubject(this)">
+           class="menu-item {% if s.term in active_subjects %}active{% endif %}"
+           data-subject="{{ s.term }}"
+           onclick="toggleSubject(this)">
           {{ s.display }} ({{ s.count }})
         </a>
       {% endfor %}
     `;
   }
 
-  document.body.style.overflow = "hidden"; // Disable background scroll
+  document.body.style.overflow = "hidden";
 }
 
-// Close modal
 function closeSeeAllModal() {
   const modal = document.getElementById("seeAllModal");
   modal.style.display = "none";
   document.body.style.overflow = "auto";
 }
 
-// Optional: Close modal when clicking outside of the box
 window.addEventListener("click", function(event) {
   const modal = document.getElementById("seeAllModal");
-  if (event.target === modal) {
-    closeSeeAllModal();
-  }
+  if (event.target === modal) closeSeeAllModal();
 });
+
+// Open "Also searching for" in the same modal
+function openAlsoSearchAll(e){
+  e.preventDefault();
+  const modal = document.getElementById("seeAllModal");
+  const modalTitle = document.getElementById("modal-title");
+  const modalBody = document.getElementById("seeAllList");
+  modalTitle.textContent = "Also searching for";
+  modalBody.innerHTML = `
+    {% for t in also_searching %}
+      <span class="also-term">{{ t }}</span>{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+  `;
+  modal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
 </script>
 
 {% if books.paginator.count == 0 %}
