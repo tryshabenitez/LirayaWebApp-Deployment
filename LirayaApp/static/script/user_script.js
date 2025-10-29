@@ -165,244 +165,213 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ===== LIRAYA Guided Tour =====
+// ===== LIRAYA Guided Tour (non-destructive highlight) =====
 (function() {
-  const HIDE_KEY = 'liraya_hide_sort_tour'; // if you want a “don’t show again” later
-
-  // Steps config
   const steps = [
     {
-      id: 'sorting',
-      title: 'Sorting options',
-      target: '#sidebar-sort',
-      message: 'Pick how results are ordered: Relevance, Title (Alphabetical), Author, Newest→Oldest, or Oldest→Newest. Your current search & filters are kept.',
-      placement: 'right'
+      id:'sorting', title:'Sorting options', target:'#sidebar-sort',
+      message:'Pick how results are ordered: Relevance, Title (Alphabetical), Author, Newest→Oldest, or Oldest→Newest. Your current search & filters are kept.',
+      placement:'right'
     },
     {
-      id: 'shelf',
-      title: 'Shelf Category',
-      target: '#sec-shelf',
-      message: 'Filter results by shelf category. Click items to toggle; selected items get highlighted.',
-      placement: 'right',
-      // highlight the list under the title
-      getHighlightEl: (anchor) => anchor?.nextElementSibling
+      id:'shelf', title:'Shelf Category', target:'#sec-shelf',
+      message:'Filter results by shelf category. Click items to toggle; selected items get highlighted.',
+      placement:'right',
+      highlightTarget: (anchor)=> anchor?.nextElementSibling || anchor
     },
     {
-      id: 'subjects',
-      title: 'Subjects / Keywords',
-      target: '#sec-subjects',
-      message: 'Narrow by subjects/keywords. Use “See All” to expand, click to toggle multiple subjects.',
-      placement: 'right',
-      getHighlightEl: (anchor) => anchor?.nextElementSibling
+      id:'subjects', title:'Subjects / Keywords', target:'#sec-subjects',
+      message:'Narrow by subjects/keywords. Use “See All” to expand, click to toggle multiple subjects.',
+      placement:'right',
+      highlightTarget: (anchor)=> anchor?.nextElementSibling || anchor
     },
     {
-      id: 'year',
-      title: 'Year range',
-      target: '#sec-year',
-      message: 'Type Min/Max year (1900…current year), or use the spinner to open a scrollable list. Click “Apply Year Filter” to apply.',
-      placement: 'right',
-      getHighlightEl: (anchor) => {
-        // highlight both Min & Max rows if present
-        const wrap = document.createElement('div');
-        const min = anchor?.nextElementSibling;
-        const max = min?.nextElementSibling;
-        if (!min) return anchor;
-        wrap.style.position = 'relative';
-        // temporary wrapper to highlight two blocks together
-        min.parentNode.insertBefore(wrap, min);
-        wrap.appendChild(min);
-        if (max) wrap.appendChild(max);
-        wrap.__lirayaTempWrap = true;
-        return wrap;
-      },
-      cleanup: (anchor, hl) => {
-        // unwrap temporary highlight wrapper
-        if (hl && hl.__lirayaTempWrap) {
-          while (hl.firstChild) anchor.parentNode.insertBefore(hl.firstChild, hl);
-          hl.remove();
-        }
+      id:'year', title:'Year range', target:'#sec-year',
+      message:'Type Min/Max year (1900…current year) or open the scrollable picker. Click “Apply Year Filter” to apply.',
+      placement:'right',
+      // Special: highlight union of min + max rows if present
+      getCustomRect: () => {
+        const minEl = document.getElementById('min-year')?.closest('.year-input');
+        const maxEl = document.getElementById('max-year')?.closest('.year-input');
+        const btnEl = document.querySelector('.year-button');
+        const rects = [minEl, maxEl, btnEl].filter(Boolean).map(el => el.getBoundingClientRect());
+        if (!rects.length) return null;
+        const pad = 6;
+        const left = Math.max(0, Math.min(...rects.map(r => r.left)) - pad);
+        const top  = Math.max(0, Math.min(...rects.map(r => r.top)) - pad);
+        const right = Math.min(window.innerWidth, Math.max(...rects.map(r => r.right)) + pad);
+        const bottom= Math.min(window.innerHeight, Math.max(...rects.map(r => r.bottom)) + pad);
+        return { left, top, width: right-left, height: bottom-top };
       }
     },
     {
-      id: 'resource',
-      title: 'Resource Type',
-      target: '#sec-resource',
-      message: 'Filter by resource type (e.g., Book, Thesis, etc.). You can select multiple.',
-      placement: 'right',
-      getHighlightEl: (anchor) => anchor?.nextElementSibling
+      id:'resource', title:'Resource Type', target:'#sec-resource',
+      message:'Filter by resource type (e.g., Book, Thesis, etc.). You can select multiple.',
+      placement:'right',
+      highlightTarget: (anchor)=> anchor?.nextElementSibling || anchor
     },
     {
-      id: 'pagination',
-      title: 'Pagination',
-      target: '#pagination-top',
-      message: 'Use these controls to move between result pages. The current sorting and filters remain applied.',
-      placement: 'bottom'
+      id:'pagination', title:'Pagination', target:'#pagination-top',
+      message:'Use these controls to move between result pages. The current sorting and filters remain applied.',
+      placement:'bottom'
     }
   ];
 
   let current = -1;
-  let overlayEl = null;
-  let tooltipEl = null;
-  let highlighted = null;
-  let highlightedCleanup = null;
+  let overlayEl, tooltipEl, ringEl;
 
-  // Public entry
   window.startLirayaTour = function() {
-    // if (localStorage.getItem(HIDE_KEY) === '1') return; // enable if you add a checkbox later
-    buildChrome();
-    nextStep();
+    ensureChrome();
+    goTo(0);
   };
 
-  function buildChrome() {
-    if (!overlayEl) {
+  function ensureChrome(){
+    if (!overlayEl){
       overlayEl = document.createElement('div');
-      overlayEl.id = 'liraya-tour-overlay';
-      overlayEl.style.display = 'none';
+      overlayEl.id='liraya-tour-overlay'; overlayEl.style.display='none';
+      overlayEl.addEventListener('click', endTour);
       document.body.appendChild(overlayEl);
     }
-    if (!tooltipEl) {
+    if (!ringEl){
+      ringEl = document.createElement('div');
+      ringEl.id='liraya-tour-ring'; ringEl.style.display='none';
+      document.body.appendChild(ringEl);
+    }
+    if (!tooltipEl){
       tooltipEl = document.createElement('div');
-      tooltipEl.id = 'liraya-tour-tooltip';
+      tooltipEl.id='liraya-tour-tooltip'; tooltipEl.style.display='none';
       tooltipEl.innerHTML = `
         <button class="liraya-tour-close" aria-label="Close" type="button">×</button>
         <div class="liraya-tour-title"></div>
         <div class="liraya-tour-body"></div>
-        <div class="liraya-tour-actions">
-          <div class="left">
-            <button class="liraya-tour-btn liraya-tour-secondary" type="button" data-act="prev">Back</button>
-          </div>
-          <div class="right">
-            <button class="liraya-tour-btn" type="button" data-act="next">Next</button>
-          </div>
-        </div>
-      `;
+        <div class="liraya-tour-actions" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;">
+          <button class="liraya-tour-btn liraya-tour-secondary" type="button" data-act="prev">Back</button>
+          <button class="liraya-tour-btn" type="button" data-act="next">Next</button>
+        </div>`;
       document.body.appendChild(tooltipEl);
-
       tooltipEl.querySelector('.liraya-tour-close').addEventListener('click', endTour);
-      tooltipEl.querySelector('[data-act="prev"]').addEventListener('click', prevStep);
-      tooltipEl.querySelector('[data-act="next"]').addEventListener('click', nextStep);
-
-      // Keep tooltip aligned on scroll/resize
-      window.addEventListener('resize', reposition, { passive: true });
+      tooltipEl.querySelector('[data-act="prev"]').addEventListener('click', ()=> goTo(current-1));
+      tooltipEl.querySelector('[data-act="next"]').addEventListener('click', ()=> goTo(current+1));
+      window.addEventListener('resize', reposition, {passive:true});
       document.addEventListener('scroll', reposition, true);
+      document.addEventListener('keydown', (e)=>{ if (e.key==='Escape') endTour(); });
     }
   }
 
-  function endTour() {
-    if (highlighted) highlighted.classList.remove('liraya-tour-highlight');
-    if (highlightedCleanup) {
-      highlightedCleanup();
-      highlightedCleanup = null;
-    }
-    highlighted = null;
-
-    if (overlayEl) overlayEl.style.display = 'none';
-    if (tooltipEl) tooltipEl.style.display = 'none';
+  function endTour(){
+    if (overlayEl) overlayEl.style.display='none';
+    if (tooltipEl) tooltipEl.style.display='none';
+    if (ringEl)    ringEl.style.display='none';
     current = -1;
   }
 
-  function prevStep() {
-    showStep(current - 1);
-  }
-
-  function nextStep() {
-    showStep(current + 1);
-  }
-
-  function showStep(i) {
-    // cleanup previous
-    if (highlighted) highlighted.classList.remove('liraya-tour-highlight');
-    if (highlightedCleanup) { highlightedCleanup(); highlightedCleanup = null; }
-    highlighted = null;
-
-    if (i < 0) return endTour();
-    if (i >= steps.length) return endTour();
+  function goTo(i){
+    if (i < 0 || i >= steps.length) return endTour();
     current = i;
-
     const s = steps[i];
+
     const anchor = document.querySelector(s.target);
-    if (!anchor) {
-      // skip missing targets gracefully
-      return nextStep();
+    if (!anchor) return goTo(i+1); // skip missing
+
+    const hlTarget = (typeof s.highlightTarget==='function' ? s.highlightTarget(anchor) : anchor) || anchor;
+
+    // Compute highlight rectangle
+    let rect;
+    if (typeof s.getCustomRect === 'function'){
+      rect = s.getCustomRect();
+    }
+    if (!rect){
+      const r = hlTarget.getBoundingClientRect();
+      const pad = 6;
+      rect = {
+        left: Math.max(0, r.left - pad),
+        top:  Math.max(0, r.top  - pad),
+        width: Math.min(window.innerWidth, r.right + pad) - Math.max(0, r.left - pad),
+        height: Math.min(window.innerHeight, r.bottom + pad) - Math.max(0, r.top - pad)
+      };
     }
 
-    // compute highlight element
-    let hlEl = anchor;
-    if (typeof s.getHighlightEl === 'function') {
-      const maybe = s.getHighlightEl(anchor);
-      if (maybe) hlEl = maybe;
-    }
+    // Show chrome
+    overlayEl.style.display='block';
+    ringEl.style.display='block';
+    tooltipEl.style.display='block';
 
-    // mark highlight
-    hlEl.classList.add('liraya-tour-highlight');
-    highlighted = hlEl;
+    // Position ring
+    ringEl.style.left   = `${rect.left}px`;
+    ringEl.style.top    = `${rect.top}px`;
+    ringEl.style.width  = `${rect.width}px`;
+    ringEl.style.height = `${rect.height}px`;
 
-    // allow a custom cleanup (like unwrap) later
-    if (typeof s.cleanup === 'function') {
-      highlightedCleanup = () => s.cleanup(anchor, hlEl);
-    }
-
-    // ensure in view
-    hlEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // overlay & tooltip visible
-    overlayEl.style.display = 'block';
-    tooltipEl.style.display = 'block';
-
-    // set content
+    // Content
     tooltipEl.querySelector('.liraya-tour-title').textContent = s.title;
-    tooltipEl.querySelector('.liraya-tour-body').textContent = s.message;
+    tooltipEl.querySelector('.liraya-tour-body').textContent  = s.message;
 
-    // prev/next button states
-    tooltipEl.querySelector('[data-act="prev"]').disabled = (i === 0);
-    tooltipEl.querySelector('[data-act="next"]').textContent = (i === steps.length - 1) ? 'Finish' : 'Next';
+    // Buttons
+    tooltipEl.querySelector('[data-act="prev"]').disabled = (i===0);
+    tooltipEl.querySelector('[data-act="next"]').textContent = (i===steps.length-1) ? 'Finish' : 'Next';
 
-    // position tooltip
-    positionTooltipAround(hlEl, s.placement || 'bottom');
+    // Position tooltip
+    positionTooltipAround(rect, s.placement || 'bottom');
+
+    // Scroll into view
+    hlTarget.scrollIntoView({behavior:'smooth', block:'center'});
   }
 
-  function reposition() {
+  function reposition(){
     if (current < 0) return;
     const s = steps[current];
     const anchor = document.querySelector(s.target);
-    if (!anchor || !tooltipEl) return;
+    if (!anchor) return;
 
-    let hlEl = anchor;
-    if (typeof s.getHighlightEl === 'function') {
-      const maybe = s.getHighlightEl(anchor);
-      if (maybe) hlEl = maybe;
+    const hlTarget = (typeof s.highlightTarget==='function' ? s.highlightTarget(anchor) : anchor) || anchor;
+
+    let rect;
+    if (typeof s.getCustomRect === 'function'){
+      rect = s.getCustomRect();
     }
-    positionTooltipAround(hlEl, s.placement || 'bottom');
+    if (!rect){
+      const r = hlTarget.getBoundingClientRect();
+      const pad = 6;
+      rect = {
+        left: Math.max(0, r.left - pad),
+        top:  Math.max(0, r.top  - pad),
+        width: Math.min(window.innerWidth, r.right + pad) - Math.max(0, r.left - pad),
+        height: Math.min(window.innerHeight, r.bottom + pad) - Math.max(0, r.top - pad)
+      };
+    }
+
+    ringEl.style.left   = `${rect.left}px`;
+    ringEl.style.top    = `${rect.top}px`;
+    ringEl.style.width  = `${rect.width}px`;
+    ringEl.style.height = `${rect.height}px`;
+
+    positionTooltipAround(rect, s.placement || 'bottom');
   }
 
-  function positionTooltipAround(el, placement) {
-    const r = el.getBoundingClientRect();
+  function positionTooltipAround(r, placement){
     const t = tooltipEl.getBoundingClientRect();
+    let top = r.top + r.height + 8;
+    let left = r.left + (r.width - t.width)/2;
 
-    // default: below centered
-    let top = r.bottom + 8;
-    let left = r.left + (r.width - t.width) / 2;
-
-    if (placement === 'right') {
-      top = r.top + (r.height - t.height) / 2;
-      left = r.right + 12;
-    } else if (placement === 'left') {
-      top = r.top + (r.height - t.height) / 2;
+    if (placement === 'right'){
+      top = r.top + (r.height - t.height)/2;
+      left = r.left + r.width + 12;
+    } else if (placement === 'left'){
+      top = r.top + (r.height - t.height)/2;
       left = r.left - t.width - 12;
-    } else if (placement === 'top') {
+    } else if (placement === 'top'){
       top = r.top - t.height - 8;
-      left = r.left + (r.width - t.width) / 2;
-    } // 'bottom' default
+      left = r.left + (r.width - t.width)/2;
+    }
 
-    // keep on screen a bit
     const pad = 8;
-    top = Math.max(pad, Math.min(top, window.innerHeight - t.height - pad));
-    left = Math.max(pad, Math.min(left, window.innerWidth - t.width - pad));
-
-    tooltipEl.style.top = `${top}px`;
+    top  = Math.max(pad, Math.min(top,  window.innerHeight - t.height - pad));
+    left = Math.max(pad, Math.min(left, window.innerWidth  - t.width  - pad));
+    tooltipEl.style.top  = `${top}px`;
     tooltipEl.style.left = `${left}px`;
   }
 })();
+
 
 
 // ===== Pagination state =====
