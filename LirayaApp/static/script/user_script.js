@@ -408,14 +408,32 @@ function updateResultsSummary() {
 }
 
 // Change page (AJAX)
-function changePage(page) {
+// Replace your changePage with this
+function changePage(page, { push = true } = {}) {
   if (page < 1) page = 1;
   if (page > totalPages) page = totalPages;
 
   currentPage = page;
+
+  // Sync URL ?page=...
+  if (push) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', String(page));
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    history.pushState({ page }, '', newUrl);
+  }
+
   updatePagination();
   fetchBooks(page);
 }
+
+// Handle browser back/forward to the correct page (no extra push)
+window.addEventListener('popstate', () => {
+  const params = new URLSearchParams(location.search);
+  const p = parseInt(params.get('page') || '1', 10);
+  changePage(isNaN(p) ? 1 : p, { push: false });
+});
+
 
 // Build/update pagination UI (top and optional bottom)
 function updatePagination() {
