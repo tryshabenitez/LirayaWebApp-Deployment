@@ -408,10 +408,12 @@ function updateResultsSummary() {
 }
 
 // Change page (AJAX)
-// Replace your changePage with this
 function changePage(page, { push = true } = {}) {
   if (page < 1) page = 1;
   if (page > totalPages) page = totalPages;
+
+  // Don't reload if it's the same page
+  if (page === currentPage) return;
 
   currentPage = page;
 
@@ -423,8 +425,8 @@ function changePage(page, { push = true } = {}) {
     history.pushState({ page }, '', newUrl);
   }
 
-  updatePagination();
   fetchBooks(page);
+  // We'll update pagination after the content is loaded
 }
 
 // Handle browser back/forward to the correct page (no extra push)
@@ -448,20 +450,40 @@ function updatePagination() {
     // Clear
     paginationElement.innerHTML = '';
 
-    // Prev
-    const prevButton = document.createElement('button');
-    prevButton.className = 'nav-button';
-    prevButton.textContent = '<';
-    prevButton.disabled = currentPage === 1;
-    prevButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      changePage(currentPage - 1);
-    });
-    paginationElement.appendChild(prevButton);
+    // First page
+    if (currentPage > 1) {
+      const firstButton = document.createElement('button');
+      firstButton.className = 'nav-button';
+      firstButton.textContent = '<<';
+      firstButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        changePage(1);
+      });
+      paginationElement.appendChild(firstButton);
+    }
 
-    // Pages (±2)
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
+    // Prev
+    if (currentPage > 1) {
+      const prevButton = document.createElement('button');
+      prevButton.className = 'nav-button';
+      prevButton.textContent = '<';
+      prevButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        changePage(currentPage - 1);
+      });
+      paginationElement.appendChild(prevButton);
+    }
+
+    // Calculate page range to show 10 pages
+    let startPage = Math.max(1, currentPage - 4);
+    let endPage = Math.min(totalPages, startPage + 9);
+    
+    // Adjust start if we're near the end
+    if (endPage - startPage < 9) {
+      startPage = Math.max(1, endPage - 9);
+    }
+
+    // Pages
     for (let page = startPage; page <= endPage; page++) {
       const a = document.createElement('a');
       a.href = '#';
@@ -476,15 +498,28 @@ function updatePagination() {
     }
 
     // Next
-    const nextButton = document.createElement('button');
-    nextButton.className = 'nav-button';
-    nextButton.textContent = '>';
-    nextButton.disabled = currentPage === totalPages;
-    nextButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      changePage(currentPage + 1);
-    });
-    paginationElement.appendChild(nextButton);
+    if (currentPage < totalPages) {
+      const nextButton = document.createElement('button');
+      nextButton.className = 'nav-button';
+      nextButton.textContent = '>';
+      nextButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        changePage(currentPage + 1);
+      });
+      paginationElement.appendChild(nextButton);
+    }
+
+    // Last page
+    if (currentPage < totalPages) {
+      const lastButton = document.createElement('button');
+      lastButton.className = 'nav-button';
+      lastButton.textContent = '>>';
+      lastButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        changePage(totalPages);
+      });
+      paginationElement.appendChild(lastButton);
+    }
   });
 
   // ✅ Reveal only after JS finished rendering
@@ -500,17 +535,31 @@ function fetchBooks(page) {
   params.set('page', page);
   const url = `${window.location.pathname}?${params.toString()}`;
 
+  // Replace book list with loading state
+  const curMain = document.querySelector('.main-content');
+  if (curMain) {
+    const currentScroll = window.scrollY;
+    const currentHeight = curMain.offsetHeight;
+    curMain.style.minHeight = `${currentHeight}px`;
+    window.scrollTo(0, currentScroll);
+  }
+
   fetch(url)
-    .then(response => response.text())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.text();
+    })
     .then(html => {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
 
       // Replace book list
       const newMain = tempDiv.querySelector('.main-content');
-      const curMain = document.querySelector('.main-content');
       if (newMain && curMain) {
         curMain.innerHTML = newMain.innerHTML;
+        curMain.style.minHeight = '';
       }
 
       // Update pagination data (current/total/count/per-page) from new HTML
@@ -531,6 +580,8 @@ function fetchBooks(page) {
     })
     .catch(error => {
       console.error('Error fetching books:', error);
+      // Restore pagination on error
+      updatePagination();
     });
 }
 
