@@ -162,30 +162,6 @@
   </div>
 </header>
 
-<!-- Pagination Above -->
-<div class="pagination" id="pagination-top">
-  {% if books.has_previous %}
-    <a href="?page={{ books.previous_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
-      <strong>&lt;</strong>
-    </a>
-  {% else %}
-    <span class="nav-button disabled"><strong>&lt;</strong></span>
-  {% endif %}
-
-  {% for i in books.paginator.page_range %}
-    <a href="?page={{ i }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="page-item {% if i == books.number %}active{% endif %}">
-      {{ i }}
-    </a>
-  {% endfor %}
-
-  {% if books.has_next %}
-    <a href="?page={{ books.next_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
-      <strong>&gt;</strong>
-    </a>
-  {% else %}
-    <span class="nav-button disabled"><strong>&gt;</strong></span>
-  {% endif %}
-</div>
 
 <!-- Results label -->
 <div class="search-results-label">
@@ -236,6 +212,31 @@
       </div>
     </div>
   {% endfor %}
+</div>
+
+<!-- Pagination Above -->
+<div class="pagination" id="pagination-top">
+  {% if books.has_previous %}
+    <a href="?page={{ books.previous_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+      <strong>&lt;</strong>
+    </a>
+  {% else %}
+    <span class="nav-button disabled"><strong>&lt;</strong></span>
+  {% endif %}
+
+  {% for i in books.paginator.page_range %}
+    <a href="?page={{ i }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="page-item {% if i == books.number %}active{% endif %}">
+      {{ i }}
+    </a>
+  {% endfor %}
+
+  {% if books.has_next %}
+    <a href="?page={{ books.next_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
+      <strong>&gt;</strong>
+    </a>
+  {% else %}
+    <span class="nav-button disabled"><strong>&gt;</strong></span>
+  {% endif %}
 </div>
 
 <!-- ✅ Add this hidden div to pass data to JavaScript -->
