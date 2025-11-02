@@ -1627,7 +1627,7 @@ header .dropdown:focus {
 }
 
 /* optional: make it easy to tweak */
-:root { --spin-speed: 3.2s; }
+:root { --spin-speed: 2.2s; }
 #liraya-loading img { animation: liraya-spin var(--spin-speed) linear infinite; }
 
 /* optional a11y */
