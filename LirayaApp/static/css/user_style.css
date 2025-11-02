@@ -1601,3 +1601,37 @@ header .dropdown:focus {
 
 
 .pagination { visibility: hidden; }
+
+
+/* ===== Loading overlay ===== */
+#liraya-loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;            /* toggled via JS */
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+#liraya-loading .box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+#liraya-loading img {
+  width: 86px;
+  height: 86px;
+  animation: liraya-spin 1s linear infinite;
+  image-rendering: -webkit-optimize-contrast;
+}
+#liraya-loading .label {
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+}
+@keyframes liraya-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
