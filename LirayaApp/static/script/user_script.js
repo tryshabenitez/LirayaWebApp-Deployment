@@ -671,34 +671,29 @@ function toggleActive(element) {
   const params = new URLSearchParams(window.location.search);
 
   if (element.hasAttribute('data-resource-type')) {
-    // Resource Type facet
     const value = element.getAttribute('data-resource-type');
-    let list = params.get('active_resource_types');
-    let arr = list ? list.split(',').filter(Boolean) : [];
-
-    if (element.classList.contains('active')) {
-      if (!arr.includes(value)) arr.push(value);
-    } else {
-      arr = arr.filter(v => v !== value);
-    }
-    params.set('active_resource_types', arr.join(','));
+    const set = new Set(params.getAll('active_resource_types'));
+    if (element.classList.contains('active')) set.add(value); else set.delete(value);
+    params.delete('active_resource_types');
+    [...set].forEach(v => params.append('active_resource_types', v));
   } else if (element.hasAttribute('data-category')) {
-    // Shelf Category facet (DO NOT split words)
     const value = element.getAttribute('data-category');
-    let list = params.get('active_categories');
-    let arr = list ? list.split(',').filter(Boolean) : [];
-
-    if (element.classList.contains('active')) {
-      if (!arr.includes(value)) arr.push(value);
-    } else {
-      arr = arr.filter(v => v !== value);
-    }
-    params.set('active_categories', arr.join(','));
+    const set = new Set(params.getAll('active_categories'));
+    if (element.classList.contains('active')) set.add(value); else set.delete(value);
+    params.delete('active_categories');
+    [...set].forEach(v => params.append('active_categories', v));
+  } else if (element.hasAttribute('data-subject')) {
+    const value = element.getAttribute('data-subject');
+    const set = new Set(params.getAll('active_subjects'));
+    if (element.classList.contains('active')) set.add(value); else set.delete(value);
+    params.delete('active_subjects');
+    [...set].forEach(v => params.append('active_subjects', v));
   }
 
   params.set('page', 1);
   window.location.search = params.toString();
 }
+
 
 function toggleResourceType(event, resourceType) {
   event.preventDefault();
