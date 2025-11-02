@@ -198,6 +198,10 @@ def user_search(request):
     active_categories = request.GET.get('active_categories', '')
     active_resource_types = request.GET.get('active_resource_types', '')
     active_subjects = request.GET.get('active_subjects', '')
+    # Multiple-select facets: getlist (NOT comma-split strings)
+    cats  = request.GET.getlist('active_categories') or []
+    rtypes = request.GET.getlist('active_resource_types') or []
+    subs   = request.GET.getlist('active_subjects') or []
     # cast years defensively
     def _to_int_or_none(v):
         try:
