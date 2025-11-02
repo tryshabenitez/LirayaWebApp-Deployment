@@ -528,27 +528,56 @@ function updatePagination() {
   });
 }
 
+// ===== Loading overlay helpers =====
+function ensureLoadingOverlay() {
+  let el = document.getElementById('liraya-loading');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'liraya-loading';
+    el.innerHTML = `
+      <div class="box">
+        <img src="/static/images/usericon.png" alt="Loading">
+        <div class="label">LOADING</div>
+      </div>
+    `;
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function showLoadingOverlay() {
+  const el = ensureLoadingOverlay();
+  el.style.display = 'flex';
+  // Prevent background scroll while overlay is visible
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+}
+function hideLoadingOverlay() {
+  const el = document.getElementById('liraya-loading');
+  if (el) el.style.display = 'none';
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+}
+
 
 // Fetch new page via AJAX while preserving current query params
 function fetchBooks(page) {
+  // 👉 show overlay immediately on page change
+  showLoadingOverlay();
+
   const params = new URLSearchParams(window.location.search);
   params.set('page', page);
   const url = `${window.location.pathname}?${params.toString()}`;
 
-  // Replace book list with loading state
+  // Keep layout from jumping while loading (optional nicety)
   const curMain = document.querySelector('.main-content');
   if (curMain) {
-    const currentScroll = window.scrollY;
     const currentHeight = curMain.offsetHeight;
     curMain.style.minHeight = `${currentHeight}px`;
-    window.scrollTo(0, currentScroll);
   }
 
   fetch(url)
     .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return response.text();
     })
     .then(html => {
@@ -562,7 +591,7 @@ function fetchBooks(page) {
         curMain.style.minHeight = '';
       }
 
-      // Update pagination data (current/total/count/per-page) from new HTML
+      // Update pagination data (current/total/count/per-page)
       const newPagData = tempDiv.querySelector('#pagination-data');
       if (newPagData) {
         const cur = parseInt(newPagData.dataset.current, 10);
@@ -578,12 +607,17 @@ function fetchBooks(page) {
       updatePagination();
       updateResultsSummary();
     })
-    .catch(error => {
-      console.error('Error fetching books:', error);
-      // Restore pagination on error
+    .catch(err => {
+      console.error('Error fetching books:', err);
+      // Keep pagination usable even on error
       updatePagination();
+    })
+    .finally(() => {
+      // 👉 hide overlay only after DOM + pagination updated (or error handled)
+      hideLoadingOverlay();
     });
 }
+
 
 // Sidebar toggle (guards for nulls)
 function toggleSidebar() {
