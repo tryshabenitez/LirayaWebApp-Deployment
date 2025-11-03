@@ -1645,3 +1645,25 @@ header .dropdown:focus {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* put near the top of user_style.css */
+:root { --header-height: 85px; } /* matches your layout; tweak if needed */
+
+/* keep header on top, create its own stacking context */
+header { isolation: isolate; z-index: 100000; }
+
+/* Loading overlay: don't cover the header area */
+#liraya-loading {
+  position: fixed;
+  top: var(--header-height);
+  left: 0; right: 0; bottom: 0;
+  /* z-index already 9990 in your CSS; keep it lower than header */
+}
+
+/* “No results” overlay (same idea) */
+#no-results-overlay {
+  position: fixed;
+  top: var(--header-height);
+  left: 0; right: 0; bottom: 0;
+  z-index: 9990;  /* keep < header */
+}
