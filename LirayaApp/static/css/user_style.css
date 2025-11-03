@@ -1619,7 +1619,8 @@ header .dropdown:focus {
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  color: #050301;
+  background: transparent;
+  color: #fff;
 }
 
 #liraya-loading img {
