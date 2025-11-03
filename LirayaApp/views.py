@@ -195,13 +195,12 @@ def user_search(request):
     q = (request.GET.get('q') or "").strip()
     field = (request.GET.get('field') or "allFields").strip()
     sort_option = request.GET.get('sort', 'Relevance')
-    active_categories = request.GET.get('active_categories', '')
-    active_resource_types = request.GET.get('active_resource_types', '')
-    active_subjects = request.GET.get('active_subjects', '')
-    # Multiple-select facets: getlist (NOT comma-split strings)
-    cats  = request.GET.getlist('active_categories') or []
+
+    # Multiple-select facets: ALWAYS use getlist (no comma-joining!)
+    cats   = request.GET.getlist('active_categories') or []
     rtypes = request.GET.getlist('active_resource_types') or []
     subs   = request.GET.getlist('active_subjects') or []
+
     # cast years defensively
     def _to_int_or_none(v):
         try:
@@ -416,34 +415,23 @@ def user_search(request):
     # ===============================
     #    CATEGORY / RESOURCE TYPE
     # ===============================
-    if active_categories:
-        cats = [c for c in active_categories.split(',') if c]
-        if cats:
-            books = books.filter(shelf_category__in=cats)
-    else:
-        cats = []
+    # (IMPORTANT) Use the repeated params lists directly; DO NOT split on commas.
+    if cats:
+        books = books.filter(shelf_category__in=cats)
 
-    if active_resource_types:
-        rtypes = [r for r in active_resource_types.split(',') if r]
-        if rtypes:
-            books = books.filter(book_type__in=rtypes)
-    else:
-        rtypes = []
+    if rtypes:
+        books = books.filter(book_type__in=rtypes)
 
     # ===============================
     #   SUBJECTS FACET FILTER (still fuzzy, but safer variants)
     # ===============================
-    if active_subjects:
-        subs = [s for s in active_subjects.split(',') if s]
-        if subs:
-            q_or = Q()
-            for s_term in subs:
-                for v in fuzzy_variants(s_term, n=5):
-                    q_or |= Q(primary_keyword__icontains=v)
-            if q_or:
-                books = books.filter(q_or)
-    else:
-        subs = []
+    if subs:
+        q_or = Q()
+        for s_term in subs:
+            for v in fuzzy_variants(s_term, n=5):
+                q_or |= Q(primary_keyword__icontains=v)
+        if q_or:
+            books = books.filter(q_or)
 
     # ===============================
     #           SORT
@@ -515,15 +503,16 @@ def user_search(request):
         'shelf_categories': shelf_categories,
         'resource_types': resource_types,
         'subjects': subjects_facet,
-        'active_categories': cats,
-        'active_resource_types': rtypes,
-        'active_subjects': subs,
-        'qs_no_book': qs_no_book,   # ViewInfo
+        'active_categories': cats,            # lists preserved
+        'active_resource_types': rtypes,      # lists preserved
+        'active_subjects': subs,              # lists preserved
+        'qs_no_book': qs_no_book,             # ViewInfo
         'current_year': current_year,
-        'also_searching': also_terms,  # NEW: for "Also searching for: …"
+        'also_searching': also_terms,         # "Also searching for"
     }
 
     return render(request, 'user_search.html', context)
+
 
 
 
