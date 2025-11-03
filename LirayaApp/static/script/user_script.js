@@ -544,8 +544,18 @@ function ensureLoadingOverlay() {
   }
   return el;
 }
+function setOverlayTopToHeader(el) {
+  const header = document.querySelector('header');
+  const h = header ? header.getBoundingClientRect().height : 0;
+  Object.assign(el.style, {
+    position: 'fixed',
+    top: `${h}px`,
+    left: '0', right: '0', bottom: '0'
+  });
+}
 function showLoadingOverlay() {
   const el = ensureLoadingOverlay();
+  setOverlayTopToHeader(el); 
   el.style.display = 'flex';
   // Prevent background scroll while overlay is visible
   document.documentElement.style.overflow = 'hidden';
