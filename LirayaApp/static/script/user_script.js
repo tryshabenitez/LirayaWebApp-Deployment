@@ -746,8 +746,12 @@ function toggleActive(element) {
   }
 
   params.set('page', 1);
+
+  // 👇 Show overlay before navigating
+  showLoadingOverlay();
   window.location.search = params.toString();
 }
+
 
 
 function toggleResourceType(event, resourceType) {
@@ -791,6 +795,7 @@ function applyYearFilter() {
   params.set('min_year', minYear);
   params.set('max_year', maxYear);
   params.set('page', 1);
+  showLoadingOverlay();
   window.location.search = params.toString();
 }
 
@@ -899,6 +904,22 @@ document.addEventListener('DOMContentLoaded', function () {
   const maxYearInput = document.getElementById('max-year');
   const applyBtn     = document.querySelector('.year-button');    // "Apply Year Filter"
   const refineHdr    = document.querySelector('.refine-search');  // "Refine Search Results"
+
+  // --- Always show overlay on form submits (sidebar & header search)
+  document.querySelectorAll('.sidebar form, form.search-form').forEach(form => {
+    form.addEventListener('submit', () => {
+      showLoadingOverlay();
+    }, { capture: true });
+  });
+  
+  // --- Specifically show overlay when sidebar sort changes (it auto-submits)
+  const sidebarSort = document.getElementById('sidebar-sort');
+  if (sidebarSort) {
+    sidebarSort.addEventListener('change', () => {
+      showLoadingOverlay(); // form will submit via onchange attribute
+    });
+  }
+
 
   bindClickHover(minYearInput);
   bindClickHover(maxYearInput);
@@ -1095,15 +1116,18 @@ function toggleSubject(element) {
   const value = element.getAttribute('data-subject');
   const params = new URLSearchParams(window.location.search);
 
-  // Use repeated params (…&active_subjects=A&active_subjects=B)
   const set = new Set(params.getAll('active_subjects'));
   if (element.classList.contains('active')) set.add(value); else set.delete(value);
   params.delete('active_subjects');
   [...set].forEach(v => params.append('active_subjects', v));
 
-  params.set('page', 1); // reset to first page on filter change
+  params.set('page', 1);
+
+  // 👇 Show overlay before navigating
+  showLoadingOverlay();
   window.location.search = params.toString();
 }
+
 
 function isOverlayVisible() {
   const el = document.getElementById('liraya-loading');
