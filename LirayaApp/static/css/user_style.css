@@ -1603,36 +1603,34 @@ header .dropdown:focus {
 .pagination { visibility: hidden; }
 
 
-/* ===== Loading overlay ===== */
+/* ===== Loading overlay (below sticky header) ===== */
+:root { --header-h: 85px; }  /* keep in one place */
+
 #liraya-loading {
   position: fixed;
-  inset: 0;
+  top: var(--header-h);   /* start below header */
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0,0,0,0.55);
-  display: none;            /* toggled via JS */
+  display: none;          /* toggled via JS */
   align-items: center;
   justify-content: center;
-  z-index: 9990;
+  z-index: 5000;          /* lower than header's 999999 */
 }
+
 #liraya-loading .box {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
 }
+
 #liraya-loading img {
   width: 86px;
   height: 86px;
-  animation: liraya-spin 3s linear infinite; /* was 1s → slower */
+  animation: liraya-spin var(--spin-speed, 2.2s) linear infinite;
   image-rendering: -webkit-optimize-contrast;
-}
-
-/* optional: make it easy to tweak */
-:root { --spin-speed: 2.2s; }
-#liraya-loading img { animation: liraya-spin var(--spin-speed) linear infinite; }
-
-/* optional a11y */
-@media (prefers-reduced-motion: reduce) {
-  #liraya-loading img { animation: none; }
 }
 
 #liraya-loading .label {
@@ -1641,7 +1639,14 @@ header .dropdown:focus {
   letter-spacing: 1.2px;
   text-shadow: 0 1px 2px rgba(0,0,0,0.45);
 }
+
 @keyframes liraya-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  #liraya-loading img { animation: none; }
+}
+
