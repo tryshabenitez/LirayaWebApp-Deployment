@@ -1603,71 +1603,57 @@ header .dropdown:focus {
 .pagination { visibility: hidden; }
 
 
-/* ===== Loading overlay ===== */
 #liraya-loading {
   position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  display: none;            /* toggled via JS */
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none; /* toggled via JS */
   align-items: center;
   justify-content: center;
-  z-index: 9990;
+  background: rgba(0, 0, 0, 0.55); /* black glass background */
+  z-index: 9990; /* just below header */
 }
-/* Center box: keep it transparent (no white panel), make text white */
+
+/* Center content — no box, transparent background */
 #liraya-loading .box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   background: transparent;
   color: #fff;
 }
 
+/* 🌀 Image — 2× bigger, smooth rotation */
 #liraya-loading img {
-  width: 126px;
-  height: 126px;
-  animation: liraya-spin 3s linear infinite; /* was 1s → slower */
+  width: 250px;
+  height: 250px;
+  animation: liraya-spin var(--spin-speed, 2.2s) linear infinite;
   image-rendering: -webkit-optimize-contrast;
 }
 
-/* optional: make it easy to tweak */
-:root { --spin-speed: 2.2s; }
-#liraya-loading img { animation: liraya-spin var(--spin-speed) linear infinite; }
-
-/* optional a11y */
-@media (prefers-reduced-motion: reduce) {
-  #liraya-loading img { animation: none; }
-}
-
+/* 💬 Label — larger, bright white */
 #liraya-loading .label {
-  color: #000000;
+  font-size: 1.8rem;         /* doubled size */
   font-weight: 800;
-  letter-spacing: 1.2px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  color: #fff;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.45);
 }
+
 @keyframes liraya-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
 
-/* put near the top of user_style.css */
-:root { --header-height: 85px; } /* matches your layout; tweak if needed */
-
-/* keep header on top, create its own stacking context */
-header { isolation: isolate; z-index: 100000; }
-
-/* Loading overlay: don't cover the header area */
-#liraya-loading {
-  position: fixed;
-  top: var(--header-height);
-  left: 0; right: 0; bottom: 0;
-  /* z-index already 9990 in your CSS; keep it lower than header */
-}
-
-/* “No results” overlay (same idea) */
+/* No Results overlay (match loading offset) */
 #no-results-overlay {
   position: fixed;
   top: var(--header-height);
-  left: 0; right: 0; bottom: 0;
-  z-index: 9990;  /* keep < header */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9990;
 }
