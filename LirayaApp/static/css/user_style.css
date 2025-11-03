@@ -1630,8 +1630,8 @@ header .dropdown:focus {
 
 /* 🌀 Image — 2× bigger, smooth rotation */
 #liraya-loading img {
-  width: 250px;
-  height: 250px;
+  width: 250px !important;
+  height: 250px !important;
   animation: liraya-spin var(--spin-speed, 2.2s) linear infinite;
   image-rendering: -webkit-optimize-contrast;
 }
