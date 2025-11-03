@@ -534,39 +534,72 @@ function ensureLoadingOverlay() {
   if (!el) {
     el = document.createElement('div');
     el.id = 'liraya-loading';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.style.display = 'none';
+    el.style.position = 'fixed';
+    el.style.left = '0';
+    el.style.right = '0';
+    el.style.bottom = '0';
+    el.style.top = '0'; // will be corrected to header height right before show
+    el.style.background = 'rgba(0,0,0,0.45)';
+    el.style.zIndex = '9990'; // header should be above; we also start overlay below header
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.style.backdropFilter = 'blur(1px)';
     el.innerHTML = `
-      <div class="box">
-        <img src="/static/images/usericon.png" alt="Loading">
-        <div class="label">LOADING</div>
+      <div class="box" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:#fff;padding:16px 20px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.3);">
+        <img src="/static/images/usericon.png" alt="" style="height:48px;width:48px;object-fit:contain;">
+        <div class="label" style="font-weight:700;letter-spacing:1px;">LOADING</div>
       </div>
     `;
     document.body.appendChild(el);
   }
   return el;
 }
+
 function setOverlayTopToHeader(el) {
   const header = document.querySelector('header');
-  const h = header ? header.getBoundingClientRect().height : 0;
-  Object.assign(el.style, {
-    position: 'fixed',
-    top: `${h}px`,
-    left: '0', right: '0', bottom: '0'
-  });
+  // Use offsetHeight which includes borders/padding and works with position:sticky/fixed
+  const h = header ? header.offsetHeight : 0;
+  el.style.top = `${h}px`;  // start *below* the header so it never covers it
+  el.style.left = '0';
+  el.style.right = '0';
+  el.style.bottom = '0';
+  el.style.position = 'fixed';
 }
+
+let _overlayResizeHandler = null;
+
 function showLoadingOverlay() {
   const el = ensureLoadingOverlay();
-  setOverlayTopToHeader(el); 
+  setOverlayTopToHeader(el);
   el.style.display = 'flex';
+
+  // Keep overlay aligned under header if window resizes (or header height changes)
+  _overlayResizeHandler = () => {
+    const visible = el && el.style.display !== 'none';
+    if (visible) setOverlayTopToHeader(el);
+  };
+  window.addEventListener('resize', _overlayResizeHandler, { passive: true });
+
   // Prevent background scroll while overlay is visible
   document.documentElement.style.overflow = 'hidden';
   document.body.style.overflow = 'hidden';
 }
+
 function hideLoadingOverlay() {
   const el = document.getElementById('liraya-loading');
   if (el) el.style.display = 'none';
+
+  if (_overlayResizeHandler) {
+    window.removeEventListener('resize', _overlayResizeHandler);
+    _overlayResizeHandler = null;
+  }
   document.documentElement.style.overflow = '';
   document.body.style.overflow = '';
 }
+
 
 
 // Fetch new page via AJAX while preserving current query params
@@ -600,6 +633,18 @@ function fetchBooks(page) {
         curMain.innerHTML = newMain.innerHTML;
         curMain.style.minHeight = '';
       }
+
+      // Sync the "No results" overlay with the new page
+      const existingNoRes = document.getElementById('no-results-overlay');
+      if (existingNoRes) existingNoRes.remove();
+      
+      const newNoRes = tempDiv.querySelector('#no-results-overlay');
+      if (newNoRes) {
+        // Reinsert and ensure it doesn't cover header (safety if template changes)
+        newNoRes.style.top = `${(document.querySelector('header')?.offsetHeight || 0)}px`;
+        document.body.appendChild(newNoRes);
+      }
+
 
       // Update pagination data (current/total/count/per-page)
       const newPagData = tempDiv.querySelector('#pagination-data');
@@ -1050,16 +1095,18 @@ function toggleSubject(element) {
   const value = element.getAttribute('data-subject');
   const params = new URLSearchParams(window.location.search);
 
-  let list = params.get('active_subjects');
-  let arr = list ? list.split(',').filter(Boolean) : [];
+  // Use repeated params (…&active_subjects=A&active_subjects=B)
+  const set = new Set(params.getAll('active_subjects'));
+  if (element.classList.contains('active')) set.add(value); else set.delete(value);
+  params.delete('active_subjects');
+  [...set].forEach(v => params.append('active_subjects', v));
 
-  if (element.classList.contains('active')) {
-    if (!arr.includes(value)) arr.push(value);
-  } else {
-    arr = arr.filter(v => v !== value);
-  }
-
-  params.set('active_subjects', arr.join(','));
   params.set('page', 1); // reset to first page on filter change
   window.location.search = params.toString();
 }
+
+function isOverlayVisible() {
+  const el = document.getElementById('liraya-loading');
+  return !!(el && el.style.display !== 'none');
+}
+
