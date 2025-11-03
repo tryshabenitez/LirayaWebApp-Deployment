@@ -32,9 +32,15 @@
     <!-- Preserve current search and filters -->
     <input type="hidden" name="q" value="{{ request.GET.q }}">
     <input type="hidden" name="field" value="{{ request.GET.field|default:'allFields' }}">
-    <input type="hidden" name="active_categories" value="{{ request.GET.active_categories }}">
-    <input type="hidden" name="active_resource_types" value="{{ request.GET.active_resource_types }}">
-    <input type="hidden" name="active_subjects" value="{{ request.GET.active_subjects }}">
+    {% for c in active_categories %}
+      <input type="hidden" name="active_categories" value="{{ c }}">
+    {% endfor %}
+    {% for r in active_resource_types %}
+      <input type="hidden" name="active_resource_types" value="{{ r }}">
+    {% endfor %}
+    {% for s in active_subjects %}
+      <input type="hidden" name="active_subjects" value="{{ s }}">
+    {% endfor %}
     <input type="hidden" name="min_year" value="{{ request.GET.min_year }}">
     <input type="hidden" name="max_year" value="{{ request.GET.max_year }}">
   </form>
@@ -149,9 +155,15 @@
 
       <!-- Preserve current sort and filters -->
       <input type="hidden" name="sort" value="{{ request.GET.sort|default:sort_option }}">
-      <input type="hidden" name="active_categories" value="{{ request.GET.active_categories }}">
-      <input type="hidden" name="active_resource_types" value="{{ request.GET.active_resource_types }}">
-      <input type="hidden" name="active_subjects" value="{{ request.GET.active_subjects }}">
+      {% for c in active_categories %}
+        <input type="hidden" name="active_categories" value="{{ c }}">
+      {% endfor %}
+      {% for r in active_resource_types %}
+        <input type="hidden" name="active_resource_types" value="{{ r }}">
+      {% endfor %}
+      {% for s in active_subjects %}
+        <input type="hidden" name="active_subjects" value="{{ s }}">
+      {% endfor %}
       <input type="hidden" name="min_year" value="{{ request.GET.min_year }}">
       <input type="hidden" name="max_year" value="{{ request.GET.max_year }}">
 
@@ -214,32 +226,10 @@
   {% endfor %}
 </div>
 
-<!-- Pagination Above -->
-<div class="pagination" id="pagination-top">
-  {% if books.has_previous %}
-    <a href="?page={{ books.previous_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
-      <strong>&lt;</strong>
-    </a>
-  {% else %}
-    <span class="nav-button disabled"><strong>&lt;</strong></span>
-  {% endif %}
+<!-- Pagination (JS renders to preserve repeated params cleanly) -->
+<div class="pagination" id="pagination-top"></div>
 
-  {% for i in books.paginator.page_range %}
-    <a href="?page={{ i }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="page-item {% if i == books.number %}active{% endif %}">
-      {{ i }}
-    </a>
-  {% endfor %}
-
-  {% if books.has_next %}
-    <a href="?page={{ books.next_page_number }}&sort={{ sort_option }}&q={{ request.GET.q }}&field={{ request.GET.field|default:'allFields' }}&active_categories={{ request.GET.active_categories }}&active_resource_types={{ request.GET.active_resource_types }}&active_subjects={{ request.GET.active_subjects }}&min_year={{ request.GET.min_year }}&max_year={{ request.GET.max_year }}" class="nav-button">
-      <strong>&gt;</strong>
-    </a>
-  {% else %}
-    <span class="nav-button disabled"><strong>&gt;</strong></span>
-  {% endif %}
-</div>
-
-<!-- ✅ Add this hidden div to pass data to JavaScript -->
+<!-- ✅ Data for JS -->
 <div id="pagination-data"
      data-current="{{ current_page }}"
      data-total="{{ total_pages }}"
@@ -257,10 +247,10 @@
 <script src="{% static 'script/user_script.js' %}"></script>
 
 <script>
-// Active categories on load (use data attribute, not text split)
+// Active categories on load (use repeated params, not comma split)
 document.addEventListener('DOMContentLoaded', function() {
   const params = new URLSearchParams(window.location.search);
-  const activeCategories = (params.get('active_categories') || '').split(',').filter(Boolean);
+  const activeCategories = params.getAll('active_categories'); // ✅
   document.querySelectorAll('.menu-item[data-category]').forEach(function(item) {
     const val = item.getAttribute('data-category');
     if (activeCategories.includes(val)) item.classList.add('active');
@@ -336,9 +326,9 @@ function openAlsoSearchAll(e){
 </script>
 
 {% if books.paginator.count == 0 %}
-<!-- No Results Overlay -->
+<!-- No Results Overlay (doesn't cover header) -->
 <div id="no-results-overlay"
-     style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:9999; background:rgba(0,0,0,0.45);">
+     style="position:fixed; left:0; right:0; bottom:0; top:85px; display:flex; align-items:center; justify-content:center; z-index:9990; background:rgba(0,0,0,0.45);">
   <div style="background:#fff; width:min(92vw, 680px); border-radius:12px; padding:24px; text-align:center; box-shadow:0 12px 36px rgba(0,0,0,0.35);">
     <div style="font-size:28px; font-weight:800; color:#3e151a; margin-bottom:12px;">
       NO SEARCH RESULTS
