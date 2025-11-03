@@ -1632,7 +1632,7 @@ header .dropdown:focus {
 #liraya-loading img {
   width: 150px !important;
   height: 150px !important;
-  animation: liraya-spin var(--spin-speed, 2.2s) linear infinite;
+  animation: liraya-spin var(--spin-speed, 1.7s) linear infinite;
   image-rendering: -webkit-optimize-contrast;
 }
 
