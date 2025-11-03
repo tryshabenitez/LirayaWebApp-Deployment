@@ -583,9 +583,7 @@ function showLoadingOverlay() {
   };
   window.addEventListener('resize', _overlayResizeHandler, { passive: true });
 
-  // Prevent background scroll while overlay is visible
-  document.documentElement.style.overflow = 'hidden';
-  document.body.style.overflow = 'hidden';
+
 }
 
 function hideLoadingOverlay() {
@@ -596,8 +594,7 @@ function hideLoadingOverlay() {
     window.removeEventListener('resize', _overlayResizeHandler);
     _overlayResizeHandler = null;
   }
-  document.documentElement.style.overflow = '';
-  document.body.style.overflow = '';
+
 }
 
 
