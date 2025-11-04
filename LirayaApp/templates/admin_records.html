@@ -172,36 +172,127 @@
 
         <form id="reportOptionsForm" method="get" action="{% url 'generate_pdf' report_type='account_bookrecords' %}">
           <div class="modal-body">
-            <label style="font-weight: bold;">Select Data Range:</label>
-            
-            <!-- Radio buttons for Date Range Options -->
-            <div class="admin-checkbox-section">
-              <label>
-                <input type="radio" id="today_radio" name="date_range" value="today" {% if date_range == 'today' or date_range == '' %}checked{% endif %}> Today
-              </label><br>
-              <label>
-                <input type="radio" name="date_range" value="last_1_week" {% if date_range == 'last_1_week' %}checked{% endif %}> Last 1 Week
-              </label><br>
-              <label>
-                <input type="radio" name="date_range" value="last_2_weeks" {% if date_range == 'last_2_weeks' %}checked{% endif %}> Last 2 Weeks
-              </label><br>
-              <label>
-                <input type="radio" name="date_range" value="last_1_month" {% if date_range == 'last_1_month' %}checked{% endif %}> Last 1 Month
-              </label><br>
-              <label>
-                <input type="radio" name="date_range" value="last_6_months" {% if date_range == 'last_6_months' %}checked{% endif %}> Last 6 Months
-              </label><br>
-              <label>
-                <input type="radio" name="date_range" value="last_1_year" {% if date_range == 'last_1_year' %}checked{% endif %}> Last 1 Year
-              </label><br>
-              <label>
-                <input type="radio" name="date_range" value="all_time" {% if date_range == 'all_time' %}checked{% endif %}> All Time
-              </label>
+            <div class="admin_records_time_select">
+              <label style="font-weight: bold;">How far back do you want to see records?</label>
+              
+              <div class="admin_records_date_preview">
+                <p>Today's Date: <span id="currentDate"></span></p>
+              </div>
+
+              <div id="todaySection" class="admin_records_section">
+                <label>
+                  <input type="radio" name="period_type" value="today" checked> Today
+                </label>
+                <div class="admin_records_period_inputs" style="display: flex;">
+                  <div class="admin_records_date_hint">
+                    <strong>Guide:</strong>
+                    <br>
+                    Will show records from today: <span id="todayPreview" class="admin_records_preview_date"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="daysSection" class="admin_records_section">
+                <label>
+                  <input type="radio" name="period_type" value="days"> Days
+                </label>
+                <div class="admin_records_period_inputs" style="display: none;">
+                  Last <input type="number" name="days" min="1" max="365" value="1" class="admin_records_number" required oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value > 365) this.value = 365; if(this.value < 1) this.value = 1;"> days
+                  <div class="admin_records_error" id="daysError"></div>
+                  <div class="admin_records_date_hint">
+                    <strong>Guide:</strong> Up to <em>365 days</em> back from today (e.g., enter 7 for the last 7 days).
+                    <br>
+                    Will show records from: <span id="daysPreview" class="admin_records_preview_date"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="weeksSection" class="admin_records_section">
+                <label>
+                  <input type="radio" name="period_type" value="weeks"> Weeks
+                </label>
+                <div class="admin_records_period_inputs" style="display: none;">
+                  Last <input type="number" name="weeks" min="1" max="52" value="1" class="admin_records_number" required oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value > 52) this.value = 52; if(this.value < 1) this.value = 1;"> weeks
+                  <div class="admin_records_error" id="weeksError"></div>
+                  <div class="admin_records_date_hint">
+                    <strong>Guide:</strong> Up to <em>52 weeks</em> back from today (e.g., enter 4 for the last 4 weeks).
+                    <br>
+                    Will show records from: <span id="weeksPreview" class="admin_records_preview_date"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="monthsSection" class="admin_records_section">
+                <label>
+                  <input type="radio" name="period_type" value="months"> Months
+                </label>
+                <div class="admin_records_period_inputs" style="display: none;">
+                  Last <input type="number" name="months" min="1" max="12" value="1" class="admin_records_number" required oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value > 12) this.value = 12; if(this.value < 1) this.value = 1;"> months
+                  <div class="admin_records_error" id="monthsError"></div>
+                  <div class="admin_records_date_hint">
+                    <strong>Guide:</strong> Up to <em>12 months</em> back from today (e.g., enter 3 for the last 3 months).
+                    <br>
+                    Will show records from: <span id="monthsPreview" class="admin_records_preview_date"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="yearsSection" class="admin_records_section">
+                <label>
+                  <input type="radio" name="period_type" value="years"> Years
+                </label>
+                <div class="admin_records_period_inputs" style="display: none;">
+                  Last <input type="number" name="years" min="1" max="10" value="1" class="admin_records_number" required oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value > 10) this.value = 10; if(this.value < 1) this.value = 1;"> years
+                  <div class="admin_records_error" id="yearsError"></div>
+                  <div class="admin_records_date_hint">
+                    <strong>Guide:</strong> Up to <em>10 years</em> back from today (e.g., enter 2 for the last 2 years).
+                    <br>
+                    Will show records from: <span id="yearsPreview" class="admin_records_preview_date"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="customDateSection" class="admin_records_section">
+                <label>
+                  <input type="radio" name="period_type" value="custom"> Custom date range
+                </label>
+                <div class="admin_records_period_inputs" style="display: none;">
+                  <div class="custom-date-inputs">
+                    <div class="date-input-group">
+                      <label for="startDate">From:</label>
+                      <input type="date" id="startDate" name="start_date" 
+                             min="2025-01-01" 
+                             class="admin_records_date" required>
+                    </div>
+                    <div class="date-input-group">
+                      <label for="endDate">To:</label>
+                      <input type="date" id="endDate" name="end_date" 
+                             min="2025-01-01"
+                             class="admin_records_date" required>
+                    </div>
+                  </div>
+                  <div class="admin_records_error" id="customDateError"></div>
+                  <div class="admin_records_date_hint">
+                    Date range must be from January 1, 2025 onwards
+                  </div>
+                </div>
+              </div>
+
+              <div id="allTimeSection" class="admin_records_section">
+                <label>
+                  <input type="radio" name="period_type" value="all"> Show all records 
+                </label>
+                <div class="admin_records_period_inputs" style="display: none;">
+                  <div class="admin_records_date_hint">
+                    <strong>Guide:</strong> Shows <em>every available record</em> (no date filters)
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="modal-actions">
-            <button type="submit" class="admin_button">Generate</button>
+            <button type="submit" class="admin_button">Generate Report</button>
           </div>
         </form>
       </div>
@@ -224,31 +315,46 @@
 
   .modal-overlay {
     position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: grid;
+    place-items: center;
     z-index: 1000;
+    padding: 0;
+    min-height: 100vh;
+    min-width: 100vw;
+    overflow: auto;
   }
 
   .modal-card {
-    width: min(720px, 92vw);
+    position: relative;
+    width: min(780px, 92vw);
+    height: auto;
+    min-height: 500px;
+    max-height: 85vh;
+    margin: auto;
     background: var(--panel);
     color: var(--ink);
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .modal-header {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--brand);
     color: var(--brand-ink);
     padding: 14px 18px;
-    position: relative;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    flex-shrink: 0;
   }
 
   .modal-header h3 {
@@ -260,19 +366,52 @@
 
   .modal-close {
     position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
+    right: 10px;
+    top: 10px;
     background: transparent;
     color: var(--brand-ink);
     border: none;
-    font-size: 1.4rem;
+    font-size: 24px;
+    font-weight: bold;
     cursor: pointer;
     line-height: 1;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    transition: all 0.2s ease;
+  }
+
+  .modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 
   .modal-body {
-    padding: 18px;
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: calc(70vh - 120px);
+    scrollbar-width: thin;
+    scrollbar-color: var(--brand) #f1f1f1;
+  }
+
+  .modal-body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .modal-body::-webkit-scrollbar-thumb {
+    background: var(--brand);
+    border-radius: 4px;
+  }
+
+  .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #3a0b0b;
   }
 
   .modal-sub {
@@ -331,6 +470,10 @@
     gap: 10px;
     padding: 14px 18px;
     border-top: 1px solid var(--line);
+    background: var(--panel);
+    flex-shrink: 0;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
   }
 
   .admin_button {
@@ -338,23 +481,131 @@
     border-radius: 8px;
   }
 
-  .admin-checkbox-section {
-    margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap; /* To allow wrapping if needed */
-    gap: 20px; /* Space between each radio button */
+  .admin_records_time_select {
+    margin-top: 15px;
   }
 
-  .admin-checkbox-section label {
+  .admin_records_date_preview {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-size: 1.1em;
+  }
+
+  .admin_records_section {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+
+  .admin_records_section label {
+    font-size: 1em;
     display: flex;
     align-items: center;
-    font-size: 1rem;
-    
+    gap: 8px;
+    margin-bottom: 6px;
   }
 
+  .admin_records_period_inputs {
+    margin-left: 22px;
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 1em;
+  }
 
-  .admin-checkbox-section input[type="radio"] {
-    margin-right: 8px; /* Space between the radio button and the label */
+  .admin_records_number {
+    width: 70px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 1em;
+  }
+
+  .admin_records_date_hint {
+    margin-top: 8px;
+    color: #666;
+    font-size: 0.9em;
+  }
+
+  .admin_records_preview_date {
+    color: #4b0e0e;
+    font-weight: bold;
+  }
+
+  .admin_records_error {
+    color: #dc2626;
+    font-size: 0.9em;
+    margin-top: 4px;
+    min-height: 20px;
+  }
+
+  .admin_records_number {
+    border: 2px solid #d1d5db;
+    transition: all 0.2s ease;
+  }
+
+  .admin_records_number:focus {
+    outline: none;
+    border-color: #4b0e0e;
+    box-shadow: 0 0 0 2px rgba(75, 14, 14, 0.1);
+  }
+
+  .admin_records_number.error {
+    border-color: #dc2626;
+    background-color: #fef2f2;
+  }
+
+  .admin_records_number::-webkit-inner-spin-button,
+  .admin_records_number::-webkit-outer-spin-button {
+    opacity: 1;
+    height: 24px;
+  }
+
+  .admin_button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .custom-date-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .date-input-group label {
+    min-width: 50px;
+    font-weight: normal;
+  }
+
+  .admin_records_date {
+    flex: 1;
+    padding: 8px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: all 0.2s ease;
+  }
+
+  .admin_records_date:focus {
+    outline: none;
+    border-color: #4b0e0e;
+    box-shadow: 0 0 0 2px rgba(75, 14, 14, 0.1);
+  }
+
+  .admin_records_date.error {
+    border-color: #dc2626;
+    background-color: #fef2f2;
   }
 </style>
 
@@ -365,15 +616,106 @@
     const modal = document.getElementById('reportOptionsModal');
     const closeBtn = document.getElementById('closeReportOptions');
     
+    // Date preview elements
+    const currentDateEl = document.getElementById('currentDate');
+    const daysPreview = document.getElementById('daysPreview');
+    const weeksPreview = document.getElementById('weeksPreview');
+    const monthsPreview = document.getElementById('monthsPreview');
+
+    // Format date helper function
+    function formatDate(date) {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+    }
+
+    // Validate input and show error
+    function validateInput(input, errorEl) {
+      const value = input.value.trim();
+      const numValue = parseInt(value);
+      const min = parseInt(input.min);
+      const max = parseInt(input.max);
+      let error = '';
+
+      if (value === '') {
+        error = 'This field cannot be empty';
+      } else if (isNaN(numValue) || numValue === 0) {
+        error = 'Please enter a valid number greater than 0';
+        input.value = '1'; // Reset to default value
+      } else if (numValue < min) {
+        error = `Value must be at least ${min}`;
+        input.value = min; // Set to minimum value
+      } else if (numValue > max) {
+        error = `Value cannot exceed ${max}`;
+        input.value = max; // Set to maximum value
+      }
+
+      errorEl.textContent = error;
+      input.classList.toggle('error', error !== '');
+      
+      // Automatically fix the value if it's outside bounds
+      if (error && value !== '') {
+        updateDatePreviews(); // Refresh previews after auto-correction
+      }
+      
+      return error === '';
+    }
+
+    // Calculate and display preview dates
+    function updateDatePreviews() {
+      const today = new Date();
+      currentDateEl.textContent = formatDate(today);
+      
+      // Today preview
+      document.getElementById('todayPreview').textContent = formatDate(today);
+
+      // Days preview
+      const daysInput = document.querySelector('input[name="days"]');
+      if (validateInput(daysInput, document.getElementById('daysError'))) {
+        const daysBack = new Date();
+        daysBack.setDate(today.getDate() - parseInt(daysInput.value));
+        daysPreview.textContent = formatDate(daysBack);
+      }
+
+      // Weeks preview
+      const weeksInput = document.querySelector('input[name="weeks"]');
+      if (validateInput(weeksInput, document.getElementById('weeksError'))) {
+        const weeksBack = new Date();
+        weeksBack.setDate(today.getDate() - (parseInt(weeksInput.value) * 7));
+        weeksPreview.textContent = formatDate(weeksBack);
+      }
+
+      // Months preview
+      const monthsInput = document.querySelector('input[name="months"]');
+      if (validateInput(monthsInput, document.getElementById('monthsError'))) {
+        const monthsBack = new Date();
+        monthsBack.setMonth(today.getMonth() - parseInt(monthsInput.value));
+        monthsPreview.textContent = formatDate(monthsBack);
+      }
+
+      // Years preview
+      const yearsInput = document.querySelector('input[name="years"]');
+      if (validateInput(yearsInput, document.getElementById('yearsError'))) {
+        const yearsBack = new Date();
+        yearsBack.setFullYear(today.getFullYear() - parseInt(yearsInput.value));
+        yearsPreview.textContent = formatDate(yearsBack);
+      }
+
+      // Enable/disable submit button based on validation
+      const submitBtn = document.querySelector('.modal-actions .admin_button');
+      const selectedInput = document.querySelector('input[name="period_type"]:checked');
+      if (selectedInput.value === 'today' || selectedInput.value === 'all') {
+        submitBtn.disabled = false;
+      } else {
+        const errorEl = document.querySelector(`#${selectedInput.value}Error`);
+        submitBtn.disabled = errorEl && errorEl.textContent !== '';
+      }
+    }
+
     // Open the modal
     openBtn.addEventListener('click', function() {
       modal.hidden = false;
-
-      // Ensure "Today" radio button is selected by default when the modal opens
-      const todayRadio = document.getElementById('today_radio');
-      if (todayRadio) {
-        todayRadio.checked = true;
-      }
+      updateDatePreviews();
     });
 
     // Close the modal
@@ -385,6 +727,149 @@
     window.addEventListener('click', function(event) {
       if (event.target === modal) {
         modal.hidden = true;
+      }
+    });
+
+    // Update previews when inputs change
+    const numberInputs = document.querySelectorAll('.admin_records_number');
+    numberInputs.forEach(input => {
+      input.addEventListener('input', updateDatePreviews);
+      input.addEventListener('change', function() {
+        if (this.value < 1) this.value = 1;
+        updateDatePreviews();
+      });
+    });
+
+    // Handle radio button changes
+    const radioButtons = document.querySelectorAll('input[name="period_type"]');
+    
+    // Enable only the inputs for the selected period; disable the rest
+    function toggleInputsBySelection(selectedPeriod) {
+      const allNames = ['days','weeks','months','years','start_date','end_date'];
+      // Disable everything first
+      allNames.forEach(name => {
+        document.querySelectorAll(`[name="${name}"]`).forEach(el => {
+          el.disabled = true;
+        });
+      });
+
+      // Enable only what we need
+      if (selectedPeriod === 'days') {
+        document.querySelectorAll('[name="days"]').forEach(el => el.disabled = false);
+      } else if (selectedPeriod === 'weeks') {
+        document.querySelectorAll('[name="weeks"]').forEach(el => el.disabled = false);
+      } else if (selectedPeriod === 'months') {
+        document.querySelectorAll('[name="months"]').forEach(el => el.disabled = false);
+      } else if (selectedPeriod === 'years') {
+        document.querySelectorAll('[name="years"]').forEach(el => el.disabled = false);
+      } else if (selectedPeriod === 'custom') {
+        document.querySelectorAll('[name="start_date"], [name="end_date"]').forEach(el => el.disabled = false);
+      } // today/all => nothing else enabled
+    }
+
+    // Function to update visibility of all period inputs and handle button state
+    function updatePeriodInputsVisibility() {
+      const inputs = document.querySelectorAll('.admin_records_period_inputs');
+      const submitBtn = document.querySelector('.modal-actions .admin_button');
+      const selectedPeriod = document.querySelector('input[name="period_type"]:checked').value;
+      
+      // Enable button by default for non-custom options
+      if (selectedPeriod !== 'custom') {
+        submitBtn.disabled = false;
+      }
+
+      inputs.forEach(input => {
+        const radioBtn = input.parentElement.querySelector('input[type="radio"]');
+        const visible = radioBtn && radioBtn.checked;
+        input.style.display = visible ? 'flex' : 'none';
+      });
+
+      // Also toggle disabled/enabled so only selected inputs get submitted
+      toggleInputsBySelection(selectedPeriod);
+    }
+
+    // Add change event listener to all radio buttons
+    radioButtons.forEach(radio => {
+      radio.addEventListener('change', updatePeriodInputsVisibility);
+    });
+
+    // Initial call to set correct visibility and enabled fields
+    updatePeriodInputsVisibility();
+
+    // Before submit, ensure only the selected inputs are enabled and log params for debugging
+    const form = document.getElementById('reportOptionsForm');
+    form.addEventListener('submit', function() {
+      const selectedPeriod = document.querySelector('input[name="period_type"]:checked').value;
+      toggleInputsBySelection(selectedPeriod);
+      const params = new URLSearchParams(new FormData(form));
+      console.log('[DEBUG] Submitting account_bookrecords with params:', Object.fromEntries(params));
+    });
+
+    // Custom date range validation
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const minDate = '2025-01-01';
+    const today = new Date().toISOString().split('T')[0];
+
+    // Set min date for both dates to January 1, 2025
+    startDate.min = minDate;
+    endDate.min = minDate;
+    // Set max date to today
+    startDate.max = today;
+    endDate.max = today;
+    // Set end date to today by default
+    endDate.value = today;
+
+    function validateCustomDateRange() {
+      const start = startDate.value ? new Date(startDate.value) : null;
+      const end = new Date(endDate.value);
+      const minAllowed = new Date('2025-01-01');
+      const errorEl = document.getElementById('customDateError');
+      let error = '';
+
+      if (startDate.value && endDate.value) {
+        if (start > end) {
+          error = 'Start date cannot be later than end date';
+        } else if (start < minAllowed) {
+          error = 'Dates cannot be earlier than January 1, 2025';
+        }
+      }
+
+      errorEl.textContent = error;
+      startDate.classList.toggle('error', error !== '');
+      endDate.classList.toggle('error', error !== '');
+
+      // Update submit button state
+      const submitBtn = document.querySelector('.modal-actions .admin_button');
+      const customRadio = document.querySelector('input[name="period_type"][value="custom"]');
+      if (customRadio.checked) {
+        submitBtn.disabled = error !== '' || !startDate.value || !endDate.value;
+      }
+
+      return error === '';
+    }
+
+    // Add event listeners for date inputs
+    startDate.addEventListener('change', function() {
+      if (startDate.value) {
+        // If a start date is selected, set the minimum end date to the start date
+        endDate.min = startDate.value;
+      } else {
+        endDate.min = '';
+      }
+      validateCustomDateRange();
+    });
+
+    endDate.addEventListener('change', validateCustomDateRange);
+
+    // Initialize when custom range is selected
+    const customRadio = document.querySelector('input[name="period_type"][value="custom"]');
+    customRadio.addEventListener('change', function() {
+      if (this.checked) {
+        // Clear start date, keep end date as today
+        startDate.value = '';
+        endDate.value = today;
+        validateCustomDateRange();
       }
     });
   });
