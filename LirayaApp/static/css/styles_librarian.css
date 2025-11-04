@@ -520,7 +520,7 @@ header h1 {
     flex-direction: column; /* Stack the image and buttons vertically */
     justify-content: center;
     align-items: center;
-    width: 360px;  /* Adjust width of the book cover container */
+    width: 240px;  /* Adjust width of the book cover container */
     height: auto; /* Adjust height to fit content */
     background-color: white; /* Changed to white for the buttons section below */
     overflow: hidden; /* Ensure the image fits the container */
@@ -612,6 +612,34 @@ header h1 {
 .takepicture-button:hover {
     background-color: #5a2a2f; /* Darker shade on hover */
     color: white; /* White text on hover */
+}
+
+/* Input and button container */
+.input-group {
+  display: flex;
+  justify-content: space-between; /* Ensure buttons align horizontally with input */
+  align-items: center;
+  gap: 10px;  /* Space between input and button */
+  width: 100%;  /* Take up full width */
+}
+
+/* Form control and select fields */
+.input-group .form-control,
+.input-group select {
+  flex-grow: 1; /* Allow input to grow */
+  font-size: 13px;
+  padding: 4px 12px;
+}
+
+/* Buttons beside inputs (+, ▼, X) */
+.input-group > .btn {
+  flex: 0 0 auto !important; /* Prevent buttons from stretching */
+  font-size: 17px; /* Slightly larger font size */
+  padding: 6px 14px; /* Increase padding for a larger button */
+  height: auto;
+  transition: all 0.2s ease;
+  max-width: 120px; /* Set maximum width to control size */
+  width: auto;
 }
 
 /* Title Crop Modal Styles */
@@ -1043,6 +1071,24 @@ header h1 {
     box-sizing: border-box;
     height: 40px; /* Adjust the height to ensure text fits properly */
     line-height: 20px; /* Ensures proper line height for the dropdown text */
+}
+
+/* Styling for the Label */
+.scanning-section-container label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block; /* Ensures it stays on its own line */
+}
+
+/* Styling for the Textarea */
+textarea.form-control {
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 
@@ -1886,14 +1932,91 @@ h2 {
     gap: 15px;
   }
 
-  .upload-button, .scan-button, .add-book-button {
+  .scan-button, .add-book-button {
     font-size: 13px;
     padding: 4px 12px;
   }
-
-  .form-control, AB_label {
-    font-size: 16px; 
+  .scan-button .btn-img {
+    width: 30px;   /* Adjust icon size for medium screens */
+    height: 30px;
   }
+
+  .book-cover-section {
+    flex-direction: row;
+    justify-content: center;
+    gap: 15px;
+  }
+
+  #scannedContentType {
+    font-size: 13px;
+    padding: 8px 12px; /* Adjust padding for better visual appearance */
+    height: 36px; /* Slightly reduce height for smaller screens */
+    max-width: 600px; /* Reduce max width */
+  }
+
+  .scanning-section-container label {
+    font-size: 14px; /* Adjust label font size */
+    margin-bottom: 6px; /* Reduce space between label and input */
+  }
+
+  textarea.form-control {
+    font-size: 13px;
+    padding: 8px;
+  }
+
+  .book-cover-left {
+    width: 200px;
+  }
+
+  .book-cover-box {
+    width: 160px;
+    height: 240px;
+    padding: 8px;
+  }
+
+  .upload-button,
+  .takepicture-button {
+    font-size: 13px;
+    padding: 4px 12px;
+    width: auto;
+    height: auto;
+    border-radius: 50px;
+    min-width: 150px;
+  }
+
+  .book-cover-right {
+    margin-left: 20px;
+    width: 90%;
+  }
+
+  .book-cover-right .form-group {
+    width: 100%;
+    margin-bottom: 6px;
+  }
+
+  .book-cover-right label {
+    font-size: 13px;
+  }
+
+  .book-cover-right .form-control,
+  .book-cover-right select {
+    font-size: 13px;
+    padding: 4px 12px;  /* Same as .add-book-button style */
+    height: auto;
+  }
+
+
+  .input-group .form-control,
+  .input-group select {
+    font-size: 13px;
+    padding: 4px 10px;
+  }
+
+  .input-group > .btn {
+    font-size: 15px; /* Slightly smaller font size */
+    padding: 5px 12px; /* Slightly reduced padding */
+  }
+
 
   .book-cover {
     max-width: 100%; /* Allow the book cover section to take full width on smaller screens */
@@ -2025,13 +2148,129 @@ h2 {
     gap: 15px;
   }
 
-  .upload-button, .scan-button, .add-book-button {
+  .scan-button, .add-book-button {
     font-size: 12px;
     padding: 4px 10px;
   }
 
-  .form-control, AB_label {
-    font-size: 15px; 
+  .scan-button .btn-img {
+    width: 28px;   /* Adjust icon size for smaller tablets */
+    height: 28px;
+  }
+
+  .book-cover-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  #scannedContentType {
+    font-size: 12.5px;
+    padding: 6px 10px; /* Adjust padding for smaller screens */
+    height: 32px; /* Adjust height for smaller screens */
+    max-width: 100%; /* Allow dropdown to take full width of container */
+  }
+
+  .scanning-section-container label {
+    font-size: 12px; /* Smaller font size for label */
+    margin-bottom: 5px; /* Reduced margin for compactness */
+  }
+
+  textarea.form-control {
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  .book-cover-left {
+    width: 180px;
+  }
+
+  .book-cover-box {
+    width: 140px;
+    height: 210px;
+    padding: 6px;
+    border-width: 1.5px;
+    border-radius: 8px;
+  }
+
+  .upload-button,
+  .takepicture-button {
+    font-size: 12.5px;
+    padding: 4px 10px;
+    width: auto;
+    height: auto;
+    border-radius: 50px;
+    min-width: 140px;
+  }
+
+  .or-separator {
+    font-size: 13px;
+  }
+
+  .book-cover-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .book-cover-left {
+    width: 180px;
+  }
+
+  .book-cover-box {
+    width: 140px;
+    height: 210px;
+    padding: 6px;
+  }
+
+  .upload-button,
+  .takepicture-button {
+    font-size: 12.5px;
+    padding: 4px 10px;
+    width: auto;
+    height: auto;
+    border-radius: 50px;
+  }
+
+  .book-cover-right {
+    margin-left: 0;
+    width: 90%;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .book-cover-right .form-group {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .book-cover-right label {
+    font-size: 12.5px;
+  }
+
+  .book-cover-right .form-control,
+  .book-cover-right select {
+    font-size: 12.5px;
+    padding: 4px 10px;
+    width: 100%;
+  }
+
+
+  .input-group {
+    flex-wrap: nowrap; /* Keep them in one line */
+    gap: 4px;
+  }
+
+  .input-group .form-control,
+  .input-group select {
+    font-size: 12.5px;
+    padding: 4px 8px;
+  }
+
+  .input-group > .btn {
+    font-size: 14px; /* Smaller font size */
+    padding: 5px 10px; /* Reduced padding */
   }
 
   .book-cover {
@@ -2170,16 +2409,160 @@ h2 {
     gap: 15px;
   }
 
-  .upload-button, .scan-button, .add-book-button {
+  .scan-button, .add-book-button {
     font-size: 11px;
     padding: 3px 8px;
   }
 
-  /* Ensure form labels and inputs adjust to smaller screens */
-  .form-control, AB_label {
-    font-size: 14px; 
+  .scan-button .btn-img {
+    width: 24px;   /* Adjust icon size for mobile screens */
+    height: 24px;
   }
 
+  #scannedContentType {
+    font-size: 12px;
+    padding: 4px 8px; /* Reduce padding further for mobile */
+    height: 28px; /* Adjust height for smaller screens */
+    max-width: 100%; /* Ensure full width on small screens */
+  }
+
+  .scanning-section-container label {
+    font-size: 11px; /* Smallest font size for mobile */
+    margin-bottom: 4px; /* Small margin to keep things compact */
+  }
+
+  textarea.form-control {
+    font-size: 11px;
+    padding: 5px;
+  }
+
+  
+
+  .book-cover-section {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 8px;
+    width: 100%;
+  }
+
+  /* Adjust the left (image + buttons) */
+  .book-cover-left {
+    width: 100%;
+    max-width: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Book cover preview box */
+  .book-cover-box {
+    width: 140px;
+    height: 200px;
+    padding: 5px;
+    border-width: 1px;
+    border-radius: 6px;
+    background-color: #f0f0f0;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Buttons (upload + take picture) */
+  .upload-button,
+  .takepicture-button {
+    font-size: 12px;
+    padding: 6px 10px;
+    width: 100%;
+    max-width: 180px;
+    height: auto;
+    border-radius: 40px;
+    border: 2px solid #3e151a;
+    background-color: #3e151a;
+    color: white;
+    text-align: center;
+  }
+
+  /* Small "OR" text between buttons */
+  .or-separator {
+    font-size: 12px;
+    margin: 4px 0;
+  }
+
+  .book-cover-section {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 10px 8px;
+    width: 100%;
+  }
+
+  .book-cover-left {
+    width: 100%;
+    max-width: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .book-cover-box {
+    width: 140px;
+    height: 200px;
+    padding: 5px;
+    border-radius: 6px;
+  }
+
+  .upload-button,
+  .takepicture-button {
+    font-size: 12px;
+    padding: 3px 8px;
+    width: auto;
+    min-width: 130px;
+  }
+
+  .book-cover-right {
+    margin-left: 0;
+    width: 100%;
+    max-width: 95%;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 0 10px;
+  }
+
+  .book-cover-right .form-group {
+    width: 100%;
+    margin-bottom: 2px;
+  }
+
+  .book-cover-right label {
+    font-size: 12px;
+  }
+
+  .book-cover-right .form-control,
+  .book-cover-right select {
+    font-size: 12px;
+    padding: 3px 8px;
+    width: 100%;
+    height: auto;
+  }
+
+
+  .input-group {
+    flex-wrap: nowrap;
+    gap: 6px; /* Increase gap for mobile */
+  }
+
+  .input-group .form-control,
+  .input-group select {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+
+  .input-group > .btn {
+    font-size: 13px; /* Even smaller font size for smaller screens */
+    padding: 4px 8px; /* Reduced padding for compact layout */
+  }
   .book-cover {
     max-width: 100%; /* Allow the book cover section to take full width on small screens */
   }
