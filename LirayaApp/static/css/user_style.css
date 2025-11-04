@@ -1608,7 +1608,7 @@ header .dropdown:focus {
   --spinner-size: 80px;          /* tweak for bigger/smaller */
   --spinner-thickness: 10px;      /* ring thickness */
   --spinner-color: #3e151a;       /* brand color */
-  --spinner-track: rgba(62,21,26,0.18);
+  --spinner-track: rgba(115,115,115,0.18);
 }
 
 /* Keep overlay dark and header visible (you already have these; included for clarity) */
