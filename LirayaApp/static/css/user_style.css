@@ -1605,7 +1605,7 @@ header .dropdown:focus {
 
 /* Brand spinner vars */
 :root{
-  --spinner-size: 120px;          /* tweak for bigger/smaller */
+  --spinner-size: 80px;          /* tweak for bigger/smaller */
   --spinner-thickness: 10px;      /* ring thickness */
   --spinner-color: #3e151a;       /* brand color */
   --spinner-track: rgba(62,21,26,0.18);
