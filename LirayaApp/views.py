@@ -78,6 +78,8 @@ from django.db import models
 from cloudinary import uploader
 from cloudinary.uploader import upload, destroy
 import pytz
+import matplotlib
+matplotlib.use('Agg') 
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -2034,7 +2036,19 @@ def generate_pdf(request, report_type):
         file_name = 'Liraya_BookDetails_Report.pdf'
 
     elif report_type == 'account_bookrecords':
-        admin_generate_accountbookrecords(pdf_buffer, date_range, user_info)
+        # Build params from the modal form in admin_records.html
+        period_type = (request.GET.get('period_type') or 'today').strip()
+        date_range_params = {
+            'period_type': period_type,
+            'days': request.GET.get('days'),
+            'weeks': request.GET.get('weeks'),
+            'months': request.GET.get('months'),
+            'years': request.GET.get('years'),
+            'start_date': request.GET.get('start_date'),
+            'end_date': request.GET.get('end_date'),
+        }
+
+        admin_generate_accountbookrecords(pdf_buffer, date_range_params, user_info)
         file_name = 'Liraya_AccountBookRecords_Report.pdf'
     
     elif report_type == 'keyword_search_history':
@@ -2404,42 +2418,13 @@ def admin_generatebookdetails_pdf(pdf_buffer, book_id, user_info):
 #------------------------------ BOOK RECORDS ------------------------------#
 def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
     try:
-        # Step 1: Filter books by date range
-        if date_range == 'today':
-            filter_date = datetime.now().date()
-        elif date_range == 'last_1_week':
-            filter_date = datetime.now().date() - timedelta(weeks=1)
-        elif date_range == 'last_2_weeks':
-            filter_date = datetime.now().date() - timedelta(weeks=2)
-        elif date_range == 'last_1_month':
-            filter_date = datetime.now().date() - timedelta(days=30)
-        elif date_range == 'last_6_months':
-            filter_date = datetime.now().date() - timedelta(days=180)
-        elif date_range == 'last_1_year':
-            filter_date = datetime.now().date() - timedelta(days=365)
-        elif date_range == 'all_time':
-            filter_date = None  # We'll handle 'all_time' case separately in queries
-        else:
-            raise ValueError("Invalid date range provided.")
-
-        # Step 2: Fetch all librarians (filter by role="LIBRARIAN")
-        librarian_accounts = UserAccounts.objects.filter(role="LIBRARIAN")
+        filter_date, display_range, window_start, window_end = _resolve_bookrecords_range(date_range)
+    
+        # Step 2: Fetch uploaders (include LIBRARIAN and DEPARTMENT roles)
+        librarian_accounts = UserAccounts.objects.filter(role__in=["LIBRARIAN", "DEPARTMENT"]) 
         
         account_info_data = []
         
-        
-        data_range_map = {
-            'today': 'Today',
-            'last_1_week': 'Last 1 Week',
-            'last_2_weeks': 'Last 2 Weeks',
-            'last_1_month': 'Last 1 Month',
-            'last_6_months': 'Last 6 Months',
-            'last_1_year': 'Last 1 Year',
-            'all_time': 'All Time'
-        }
-        
-        # Use the mapped value for data_range
-        display_range = data_range_map.get(date_range, date_range.capitalize())
         
         # Step 4.1: Get the librarian who uploaded the most and fewest books
         
@@ -2448,11 +2433,18 @@ def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
         for librarian in librarian_accounts:
             account_obj = librarian.account  # Get the associated AccountInformation for each librarian
             
-            # Step 3.1: Filter books by the librarian and date range
-            if date_range != 'all_time':
-                books_uploaded = Books.objects.filter(account=account_obj, date_uploaded__gte=filter_date)
+            # Step 3.1: Filter books by the librarian and resolved date window
+            # Only count non-archived books to align with UI counts
+            base_qs = Books.objects.filter(account=account_obj, is_archived=False)
+            # Always prefer the resolved concrete window (window_start/window_end) for consistency with the chart
+            if window_start and window_end:
+                books_uploaded = base_qs.filter(date_uploaded__gte=window_start, date_uploaded__lte=window_end)
+            elif window_start:
+                books_uploaded = base_qs.filter(date_uploaded__gte=window_start)
+            elif window_end:
+                books_uploaded = base_qs.filter(date_uploaded__lte=window_end)
             else:
-                books_uploaded = Books.objects.filter(account=account_obj)  # No date filter for 'all_time'
+                books_uploaded = base_qs  # No date filter (all time)
 
             # Step 3.2: Get the count of books uploaded
             total_books_uploaded = books_uploaded.count()
@@ -2463,90 +2455,177 @@ def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
             # Step 3.4: Add the librarian's data to the list
             account_info_data.append({
                 'account_name': f"{account_obj.first_name} {' ' + account_obj.middle_name if account_obj.middle_name else ''} {account_obj.last_name}",
+                'role': (librarian.role.title() if getattr(librarian, 'role', None) else 'N/A'),
                 'total_books_uploaded': total_books_uploaded,
                 'latest_book_date': latest_book_date or 'Not uploaded today',
-                'data_range': date_range,
+                'data_range': display_range,
             })
 
 
-        # Step 4.1: Get the highest and lowest uploaded librarians
-        highest_uploaded_librarians = [librarian for librarian in account_info_data if librarian['total_books_uploaded'] == max(account_info_data, key=lambda x: x['total_books_uploaded'])['total_books_uploaded']]
-        lowest_uploaded_librarians = [librarian for librarian in account_info_data if librarian['total_books_uploaded'] == min(account_info_data, key=lambda x: x['total_books_uploaded'])['total_books_uploaded']]
+        # Step 4.1: Build librarian-level summary safely (handle empty dataset)
+        if account_info_data:
+            highest_uploaded_librarians = [l for l in account_info_data if l['total_books_uploaded'] == max(account_info_data, key=lambda x: x['total_books_uploaded'])['total_books_uploaded']]
+            lowest_uploaded_librarians = [l for l in account_info_data if l['total_books_uploaded'] == min(account_info_data, key=lambda x: x['total_books_uploaded'])['total_books_uploaded']]
 
-        # Step 4.2: Get the count of librarians who have not uploaded any books
-        librarians_with_no_uploads = len([librarian for librarian in account_info_data if librarian['total_books_uploaded'] == 0])
+            librarians_with_no_uploads = len([l for l in account_info_data if l['total_books_uploaded'] == 0])
+            total_librarians = len(account_info_data)
+            top_librarians = sorted(account_info_data, key=lambda x: x['total_books_uploaded'], reverse=True)[:10]
 
-        # Step 4.3: Get the total number of librarians
-        total_librarians = len(account_info_data)
+            # Prepare labels; list up to 3 names, collapse to 'Multiple accounts' for 4 or more
+            high_names = [l['account_name'] for l in highest_uploaded_librarians]
+            low_names  = [l['account_name'] for l in lowest_uploaded_librarians]
 
-        # Step 4.4: Get the top 10 most active librarians based on total books uploaded
-        top_librarians = sorted(account_info_data, key=lambda x: x['total_books_uploaded'], reverse=True)[:10]
+            def _join_names(names):
+                n = len(names)
+                if n == 0:
+                    return 'N/A'
+                if n == 1:
+                    return names[0]
+                if n == 2:
+                    return f"{names[0]} and {names[1]}"
+                if n == 3:
+                    return f"{names[0]}, {names[1]}, and {names[2]}"
+                return 'Multiple accounts'
 
-        # Preparing descriptions for the highest and lowest uploaded librarians
-        highest_uploaded_librarian_names = " and ".join([librarian['account_name'] for librarian in highest_uploaded_librarians])
-        lowest_uploaded_librarian_names = " and ".join([librarian['account_name'] for librarian in lowest_uploaded_librarians])
+            def _subject_label(names):
+                return _join_names(names)
 
-        # Step 4.3: Get the most recent upload date among the highest uploaded librarians
-        most_recent_highest_upload_date = max(highest_uploaded_librarians, key=lambda x: x['latest_book_date'])['latest_book_date']
+            def _verb(n, singular='has', plural='have'):
+                return singular if n == 1 else plural
 
-        # Step 4.4: Get the librarian(s) who made the most recent upload (if multiple, join names with "and")
-        recent_highest_uploaded_librarians = [librarian['account_name'] for librarian in highest_uploaded_librarians if librarian['latest_book_date'] == most_recent_highest_upload_date]
+            highest_subject = _subject_label(high_names)
+            highest_verb    = _verb(len(high_names))
+            lowest_subject  = _subject_label(low_names)
+            lowest_verb     = _verb(len(low_names))
 
-        # Join names with "and" if there are multiple
-        recent_highest_uploaded_librarians_str = " and ".join(recent_highest_uploaded_librarians)
-        
-        # Updating the table description to reflect the above details
-        table_description_account_info = f"""
-            <b>Librarian Upload Data for {display_range}</b><br/><br/>
-            Table 1 shows that <b>{highest_uploaded_librarian_names}</b> have uploaded the highest number of books during the {display_range}, 
-            with a total of <b>{highest_uploaded_librarians[0]['total_books_uploaded']}</b> books. In contrast, <b>{lowest_uploaded_librarian_names}</b> 
-            have uploaded the fewest books during this period, with a total of <b>{lowest_uploaded_librarians[0]['total_books_uploaded']}</b> books.<br/><br/>
-            
-            The most recent book upload was made by <b>{recent_highest_uploaded_librarians_str}</b> on <b>{most_recent_highest_upload_date}</b>. 
-            There are <b>{librarians_with_no_uploads}</b> librarians who have not uploaded any books within the specified range. The total number of librarians is <b>{total_librarians}</b>.<br/><br/>
-            
-            The most active librarians are the following (highest to lowest books uploaded):<br/>
-            <ol>
-                {"".join([f"<li>{i+1}. {librarian['account_name']}</li>  " for i, librarian in enumerate(top_librarians)])}
-            </ol>
+            # Most recent upload among the highs (guard None dates by sorting key that handles None)
+            def _safe_date(v):
+                d = v.get('latest_book_date')
+                return d or date.min
 
-        """
+            most_recent_highest_upload_date = max(highest_uploaded_librarians, key=_safe_date).get('latest_book_date')
+            recent_names = [l['account_name'] for l in highest_uploaded_librarians if l.get('latest_book_date') == most_recent_highest_upload_date]
+            recent_subject = _subject_label(recent_names)
+
+            # Total uploads across all librarians/departments in the selected window
+            total_books_all = sum(l['total_books_uploaded'] for l in account_info_data)
+
+            if total_books_all == 0:
+                table_description_account_info = f"""
+                    <b>Librarian/Department Upload Data for {display_range}</b><br/><br/>
+                    No uploads were recorded from librarians or departments during this period.<br/>
+                    Total accounts considered: <b>{total_librarians}</b>.
+                """
+            else:
+                table_description_account_info = f"""
+                    <b>Librarian/Department Upload Data for {display_range}</b><br/><br/>
+                    Table 1 shows that <b>{highest_subject}</b> {highest_verb} uploaded the highest number of books during the {display_range}, 
+                    with a total of <b>{(highest_uploaded_librarians[0]['total_books_uploaded'] if highest_uploaded_librarians else 0)}</b> books. In contrast, <b>{lowest_subject}</b> 
+                    {lowest_verb} uploaded the fewest books during this period, with a total of <b>{(lowest_uploaded_librarians[0]['total_books_uploaded'] if lowest_uploaded_librarians else 0)}</b> books.<br/><br/>
+                    
+                    Overall, a total of <b>{total_books_all}</b> books were uploaded across all librarians/departments during this period.<br/><br/>
+
+                    The most recent book upload was made by <b>{recent_subject}</b> on <b>{most_recent_highest_upload_date or 'N/A'}</b>. 
+                    There are <b>{librarians_with_no_uploads}</b> librarians/departments who have not uploaded any books within the specified range. The total number of accounts is <b>{total_librarians}</b>.<br/><br/>
+                    
+                    The most active librarians/departments are the following (highest to lowest books uploaded):<br/>
+                    <ol>
+                        {"".join([f"<li>{i+1}. {l['account_name']}</li>" for i, l in enumerate(top_librarians)])}
+                    </ol>
+
+                """
+        else:
+            table_description_account_info = f"""
+                <b>Librarian/Department Upload Data for {display_range}</b><br/><br/>
+                No librarian or department data available for the selected range. Overall, <b>no uploads</b> were recorded during this period.
+            """
         
         # Step 4: Prepare the second data - Categorize books by type (Thesis, Academic)
-        if date_range != 'all_time':
-            # Filter by date range and categorize by book type (Thesis, Academic)
-            categorized_books = Books.objects.filter(date_uploaded__gte=filter_date)
+        # Apply the same resolved window
+        # Only include non-archived books in categorized summaries
+        cb_qs = Books.objects.filter(is_archived=False)
+        # Use the same resolved window here too to ensure descriptions/tables match counts
+        if window_start and window_end:
+            categorized_books = cb_qs.filter(date_uploaded__gte=window_start, date_uploaded__lte=window_end)
+        elif window_start:
+            categorized_books = cb_qs.filter(date_uploaded__gte=window_start)
+        elif window_end:
+            categorized_books = cb_qs.filter(date_uploaded__lte=window_end)
         else:
-            # If 'all_time', no filtering by date
-            categorized_books = Books.objects.all()
+            categorized_books = cb_qs
 
         # Separate the books into Thesis and Academic categories
         thesis_books = categorized_books.filter(book_type='Thesis').order_by('title')  # Alphabetical order by title
         academic_books = categorized_books.filter(book_type='Academic').order_by('title')  # Alphabetical order by title
 
-        # Prepare data for categorized books with details
+            # Prepare data for categorized books with details
         categorized_books_data = []
         
-        # Annotating the thesis books with book_count from BookViewLog
-        most_viewed_thesis_book = thesis_books.annotate(book_count=models.Subquery(
-            BookViewLog.objects.filter(book_id=models.OuterRef('book_id')).values('book_count')[:1]
-        )).order_by('-book_count').first()
+        # Annotate thesis books with book_count from BookViewLog (safe when empty)
+        annotated_thesis = thesis_books.annotate(
+            book_count=models.Subquery(
+                BookViewLog.objects.filter(book_id=models.OuterRef('book_id')).values('book_count')[:1]
+            )
+        )
 
-        least_viewed_thesis_book = thesis_books.annotate(book_count=models.Subquery(
-            BookViewLog.objects.filter(book_id=models.OuterRef('book_id')).values('book_count')[:1]
-        )).order_by('book_count').first()
+        if thesis_books.exists():
+            # Materialize minimal fields for tie handling
+            thesis_rows = list(
+                annotated_thesis.values('title', 'date_uploaded', 'book_id', 'book_count')
+            )
 
-        
-        latest_uploaded_book = thesis_books.order_by('-date_uploaded').first()
-        oldest_uploaded_book = thesis_books.order_by('date_uploaded').first()
-        
-        table_description_thesis_books = f"""
-            <b>Thesis Books for {display_range}</b><br/><br/>
-            Table 2 displays the list of all thesis books uploaded within the {display_range}. A total of <b>{thesis_books.count()}</b> thesis books were uploaded during this period. 
-            The table shows that the most viewed book is <b>{most_viewed_thesis_book.title}</b>, with <b>{most_viewed_thesis_book.book_count}</b> views, 
-            while the least viewed book is <b>{least_viewed_thesis_book.title}</b>, with <b>{least_viewed_thesis_book.book_count}</b> views. 
-            The most recently uploaded book is <b>{latest_uploaded_book.title}</b>, while the oldest uploaded book is <b>{oldest_uploaded_book.title}</b>.
-        """
+            # Helper to join up to 3 titles; 4+ => "Multiple books"
+            def _join_titles(names):
+                names = [n for n in names if n]
+                if not names:
+                    return 'N/A'
+                if len(names) >= 4:
+                    return 'Multiple books'
+                if len(names) == 1:
+                    return names[0]
+                if len(names) == 2:
+                    return f"{names[0]} and {names[1]}"
+                return f"{names[0]}, {names[1]}, and {names[2]}"
+
+            # Views-based ties (treat None as 0)
+            view_counts = [(row['title'], int(row['book_count'] or 0)) for row in thesis_rows]
+            if view_counts:
+                mv_max = max(vc for _, vc in view_counts)
+                lv_min = min(vc for _, vc in view_counts)
+                mv_titles = [t for t, vc in view_counts if vc == mv_max]
+                lv_titles = [t for t, vc in view_counts if vc == lv_min]
+            else:
+                mv_max = lv_min = 0
+                mv_titles = lv_titles = []
+
+            # Date-based ties
+            dates = [row['date_uploaded'] for row in thesis_rows if row.get('date_uploaded') is not None]
+            if dates:
+                latest_dt = max(dates)
+                oldest_dt = min(dates)
+                latest_titles = [row['title'] for row in thesis_rows if row.get('date_uploaded') == latest_dt]
+                oldest_titles = [row['title'] for row in thesis_rows if row.get('date_uploaded') == oldest_dt]
+            else:
+                latest_titles = []
+                oldest_titles = []
+
+            mv_label = _join_titles(mv_titles)
+            lv_label = _join_titles(lv_titles)
+            latest_label = _join_titles(latest_titles)
+            oldest_label = _join_titles(oldest_titles)
+
+            table_description_thesis_books = f"""
+                <b>Thesis Books for {display_range}</b><br/><br/>
+                Table 2 displays the list of all thesis books uploaded within the {display_range}. A total of <b>{thesis_books.count()}</b> thesis books were uploaded during this period. 
+                The table shows that the most viewed book(s) is/are <b>{mv_label}</b>, with <b>{mv_max}</b> views, 
+                while the least viewed book(s) is/are <b>{lv_label}</b>, with <b>{lv_min}</b> views. 
+                The most recently uploaded book(s) is/are <b>{latest_label}</b>, while the oldest uploaded book(s) is/are <b>{oldest_label}</b>.
+            """
+        else:
+            table_description_thesis_books = f"""
+                <b>Thesis Books for {display_range}</b><br/><br/>
+                No thesis books were uploaded in this period.
+            """
         
         # Add Thesis books
         if thesis_books.exists():
@@ -2574,25 +2653,68 @@ def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
                 'book_type': 'Thesis',
             })
 
-        # Get the most viewed and least viewed academic books similarly
-        most_viewed_academic_book = academic_books.annotate(book_count=models.Subquery(
-            BookViewLog.objects.filter(book_id=models.OuterRef('book_id')).values('book_count')[:1]
-        )).order_by('-book_count').first()
+        # Annotate academic books with book_count from BookViewLog (safe when empty)
+        annotated_academic = academic_books.annotate(
+            book_count=models.Subquery(
+                BookViewLog.objects.filter(book_id=models.OuterRef('book_id')).values('book_count')[:1]
+            )
+        )
 
-        least_viewed_academic_book = academic_books.annotate(book_count=models.Subquery(
-            BookViewLog.objects.filter(book_id=models.OuterRef('book_id')).values('book_count')[:1]
-        )).order_by('book_count').first()
-        
-        latest_uploaded_academic_book = academic_books.order_by('-date_uploaded').first()
-        oldest_uploaded_academic_book = academic_books.order_by('date_uploaded').first()
-        # Add the table description for academic books
-        table_description_academic_books = f"""
-            <b>Academic Books for {display_range}</b><br/><br/>
-            Table 3 displays the list of all academic books uploaded within the {display_range}. A total of <b>{academic_books.count()}</b> academic books were uploaded during this period. 
-            The table shows that the most viewed book is <b>{most_viewed_academic_book.title}</b>, with <b>{most_viewed_academic_book.book_count}</b> views, 
-            while the least viewed book is <b>{least_viewed_academic_book.title}</b>, with <b>{least_viewed_academic_book.book_count}</b> views. 
-            The most recently uploaded book is <b>{latest_uploaded_academic_book.title}</b>, while the oldest uploaded book is <b>{oldest_uploaded_academic_book.title}</b>.
-        """
+        # Add the table description for academic books (safe when empty)
+        if academic_books.exists():
+            acad_rows = list(
+                annotated_academic.values('title', 'date_uploaded', 'book_id', 'book_count')
+            )
+
+            def _join_titles_ac(names):
+                names = [n for n in names if n]
+                if not names:
+                    return 'N/A'
+                if len(names) >= 4:
+                    return 'Multiple books'
+                if len(names) == 1:
+                    return names[0]
+                if len(names) == 2:
+                    return f"{names[0]} and {names[1]}"
+                return f"{names[0]}, {names[1]}, and {names[2]}"
+
+            view_counts_ac = [(row['title'], int(row['book_count'] or 0)) for row in acad_rows]
+            if view_counts_ac:
+                mv_max_ac = max(vc for _, vc in view_counts_ac)
+                lv_min_ac = min(vc for _, vc in view_counts_ac)
+                mv_titles_ac = [t for t, vc in view_counts_ac if vc == mv_max_ac]
+                lv_titles_ac = [t for t, vc in view_counts_ac if vc == lv_min_ac]
+            else:
+                mv_max_ac = lv_min_ac = 0
+                mv_titles_ac = lv_titles_ac = []
+
+            dates_ac = [row['date_uploaded'] for row in acad_rows if row.get('date_uploaded') is not None]
+            if dates_ac:
+                latest_dt_ac = max(dates_ac)
+                oldest_dt_ac = min(dates_ac)
+                latest_titles_ac = [row['title'] for row in acad_rows if row.get('date_uploaded') == latest_dt_ac]
+                oldest_titles_ac = [row['title'] for row in acad_rows if row.get('date_uploaded') == oldest_dt_ac]
+            else:
+                latest_titles_ac = []
+                oldest_titles_ac = []
+
+            mv_label_ac = _join_titles_ac(mv_titles_ac)
+            lv_label_ac = _join_titles_ac(lv_titles_ac)
+            latest_label_ac = _join_titles_ac(latest_titles_ac)
+            oldest_label_ac = _join_titles_ac(oldest_titles_ac)
+
+            table_description_academic_books = f"""
+                <b>Academic Books for {display_range}</b><br/><br/>
+                Table 3 displays the list of all academic books uploaded within the {display_range}. A total of <b>{academic_books.count()}</b> academic books were uploaded during this period. 
+                The table shows that the most viewed book(s) is/are <b>{mv_label_ac}</b>, with <b>{mv_max_ac}</b> views, 
+                while the least viewed book(s) is/are <b>{lv_label_ac}</b>, with <b>{lv_min_ac}</b> views. 
+                The most recently uploaded book(s) is/are <b>{latest_label_ac}</b>, while the oldest uploaded book(s) is/are <b>{oldest_label_ac}</b>.
+            """
+        else:
+            table_description_academic_books = f"""
+                <b>Academic Books for {display_range}</b><br/><br/>
+                No academic books were uploaded in this period.
+            """
         # Add Academic books
         if academic_books.exists():
             for book in academic_books:
@@ -2619,217 +2741,535 @@ def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
                 'book_type': 'Academic',
             })
             
+        # ---------------- Shelf Category Counts (Table 4) ---------------- #
+        # Compute counts per shelf category in the same resolved window (non-archived only)
+        shelf_counts_qs = categorized_books.values('shelf_category').annotate(n=Count('shelf_category'))
+        # Build data rows
+        shelf_counts_data = []
+        for row in shelf_counts_qs.order_by('-n', 'shelf_category'):
+            shelf_counts_data.append({
+                'shelf_category': row.get('shelf_category') or 'Uncategorized',
+                'count': int(row.get('n') or 0),
+            })
+
+        # Description with tie handling (list up to 3 categories, else 'Multiple categories')
+        if shelf_counts_data:
+            counts = [r['count'] for r in shelf_counts_data]
+            max_c = max(counts)
+            min_c = min(counts)
+            high_names = [r['shelf_category'] for r in shelf_counts_data if r['count'] == max_c]
+            low_names  = [r['shelf_category'] for r in shelf_counts_data if r['count'] == min_c]
+
+            def _join_labels(names):
+                names = [n for n in names if n]
+                if len(names) >= 4:
+                    return 'Multiple categories'
+                if len(names) == 0:
+                    return 'N/A'
+                if len(names) == 1:
+                    return names[0]
+                if len(names) == 2:
+                    return f"{names[0]} and {names[1]}"
+                return f"{names[0]}, {names[1]}, and {names[2]}"
+
+            high_label = _join_labels(high_names)
+            low_label  = _join_labels(low_names)
+
+            table_description_shelf = f"""
+                <b>Shelf Category Counts for {display_range}</b><br/><br/>
+                Table 4 summarizes the number of books per shelf category within the selected range. The category/categories with the highest count is/are <b>{high_label}</b> with <b>{max_c}</b> book(s),
+                while the lowest is/are <b>{low_label}</b> with <b>{min_c}</b> book(s).
+            """
+        else:
+            table_description_shelf = f"""
+                <b>Shelf Category Counts for {display_range}</b><br/><br/>
+                No books were uploaded in this period, so no shelf category counts are available.
+            """
+
         all_description_of_tables_data = []
         all_description_of_tables_data.extend([
             {"account_info_desc": table_description_account_info},
             {"thesis_books_desc": table_description_thesis_books},
             {"academic_books_desc": table_description_academic_books},
+            {"shelf_counts_desc": table_description_shelf},
         ])
         
         # Step 5: Generate the report using ReportLab (passing account_info_data, categorized_books_data, and user_info)
         file_name = "Liraya_AccountBookRecords_Report.pdf"
         
-        # Step 6: GHANT Chart
-        graph_path, graph_description = generate_librarian_upload_chart(date_range)
-        
-        
-        generate_account_bookrecords(pdf_buffer, account_info_data, categorized_books_data, user_info, file_name, graph_path, graph_description, all_description_of_tables_data)
+        graph_path, graph_description = generate_librarian_upload_chart(window=(window_start, window_end), label=display_range)
+
+        # Header start/end dates for Book Range line: only use the resolved window
+        if window_start and window_end:
+            start_date_str = window_start.strftime('%B %d, %Y')
+            end_date_str = window_end.strftime('%B %d, %Y')
+        else:
+            start_date_str = None
+            end_date_str = None
+
+        generate_account_bookrecords(
+            pdf_buffer,
+            account_info_data,
+            categorized_books_data,
+            user_info,
+            file_name,
+            graph_path,
+            graph_description,
+            all_description_of_tables_data,
+            shelf_counts_data,
+            start_date_str,
+            end_date_str
+        )
 
     except Exception as e:
         logger.error(f"Error generating account book records report: {str(e)}")
         return HttpResponse(f"Error generating account book records report: {str(e)}", status=500)
 
-
-
-def generate_librarian_upload_chart(date_range):
+def _data_floor() -> date:
+    """
+    Dynamic lower bound for any report/chart range.
+    Falls back to the previous constant if DB has no rows or on error.
+    """
     try:
-        # Step 1: Define the filter for date range
-        if date_range == 'today':
-            start_date = datetime.now().date() - timedelta(days=1)
-            end_date = datetime.now().date() + timedelta(days=1)
-            filter_date = [start_date, end_date]
-        elif date_range == 'last_1_week':
-            filter_date = datetime.now().date() - timedelta(weeks=1)
-        elif date_range == 'last_2_weeks':
-            filter_date = datetime.now().date() - timedelta(weeks=2)
-        elif date_range == 'last_1_month':
-            filter_date = datetime.now().date() - timedelta(days=30)
-        elif date_range == 'last_6_months':
-            filter_date = datetime.now().date() - timedelta(days=180)
-        elif date_range == 'last_1_year':
-            filter_date = datetime.now().date() - timedelta(days=365)
-        elif date_range == 'all_time':
-            filter_date = None  # No filter for all time
+        earliest = Books.objects.aggregate(m=Min('date_uploaded'))['m']
+        if earliest is None:
+            return DATA_FLOOR
+        return earliest if isinstance(earliest, date) else earliest.date()
+    except Exception:
+        return DATA_FLOOR
+
+def _resolve_bookrecords_range(date_range, today=None):
+    """
+    Compute (filter_date, display_range, window_start, window_end) from the admin modal params or legacy string.
+    - date_range: dict like {period_type, days|weeks|months|years|start_date|end_date} OR legacy string key
+    - filter_date: either a single date (lower bound), a (start,end) tuple, or None for 'all'
+    - display_range: human-readable label used in descriptions
+    - window_start/window_end: concrete inclusive window bounds for charting (or None/None for 'all')
+    """
+    current_date = today or datetime.now().date()
+    filter_date = None
+    display_range = 'All Time'
+
+    if isinstance(date_range, dict):
+        params = date_range
+        period_type = (params.get('period_type') or 'today').strip()
+
+        if period_type == 'today':
+            filter_date = current_date
+            display_range = 'Today'
+        elif period_type == 'days':
+            days = int(params.get('days') or 1)
+            filter_date = current_date - timedelta(days=days)
+            display_range = f"Last {days} Days"
+        elif period_type == 'weeks':
+            weeks = int(params.get('weeks') or 1)
+            filter_date = current_date - timedelta(weeks=weeks)
+            display_range = f"Last {weeks} Weeks"
+        elif period_type == 'months':
+            months = int(params.get('months') or 1)
+            filter_date = (current_date - relativedelta(months=months))
+            display_range = f"Last {months} Months"
+        elif period_type == 'years':
+            years = int(params.get('years') or 1)
+            filter_date = (current_date - relativedelta(years=years))
+            display_range = f"Last {years} Years"
+        elif period_type == 'custom':
+            sd_raw = params.get('start_date')
+            ed_raw = params.get('end_date')
+            start_date = datetime.strptime(sd_raw, '%Y-%m-%d').date() if sd_raw else None
+            end_date = datetime.strptime(ed_raw, '%Y-%m-%d').date() if ed_raw else current_date
+            if start_date and end_date and start_date > end_date:
+                start_date, end_date = end_date, start_date
+            filter_date = (start_date, end_date)
+            if start_date and end_date:
+                display_range = f"{start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}"
+            else:
+                display_range = 'Custom Range'
+        elif period_type == 'all':
+            filter_date = None
+            display_range = 'All Time'
+        else:
+            raise ValueError("Invalid period type provided.")
+    else:
+        key = (date_range or '').strip()
+        if key == 'today':
+            filter_date = current_date
+            display_range = 'Today'
+        elif key == 'last_1_week':
+            filter_date = current_date - timedelta(weeks=1)
+            display_range = 'Last 1 Week'
+        elif key == 'last_2_weeks':
+            filter_date = current_date - timedelta(weeks=2)
+            display_range = 'Last 2 Weeks'
+        elif key == 'last_1_month':
+            filter_date = current_date - timedelta(days=30)
+            display_range = 'Last 1 Month'
+        elif key == 'last_6_months':
+            filter_date = current_date - timedelta(days=180)
+            display_range = 'Last 6 Months'
+        elif key == 'last_1_year':
+            filter_date = current_date - timedelta(days=365)
+            display_range = 'Last 1 Year'
+        elif key in ('all_time', 'all'):
+            filter_date = None
+            display_range = 'All Time'
         else:
             raise ValueError("Invalid date range provided.")
-        
-        
-        # Step 2: Fetch all librarians (filter by role="LIBRARIAN")
-        librarian_data = defaultdict(list)  # Will hold librarian names and their book uploads
-        
-        librarian_accounts = UserAccounts.objects.filter(role="LIBRARIAN")
-        
-        # Collect book upload data for each librarian
-        for librarian in librarian_accounts:
-            account_obj = librarian.account
-            books_uploaded = Books.objects.filter(account=account_obj)
 
-            # Filter by date range if needed
-            if filter_date:
-                if isinstance(filter_date, list):
-                    books_uploaded = books_uploaded.filter(date_uploaded__range=filter_date)
-                else:
-                    books_uploaded = books_uploaded.filter(date_uploaded__gte=filter_date)
-            
-            # Count uploads per date for each librarian
-            full_name = f"{librarian.account.first_name} {librarian.account.last_name}"
-            for book in books_uploaded:
-                librarian_data[full_name].append(book.date_uploaded)
+    # Concrete chart window
+    if isinstance(filter_date, tuple):
+        sd, ed = filter_date
+        window_start = sd or _data_floor()
+        window_end = ed or current_date
+    elif filter_date:
+        window_start = filter_date
+        window_end = current_date
+    else:
+        window_start, window_end = None, None
 
-        # Step 3: Get the top 10 librarians based on upload counts
-        upload_counts = {librarian: len(dates) for librarian, dates in librarian_data.items()}
-        
-        # Sort librarians by upload count in descending order
-        top_librarians = sorted(upload_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-        
-        # Get the data for the top 10 librarians
-        top_librarian_names = [librarian[0] for librarian in top_librarians]
-        
-        # Prepare data for plotting (grouped by date)
-        plot_data = defaultdict(lambda: defaultdict(int))  # Store count of uploads per day per librarian
-        
-        for librarian, upload_dates in librarian_data.items():
-            if librarian in top_librarian_names:
-                for upload_date in upload_dates:
-                    plot_data[upload_date][librarian] += 1  # Increment upload count per date
+    return filter_date, display_range, window_start, window_end
 
-        # Convert plot_data into a DataFrame for easier plotting
-        if plot_data:
-            dates = sorted(plot_data.keys())  # Sorted dates
-            data = {librarian: [plot_data[date].get(librarian, 0) for date in dates] for librarian in top_librarian_names}
-            df = pd.DataFrame(data, index=dates)
+def generate_librarian_upload_chart(window=None, label=None, date_range=None):
+    """
+    Generate a line chart of librarian uploads over a given window with adaptive x-axis granularity.
 
-            # Step 4: Plot the line chart
+    Inputs:
+    - window: (start_date, end_date) tuple of date or datetime (inclusive). When None/None, uses all-time.
+    - label: display label for description (e.g., "Last 6 Months", "Today"). Optional.
+    - date_range: legacy string (e.g., 'today', 'last_1_week') for backward-compat; used only if window is None.
+
+    Outputs:
+    - (graph_path, graph_description)
+    """
+    try:
+        # 1) Resolve concrete window [ws, we]
+        today = datetime.now().date()
+        ws, we = None, None
+
+        if window and isinstance(window, (tuple, list)) and len(window) == 2:
+            ws, we = window
+        else:
+            # Backward compatibility with legacy string date_range
+            key = (date_range or '').strip() if date_range else None
+            if key in (None, '', 'all_time', 'all'):
+                ws, we = None, None
+            elif key == 'today':
+                ws = today
+                we = today
+            elif key == 'last_1_week':
+                ws = today - timedelta(weeks=1)
+                we = today
+            elif key == 'last_2_weeks':
+                ws = today - timedelta(weeks=2)
+                we = today
+            elif key == 'last_1_month':
+                ws = today - timedelta(days=30)
+                we = today
+            elif key == 'last_6_months':
+                ws = today - timedelta(days=180)
+                we = today
+            elif key == 'last_1_year':
+                ws = today - timedelta(days=365)
+                we = today
+            else:
+                raise ValueError("Invalid date range provided.")
+
+        # If all-time requested, infer from data (use non-archived to match UI/report semantics)
+        if ws is None or we is None:
+            agg = Books.objects.filter(is_archived=False).aggregate(mn=Min('date_uploaded'), mx=Max('date_uploaded'))
+            mn, mx = agg.get('mn'), agg.get('mx')
+            if not mn or not mx:
+                # no data at all
+                mn = today
+                mx = today
+            # Convert to date if needed
+            ws = mn.date() if hasattr(mn, 'date') else mn
+            we = mx.date() if hasattr(mx, 'date') else mx
+
+        if ws > we:
+            ws, we = we, ws
+
+        # 2) Determine granularity and step
+        # Compute span in days
+        span_days = max(1, (we - ws).days + 1)
+
+        # granularity: use 'day' even for single-day windows (Books.date_uploaded is a DateField)
+        if span_days <= 1:
+            gran = 'day'
+        elif span_days <= 45:
+            gran = 'day'
+        elif span_days <= 365:
+            gran = 'week'
+        elif span_days <= 3 * 365:
+            gran = 'month'
+        else:
+            gran = 'year'
+
+        # Max number of bins for readability
+        MAX_BINS = 60
+
+        def months_between(d1, d2):
+            return (d2.year - d1.year) * 12 + (d2.month - d1.month) + 1
+
+        def years_between(d1, d2):
+            return (d2.year - d1.year) + 1
+
+        # number of base units
+        if gran == 'hour':
+            units = 24
+        elif gran == 'day':
+            units = span_days
+        elif gran == 'week':
+            units = max(1, (span_days + 6) // 7)
+        elif gran == 'month':
+            units = months_between(ws, we)
+        else:
+            units = years_between(ws, we)
+
+        # choose a nice step (1,2,5,10,20,50...)
+        def nice_step(n_units, max_bins=MAX_BINS):
+            candidates = [1, 2, 3, 5, 7, 10, 14, 15, 20, 30, 60, 90, 120]
+            for c in candidates:
+                if (n_units + c - 1) // c <= max_bins:
+                    return c
+            # fallback
+            return max(1, (n_units + max_bins - 1) // max_bins)
+
+        step = nice_step(units)
+
+        # 3) Build bins and labels
+        bins = []
+        labels = []
+
+        if gran == 'hour':
+            # Use the single day (ws) as reference
+            ref_dt = datetime(ws.year, ws.month, ws.day)
+            h = 0
+            while h < 24:
+                bins.append(('hour', h))
+                labels.append(f"{h:02d}:00")
+                h += step
+        elif gran == 'day':
+            cur = ws
+            while cur <= we:
+                bins.append(('day', cur))
+                labels.append(cur.strftime('%Y-%m-%d'))
+                cur = cur + timedelta(days=step)
+        elif gran == 'week':
+            cur = ws
+            while cur <= we:
+                bins.append(('week', cur))
+                labels.append(f"Week of {cur.strftime('%Y-%m-%d')}")
+                cur = cur + timedelta(weeks=step)
+        elif gran == 'month':
+            cur = date(ws.year, ws.month, 1)
+            end_m = date(we.year, we.month, 1)
+            while cur <= end_m:
+                bins.append(('month', cur.year, cur.month))
+                labels.append(f"{cur.year}-{cur.month:02d}")
+                cur = (cur + relativedelta(months=step))
+        else:  # year
+            cur_y = ws.year
+            while cur_y <= we.year:
+                bins.append(('year', cur_y))
+                labels.append(str(cur_y))
+                cur_y += step
+
+        # 4) Chart - Collect data per librarian (LIBRARIAN + DEPARTMENT)
+        librarian_accounts = UserAccounts.objects.filter(role__in=["LIBRARIAN", "DEPARTMENT"])  
+        librarian_names = []
+        uploads_by_lib = {}
+
+        # Precompute date bounds (inclusive on both ends)
+        start_d = ws
+        end_d = we
+
+        for ua in librarian_accounts.select_related('account'):
+            full_name = f"{ua.account.first_name} {ua.account.last_name}".strip()
+            librarian_names.append(full_name)
+
+            # Match counts with UI by excluding archived books
+            qs = Books.objects.filter(
+                account=ua.account,
+                is_archived=False,
+                date_uploaded__gte=start_d,
+                date_uploaded__lte=end_d
+            )
+
+            # Map each upload to a bin
+            counts = [0] * len(bins)
+            for book in qs.only('date_uploaded'):
+                dt = book.date_uploaded
+                # If it's date-only, coerce to datetime for consistency
+                if isinstance(dt, date) and not isinstance(dt, datetime):
+                    dt = datetime(dt.year, dt.month, dt.day)
+
+                if gran == 'day':
+                    # distance in days from ws
+                    d = (dt.date() - ws).days
+                    if d >= 0:
+                        idx = d // step
+                        if 0 <= idx < len(counts):
+                            counts[idx] += 1
+                elif gran == 'week':
+                    d = (dt.date() - ws).days
+                    if d >= 0:
+                        w = d // 7
+                        idx = w // step
+                        if 0 <= idx < len(counts):
+                            counts[idx] += 1
+                elif gran == 'month':
+                    ddt = dt.date()
+                    months = (ddt.year - ws.year) * 12 + (ddt.month - ws.month)
+                    if months >= 0:
+                        idx = months // step
+                        if 0 <= idx < len(counts):
+                            counts[idx] += 1
+                else:  # year
+                    years = dt.year - ws.year
+                    if years >= 0:
+                        idx = years // step
+                        if 0 <= idx < len(counts):
+                            counts[idx] += 1
+
+            uploads_by_lib[full_name] = counts
+
+        # 5) Keep top 10 librarians by total
+        totals = {name: sum(vals) for name, vals in uploads_by_lib.items()}
+        top10 = sorted(totals.items(), key=lambda x: x[1], reverse=True)[:10]
+        top_names = [n for (n, _) in top10] if top10 else []
+
+        # 6) Build DataFrame for plotting
+        if top_names:
+            data = {name: uploads_by_lib.get(name, [0] * len(bins)) for name in top_names}
+            df = pd.DataFrame(data, index=labels)
+
+            # Plot
             plt.figure(figsize=(10, 6))
+            colors = plt.cm.get_cmap('tab20', len(top_names))
+            for idx, name in enumerate(df.columns):
+                plt.plot(df.index, df[name], label=name, color=colors(idx))
 
-            # Define a color palette for the lines (each librarian gets a different color)
-            colors = plt.cm.get_cmap('tab20', len(top_librarian_names))
-
-            for idx, librarian in enumerate(df.columns):
-                plt.plot(df.index, df[librarian], label=librarian, color=colors(idx))
-
-            plt.title("Librarian Book Uploads Over Time")
-            plt.xlabel("Date")
-            plt.ylabel("Number of Book Uploads")
+            title = "Librarian Book Uploads Over Time"
+            plt.title(title)
+            # X-axis label based on granularity
+            xlabel = {
+                'hour': 'Hour of Day',
+                'day': 'Date',
+                'week': 'Week Start',
+                'month': 'Month',
+                'year': 'Year',
+            }[gran]
+            plt.xlabel(xlabel)
+            plt.ylabel('Number of Book Uploads')
             plt.xticks(rotation=45)
-            
-            # Set y-axis ticks to be integer values only
-            max_y = int(df.max().max())  # Get the maximum value of book uploads
-            plt.yticks(range(0, max_y + 3)) 
-            
+
+            max_y = int(df.max().max()) if not df.empty else 0
+            plt.yticks(range(0, max(1, max_y) + 2))
             plt.legend(loc='upper left')
             plt.grid(True)
-            
-            # Set border color to #3e151a and increase the linewidth
-            plt.gca().spines['top'].set_color('#3e151a')
-            plt.gca().spines['top'].set_linewidth(2)
-            plt.gca().spines['right'].set_color('#3e151a')
-            plt.gca().spines['right'].set_linewidth(2)
-            plt.gca().spines['bottom'].set_color('#3e151a')
-            plt.gca().spines['bottom'].set_linewidth(2)
-            plt.gca().spines['left'].set_color('#3e151a')
-            plt.gca().spines['left'].set_linewidth(2)
 
-            # Save the chart
-            media_dir = os.path.join(os.getcwd(), 'LirayaApp', 'media', 'graphs')  # Specify the path for saving the chart
+            ax = plt.gca()
+            for side in ['top', 'right', 'bottom', 'left']:
+                ax.spines[side].set_color('#3e151a')
+                ax.spines[side].set_linewidth(2)
+
+            media_dir = os.path.join(os.getcwd(), 'LirayaApp', 'media', 'graphs')
             if not os.path.exists(media_dir):
-                os.makedirs(media_dir)  # Create the directory if it doesn't exist
-
-            graph_filename = "librarian_uploads_over_time.png"
-            graph_path = os.path.join(media_dir, graph_filename)  # Full path where the image will be saved
+                os.makedirs(media_dir)
+            graph_filename = 'librarian_uploads_over_time.png'
+            graph_path = os.path.join(media_dir, graph_filename)
 
             plt.tight_layout()
-            plt.savefig(graph_path)  # Save the plot as an image
+            plt.savefig(graph_path)
             plt.close()
         else:
-            # No data for the given date range, set graph to just 'today' with no uploads
-            graph_path = None
+            # Create a placeholder chart that clearly says "No Data"
+            plt.figure(figsize=(10, 6))
+            plt.title('Librarian Book Uploads Over Time')
+            plt.text(0.5, 0.5, 'No Data Available for Selected Range', ha='center', va='center', fontsize=14)
+            plt.axis('off')
+            media_dir = os.path.join(os.getcwd(), 'LirayaApp', 'media', 'graphs')
+            if not os.path.exists(media_dir):
+                os.makedirs(media_dir)
+            graph_filename = 'librarian_uploads_over_time.png'
+            graph_path = os.path.join(media_dir, graph_filename)
+            plt.savefig(graph_path)
+            plt.close()
 
-        # Step 5: Create graph description
-        formatted_current_date = datetime.now().strftime('%B %d, %Y')
-        if date_range == 'today':
-            date_range_str = f"{formatted_current_date} to {formatted_current_date}"  # For today, it will show the same date for start and end
-        elif date_range == 'last_1_week':
-            date_range_str = f"{(datetime.now() - timedelta(weeks=1)).strftime('%B %d, %Y')} to {formatted_current_date}"
-        elif date_range == 'last_2_weeks':
-            date_range_str = f"{(datetime.now() - timedelta(weeks=2)).strftime('%B %d, %Y')} to {formatted_current_date}"
-        elif date_range == 'last_1_month':
-            date_range_str = f"{(datetime.now() - timedelta(days=30)).strftime('%B %d, %Y')} to {formatted_current_date}"
-        elif date_range == 'last_6_months':
-            date_range_str = f"{(datetime.now() - timedelta(days=180)).strftime('%B %d, %Y')} to {formatted_current_date}"
-        elif date_range == 'last_1_year':
-            date_range_str = f"{(datetime.now() - timedelta(days=365)).strftime('%B %d, %Y')} to {formatted_current_date}"
-        elif date_range == 'all_time':
-            date_range_str = "Since the beginning of records"
+        # 7) Build description
+        # Determine date range string
+        if ws == we:
+            date_range_str = ws.strftime('%B %d, %Y')
         else:
-            date_range_str = f"{formatted_current_date} to {formatted_current_date}"  # Default if something else goes wrong
+            date_range_str = f"{ws.strftime('%B %d, %Y')} to {we.strftime('%B %d, %Y')}"
 
+        used_label = label or date_range or 'Selected Range'
 
-        if not plot_data:
-            graph_description = f"""
-            Figure 1 represents the upload activity of librarians from <b>{formatted_current_date}</b>.<br/>
-            No data available for the selected date range.
-            """
-        elif date_range == 'today': 
-            # Regular description when data is available
-            graph_description = f"""
-            Figure 1 represents the upload activity of librarians from <b>{formatted_current_date}</b>.<br/><br/>
-            The number of books uploaded by each librarian is plotted over time. Each line on the chart represents a librarian,
-            with the X-axis showing the time and the Y-axis representing the number of books uploaded.<br /><br />
-            <b>Librarians involved:</b><br/>
-            """
-            
-            number_librarians = 0
-            for librarian in top_librarian_names:
-                total_books = upload_counts.get(librarian, 0)
-                avg_books_per_day = total_books / len(dates) if dates else 0
-                number_librarians += 1
-                graph_description += f"{number_librarians}. <b>{librarian}</b> uploaded a total of <b>{total_books}</b> books.<br/>"
-            
-            graph_description += f"""<br/>
-            This chart helps visualize the upload trends and highlights which librarian had the most consistent or highest 
-            number of uploads over <b>{date_range}</b>.<br/>
-            """
-
+        if not top_names:
+            graph_description = (
+                f"""
+                Figure 1 shows librarian upload activity for <b>{used_label}</b> (<i>{date_range_str}</i>).<br/>
+                No data is available for this range. The placeholder chart is shown for completeness.
+                """
+            )
         else:
-            # Regular description when data is available
-            graph_description = f"""
-            Figure 1 represents the upload activity of librarians <b>{date_range_str}</b> to .<br/><br/>
-            The number of books uploaded by each librarian is plotted over time. Each line on the chart represents a librarian,
-            with the X-axis showing the dates and the Y-axis representing the number of books uploaded.<br /><br />
-            <b>Librarians involved:</b><br/>
-            """
-            
-            number_librarians = 0
-            for librarian in top_librarian_names:
-                total_books = upload_counts.get(librarian, 0)
-                avg_books_per_day = total_books / len(dates) if dates else 0
-                number_librarians += 1
-                graph_description += f"{number_librarians}. <b>{librarian}</b> uploaded a total of <b>{total_books}</b> books, with an average of <b>{avg_books_per_day:.2f}</b> books per day.<br/>"
-            
-            graph_description += f"""<br/>
-            This chart helps visualize the upload trends and highlights which librarian had the most consistent or highest 
-            number of uploads over the <b>{date_range}</b>.<br/>
-            """
+            unit_text = {
+                'hour': 'hour',
+                'day': 'day',
+                'week': 'week',
+                'month': 'month',
+                'year': 'year',
+            }[gran]
+            step_text = f"every {step} {unit_text}{'' if step == 1 else 's'}"
+            graph_description = (
+                f"""
+                Figure 1 shows librarian upload activity for <b>{used_label}</b> (<i>{date_range_str}</i>),
+                grouped {step_text}. Each line represents a librarian (LIBRARIAN/DEPARTMENT roles).
+                """
+            )
 
-        return graph_path, graph_description  # Return the path of the saved chart image
+            # Append top librarians summary
+            number_librarians = 0
+            # Compute real elapsed time between ws and we (inclusive days)
+            total_days_span = max(1, (we - ws).days + 1)
+            # Convert span to the same unit as chart granularity
+            if gran == 'day':
+                denom_units = float(total_days_span)
+            elif gran == 'week':
+                denom_units = total_days_span / 7.0
+            elif gran == 'month':
+                # Average days per month to account for varying month lengths
+                denom_units = total_days_span / 30.4375
+            else:  # 'year'
+                # Average days per year (including leap years)
+                denom_units = total_days_span / 365.25
+
+            denom_units = max(1e-9, denom_units)  # safety against division by zero
+
+            for name in top_names:
+                total_books = float(totals.get(name, 0))
+                number_librarians += 1
+                if int(total_books) == 0:
+                    graph_description += (
+                        f"<br/>{number_librarians}. <b>{name}</b> recorded <b>no uploads</b> for this range."
+                    )
+                else:
+                    # Average per real elapsed time unit matching the chart granularity
+                    avg_per_unit = total_books / denom_units
+                    graph_description += (
+                        f"<br/>{number_librarians}. <b>{name}</b> uploaded a total of <b>{int(total_books)}</b> books "
+                        f"(avg {avg_per_unit:.2f} per {unit_text})."
+                    )
+
+        return graph_path, graph_description
 
     except Exception as e:
         print(f"Error generating librarian upload chart: {e}")
         return None, None
 
 
-########### LIBRARIAN DASHBOARD ############
+
 ########### LIBRARIAN DASHBOARD ############
 @login_checker
 @role_required('LIBRARIAN')
