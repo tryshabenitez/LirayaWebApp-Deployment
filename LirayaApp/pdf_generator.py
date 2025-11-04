@@ -638,7 +638,7 @@ def generate_book_view_graph(book_id):
 
 #----------------------------------- ALL BOOKS RECORDS -----------------------------------#
 # Generate Account Book Records Report
-def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_books_data, user_info, file_name, graph_path=None, graph_description=None, all_description_of_tables_data=None):
+def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_books_data, user_info, file_name, graph_path=None, graph_description=None, all_description_of_tables_data=None, shelf_counts_data=None, start_date_str=None, end_date_str=None):
     # Use the reusable page format and 
     flowables = []
     document, flowables, title_header_style, title_topic_style, content_style, tableheader_style, titletable_style, bold_style, normal_style, table_content_style = generate_pdf_format(pdf_buffer, "Liraya_AccountBookRecords_Report")
@@ -655,6 +655,14 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
         name='TitleHeaderStyle',
         fontName='Helvetica-Bold',  # Font style
         fontSize=20,  # Font size for title header
+        alignment=1,  # Center alignment
+        spaceAfter=15  # Space after the title
+    )
+    
+    daterange_header_style = ParagraphStyle(
+        name='DateRangeHeaderStyle',
+        fontName='Helvetica',  # Font style
+        fontSize=12,  # Font size for title header
         alignment=1,  # Center alignment
         spaceAfter=15  # Space after the title
     )
@@ -686,20 +694,32 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
     flowables.append(Paragraph(f"Book Range: {data_range_label}", semi_title_header_style))
     flowables.append(Spacer(1, 12))
 
+    # Show one date if start == end; otherwise show the range. Also handle single/missing values.
+    if start_date_str and end_date_str:
+        if start_date_str == end_date_str:
+            flowables.append(Paragraph(f"({start_date_str})", daterange_header_style))
+        else:
+            flowables.append(Paragraph(f"({start_date_str} to {end_date_str})", daterange_header_style))
+        flowables.append(Spacer(1, 12))
+    elif start_date_str or end_date_str:
+        single = start_date_str or end_date_str
+        flowables.append(Paragraph(f"({single})", daterange_header_style))
+        flowables.append(Spacer(1, 12))
+
     # Call create_user_info_table to generate the user info table
     user_info_table = create_user_info_table_header(user_info)
     flowables.append(user_info_table)
     flowables.append(Spacer(1, 12))  # Add space after the user info table
 
     # ------------------- Librarian Table ------------------------ #
-    title_topic1 = "Table 1. Librarians and Their Book Uploads Overview"
+    title_topic1 = "Table 1. Librarians/Departments and Their Book Uploads Overview"
     title_topic1_paragraph = Paragraph(title_topic1, title_topic_style)
     flowables.append(title_topic1_paragraph)
     flowables.append(Spacer(1, 5))  # Add space after title_topic1
     
     table_data = [
         [Paragraph('No.', tableheader_style), 
-         Paragraph('Full Name', tableheader_style), 
+         Paragraph('Full Name / Role', tableheader_style), 
          Paragraph('Books Uploaded', tableheader_style), 
          Paragraph('Latest Upload Date', tableheader_style)]
     ]
@@ -707,7 +727,8 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
     for index, librarian in enumerate(account_info_data):  
         table_data.append([
             Paragraph(str(index + 1), table_content_style),
-            Paragraph(librarian['account_name'], table_content_style),
+            Paragraph(f"{librarian.get('account_name', 'N/A')} (" 
+                      f"{librarian.get('role', 'N/A')})", table_content_style),
             Paragraph(str(librarian['total_books_uploaded']), table_content_style),
             Paragraph(str(librarian['latest_book_date']), table_content_style)
         ])
@@ -744,7 +765,7 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
     flowables.append(description_paragraph_table1)  # Add it to flowables
     flowables.append(Spacer(1, 12)) 
     
-    title_figure1 = "Figure 1: Librarian Book Uploads Over Time"
+    title_figure1 = "Figure 1: Librarian/Department Book Uploads Over Time"
     title_figure1_paragraph = Paragraph(title_figure1, title_topic_style)
     flowables.append(title_figure1_paragraph)
     flowables.append(Spacer(1, 5))  # Add space after title_topic2
@@ -896,8 +917,69 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
     flowables.append(description_paragraph_table1)  # Add it to flowables
     flowables.append(Spacer(1, 12)) 
     
+    
+    # Thesis Books Table
+    title_topic4 = "Table 4. Shelf Books Count by Category"
+    title_topic4_paragraph = Paragraph(title_topic4, title_topic_style)
+    flowables.append(title_topic4_paragraph)
+    flowables.append(Spacer(1, 5))  # Add space after title_topic4
+
+    # Shelf Category table (2 columns: Shelf Category, Count)
+    shelf_table_data = [
+        [Paragraph('Shelf Category', tableheader_style), Paragraph('Count', tableheader_style)]
+    ]
+
+    if shelf_counts_data:
+        for row in shelf_counts_data:
+            shelf_table_data.append([
+                Paragraph(str(row.get('shelf_category') or 'Uncategorized'), table_content_style),
+                Paragraph(str(row.get('count') or 0), table_content_style),
+            ])
+    else:
+        shelf_table_data.append([
+            Paragraph('N/A', table_content_style),
+            Paragraph('0', table_content_style),
+        ])
+
+    shelf_table = Table(shelf_table_data, colWidths=[4.8*inch, 1.6*inch])
+    shelf_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#451e23'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BACKGROUND', (0, 1), (-1, -1), '#ffffff'),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('WORDWRAP', (0, 1), (-1, -1), True),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 12),
+    ]))
+
+    for row_idx in range(1, len(shelf_table_data)):
+        if row_idx % 2 == 1:
+            shelf_table.setStyle(TableStyle([('BACKGROUND', (0, row_idx), (-1, row_idx), '#e8d8c4')]))
+        else:
+            shelf_table.setStyle(TableStyle([('BACKGROUND', (0, row_idx), (-1, row_idx), '#ffffff')]))
+
+    flowables.append(shelf_table)
+    flowables.append(Spacer(1, 12))
+
+    # Shelf table description (index 3)
+    if all_description_of_tables_data and len(all_description_of_tables_data) >= 4:
+        shelf_desc_html = all_description_of_tables_data[3].get('shelf_counts_desc')
+        if shelf_desc_html:
+            flowables.append(Paragraph(shelf_desc_html, content_style))
+            flowables.append(Spacer(1, 12))
+
     # Build the document
     document.build(flowables, onFirstPage=create_header_and_footer, onLaterPages=create_header_and_footer)
+
+
 
 
 
