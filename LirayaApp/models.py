@@ -1,16 +1,19 @@
 from django.db import models
 from django.utils import timezone
 from django.core.validators import RegexValidator
+import re
 
 # Add this above your model classes
 name_validator = RegexValidator(
-    regex=r'^[A-Za-z\s\-\'\.]+$',
-    message="Please enter a valid name."
+    regex=r"^[^\W\d_][^\W\d_ .'-]*(?:[ .'-][^\W\d_ .'-]+)*$",
+    message="Please enter a valid name.",
+    flags=re.UNICODE,
 )
 
 middle_name_validator = RegexValidator(
-    regex=r'^([A-Za-z\s\-\'\.]+|[Nn]/?[Aa])$',
-    message="Please enter a valid middle name. Use 'N/A' if not applicable."
+    regex=r"^(?:[^\W\d_][^\W\d_ .'-]*(?:[ .'-][^\W\d_ .'-]+)*|[Nn]/?[Aa])$",
+    message="Please enter a valid middle name. Use 'N/A' if not applicable.",
+    flags=re.UNICODE,
 )
 
 # Account Information Table
