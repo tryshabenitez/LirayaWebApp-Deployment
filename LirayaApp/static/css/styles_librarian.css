@@ -1954,6 +1954,12 @@ h2 {
     max-width: 600px; /* Reduce max width */
   }
 
+  #scannedContent {
+    font-size: 13px; /* Slightly smaller font size */
+    padding: 8px; /* Reduced padding for smaller screens */
+    height: 250px; /* Reduced height to fit smaller screens */
+  }
+
   .scanning-section-container label {
     font-size: 14px; /* Adjust label font size */
     margin-bottom: 6px; /* Reduce space between label and input */
@@ -2169,6 +2175,12 @@ h2 {
     padding: 6px 10px; /* Adjust padding for smaller screens */
     height: 32px; /* Adjust height for smaller screens */
     max-width: 100%; /* Allow dropdown to take full width of container */
+  }
+
+  #scannedContent {
+    font-size: 12px; /* Even smaller font size for tablets */
+    padding: 6px; /* Reduced padding further */
+    height: 200px; /* Smaller height for compact layout */
   }
 
   .scanning-section-container label {
@@ -2424,6 +2436,12 @@ h2 {
     padding: 4px 8px; /* Reduce padding further for mobile */
     height: 28px; /* Adjust height for smaller screens */
     max-width: 100%; /* Ensure full width on small screens */
+  }
+
+  #scannedContent {
+    font-size: 11px; /* Smallest font size for mobile */
+    padding: 5px; /* Reduced padding for mobile */
+    height: 180px; /* Further reduced height for mobile screens */
   }
 
   .scanning-section-container label {
