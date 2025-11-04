@@ -1603,59 +1603,51 @@ header .dropdown:focus {
 .pagination { visibility: hidden; }
 
 
+/* Brand spinner vars */
+:root{
+  --spinner-size: 120px;          /* tweak for bigger/smaller */
+  --spinner-thickness: 10px;      /* ring thickness */
+  --spinner-color: #3e151a;       /* brand color */
+  --spinner-track: rgba(62,21,26,0.18);
+}
+
+/* Keep overlay dark and header visible (you already have these; included for clarity) */
 #liraya-loading {
   position: fixed;
-  top: var(--header-height);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: none; /* toggled via JS */
+  top: var(--header-height, 85px);
+  left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55); /* black glass background */
-  z-index: 9990; /* just below header */
+  z-index: 9990; /* header is higher via isolation: isolate + higher z-index */
 }
 
-/* Center content — no box, transparent background */
-#liraya-loading .box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  background: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  color: #fff;
+#liraya-loading .box{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+  background: transparent; /* no white box */
+  color:#fff;               /* not used now but fine to keep */
 }
 
-/* 🌀 Image — 2× bigger, smooth rotation */
-#liraya-loading img {
-  width: 150px !important;
-  height: 150px !important;
-  animation: liraya-spin var(--spin-speed, 1.7s) linear infinite;
-  image-rendering: -webkit-optimize-contrast;
+/* The spinner itself */
+.liraya-spinner{
+  width: var(--spinner-size);
+  height: var(--spinner-size);
+  border-radius: 50%;
+  border: var(--spinner-thickness) solid var(--spinner-track);
+  border-top-color: var(--spinner-color);   /* the moving colored arc */
+  animation: liraya-rotate 0.9s linear infinite;
 }
 
-/* 💬 Label — larger, bright white */
-#liraya-loading .label {
-  font-size: 1.8rem;         /* doubled size */
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 2px;
-  text-shadow: 0 2px 3px rgba(0,0,0,0.45);
+/* Motion reduce */
+@media (prefers-reduced-motion: reduce){
+  .liraya-spinner{ animation: none; }
 }
 
-@keyframes liraya-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* No Results overlay (match loading offset) */
-#no-results-overlay {
-  position: fixed;
-  top: var(--header-height);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9990;
+/* Rotate animation */
+@keyframes liraya-rotate{
+  to { transform: rotate(360deg); }
 }
