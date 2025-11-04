@@ -2744,13 +2744,14 @@ def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
         # ---------------- Shelf Category Counts (Table 4) ---------------- #
         # Compute counts per shelf category in the same resolved window (non-archived only)
         shelf_counts_qs = categorized_books.values('shelf_category').annotate(n=Count('shelf_category'))
-        # Build data rows
+        # Build data rows (then sort alphabetically by category, case-insensitive)
         shelf_counts_data = []
-        for row in shelf_counts_qs.order_by('-n', 'shelf_category'):
+        for row in shelf_counts_qs:
             shelf_counts_data.append({
                 'shelf_category': row.get('shelf_category') or 'Uncategorized',
                 'count': int(row.get('n') or 0),
             })
+        shelf_counts_data.sort(key=lambda r: (r['shelf_category'] or '').lower())
 
         # Description with tie handling (list up to 3 categories, else 'Multiple categories')
         if shelf_counts_data:
