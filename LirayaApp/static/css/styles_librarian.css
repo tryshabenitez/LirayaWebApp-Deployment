@@ -1877,6 +1877,11 @@ h2 {
     height: 70px; /* Height for 1024px width screens */
   }
 
+  .librarian-footer {
+    font-size: 13px; /* Slightly reduce font size */
+    height: 70px; /* Reduce footer height */
+  }
+
   .slim-sidebar {
     width: 60px;
   }
@@ -2104,6 +2109,12 @@ h2 {
   header {
     height: 60px; /* Height for 768px width screens */
   }
+
+  .librarian-footer {
+    font-size: 12px; /* Further reduce font size */
+    height: 60px; /* Reduce footer height */
+  }
+  
   .slim-sidebar {
     width: 50px;
   }
@@ -2384,6 +2395,12 @@ h2 {
   header {
     height: 50px; /* Height for 480px width screens */
   }
+
+  .librarian-footer {
+    font-size: 11px; /* Reduce font size to fit mobile screens */
+    height: 50px; /* Make the footer even shorter */
+  }
+  
   .slim-sidebar {
     width: 40px;
   }
