@@ -62,7 +62,7 @@ header h1 {
   padding: 10px 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   z-index: 1000;
   transition: width 0.3s ease;
@@ -76,27 +76,33 @@ header h1 {
   margin-bottom: 40px;
 }
 
+/* Keep the image space reserved even when not expanded */
 .menu-expanded-img {
-  display: none;
+  display: block;             /* Always take up space, even when collapsed */
+  visibility: hidden;         /* Hide the image but reserve space */
   width: 100px;
-  height: 100px;
+  height: 100px;              /* Ensure the height is always reserved */
   margin-left: 10px;
 }
 
 .slim-sidebar.expanded .menu-expanded-img {
-  display: inline-block;
+  display: inline-block;      /* Show the image when expanded */
+  visibility: visible;        /* Make the image visible */
 }
 
 
+/* Nav Group */
 .nav-group {
   display: flex;
   flex-direction: column;
   gap: 30px;
   width: 100%;
   margin-top: 10px;
-  padding: 0; /* match logout's padding-left */
+  padding: 0;
   box-sizing: border-box;
+  flex-grow: 1; /* Ensure the nav group takes up the available space */
 }
+
 
 
 .nav-item {
@@ -143,6 +149,30 @@ header h1 {
   border-radius: 8px;
   cursor: pointer;
   width: 100%;
+}
+
+
+/* Keep logout at the bottom + make room for the divider */
+.slim-sidebar .logout-link {
+  position: relative;
+  margin-top: auto;      /* ensures it's last in the column */
+  padding-top: 12px;     /* space above for the divider */
+}
+
+/* The separator line above Logout */
+.slim-sidebar .logout-link::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;            /* inset to align with icons/text */
+  right: 12px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* (Optional) make logout’s padding match other items */
+.slim-sidebar .logout-link {
+  padding: 15px 20px;    /* same as .nav-item */
 }
 
 /* Logout alignment */
@@ -1860,6 +1890,20 @@ h2 {
     height: 25px;
   }
 
+  .nav-item {
+    padding: 12px 16px; /* Slightly smaller padding for medium screens */
+  }
+
+  /* Keep the Logout button at the bottom with a divider */
+  .slim-sidebar .logout-link {
+    padding: 12px 16px; /* Adjust padding */
+  }
+
+  .menu-expanded-img {
+    width: 80px;  /* Reduced size for medium screens */
+    height: 80px;
+  }
+
   .main-content.shift-right {
     margin-left: 180px;
   }
@@ -2073,9 +2117,21 @@ h2 {
     height: 22px;
   }
 
-  .nav-label,
-  .logout-link .nav-label {
-    font-size: 14px;
+  .nav-item {
+    padding: 10px 12px; /* Smaller padding */
+  }
+
+  .nav-label {
+    font-size: 14px; /* Smaller label font size */
+  }
+
+  .slim-sidebar .logout-link {
+    padding: 10px 12px; /* Reduced padding for mobile */
+  }
+
+  .menu-expanded-img {
+    width: 60px;  /* Smaller size for mobile screens */
+    height: 60px;
   }
 
   .main-content.shift-right {
@@ -2341,9 +2397,21 @@ h2 {
     height: 20px;
   }
 
-  .nav-label,
-  .logout-link .nav-label {
-    font-size: 13px;
+  .nav-item {
+    padding: 8px 10px; /* Ultra-small padding */
+  }
+
+  .nav-label {
+    font-size: 12px; /* Even smaller labels for small devices */
+  }
+
+  .slim-sidebar .logout-link {
+    padding: 8px 10px; /* Ultra-small padding for the logout link */
+  }
+
+  .menu-expanded-img {
+    width: 50px;  /* Further reduced for very small screens */
+    height: 50px;
   }
 
   .main-content.shift-right {
