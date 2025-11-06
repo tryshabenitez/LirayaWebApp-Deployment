@@ -1667,13 +1667,13 @@ def _deactivation_recommendations(context):
             and (created_in_window is not None and created_in_window == 0)
         ) or (days_since_last_upload is not None and days_since_last_upload > 7)
 
-        if status == "ACTIVE" and role in ("ADMIN", "LIBRARIAN", "DEPARTMENT") and no_recent_activity:
+        if status == "ACTIVE" and role in ("LIBRARIAN", "DEPARTMENT") and no_recent_activity:
             days_text = f"{days_since_last_upload} days"
-            reason = f"Active but no uploads/creates in the last {days_text}"
+            reason = f"Active but no uploads in the last {days_text}"
 
         # Rule 2: New accounts inactive for a while
         if reason is None and status == "NEW" and (days_in_status is not None and days_in_status >= 7):
-            reason = f"New for {days_in_status} days with no activity"
+            reason = f"Account registered {days_in_status} days ago with no initial login detected"
 
 
         if reason:
@@ -2135,8 +2135,8 @@ def generate_account_information(output_stream, context):
     flow.append(_section_title_center("Accounts Recommended for Deactivation", styles))
     flow.append(_reco_table(context, styles))
     flow.append(Paragraph(
-        "Criteria: (1) Active but no uploads or account creation in the last 7+ days; "
-        "(2) New for ≥7 days with no activity.",
+        "Criteria: (1) Active but no uploads in the last 7+ days; "
+        "(2) Account registered ≥7 days ago but user never logged in.",
         styles["SmallGray"]
     ))  # <-- closed properly
     
