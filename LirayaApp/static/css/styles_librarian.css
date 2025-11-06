@@ -2080,6 +2080,17 @@ h2 {
   .large-container {
     max-width: 100%; /* Adjust the large container to fit smaller screens */
   }
+
+  .keyword-table {
+    font-size: 14px;  /* Adjust font size */
+  }
+  .keyword-table th,
+  .keyword-table td {
+    padding: 10px 8px;  /* Reduce padding */
+  }
+  .keyword-table thead th {
+    padding: 10px;
+  }
   
   /******LIBRARIAN PROFILE********/
   .profile-container {
@@ -2358,6 +2369,20 @@ h2 {
 
   .large-container {
     max-width: 100%; /* Adjust the large container to fit smaller screens */
+  }
+
+  .keyword-table {
+    font-size: 10px;  /* Adjust font size */
+  }
+  .keyword-table th,
+  .keyword-table td {
+    padding: 8px 6px;  /* Reduce padding */
+  }
+  .keyword-table thead th {
+    padding: 8px;
+  }
+  .keyword-table tbody td {
+    height: 50px;  /* Reduce row height */
   }
 
   /******LIBRARIAN PROFILE********/
@@ -2672,6 +2697,24 @@ h2 {
 
   .large-container {
     max-width: 100%; /* Adjust the large container to fit smaller screens */
+  }
+
+  .keyword-table {
+    font-size: 6px;  /* Adjust font size */
+  }
+  .keyword-table th,
+  .keyword-table td {
+    padding: 6px 4px;  /* Further reduce padding */
+  }
+  .keyword-table thead th {
+    padding: 6px;
+  }
+  .keyword-table tbody td {
+    height: 40px;  /* Reduce row height further */
+  }
+  .table-container {
+    margin: 10px auto;
+    width: 100%;
   }
 
   /******LIBRARIAN PROFILE********/
