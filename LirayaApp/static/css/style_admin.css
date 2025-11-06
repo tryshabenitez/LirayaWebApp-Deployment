@@ -7,29 +7,9 @@
 
 .admin-header {
   display: flex;
-  justify-content: space-between; /* Space out title and profile image */
+  justify-content: space-between; /* Space out title and icon */
   align-items: center; /* Align items vertically */
   margin-bottom: 20px; /* Add spacing below */
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
-  width: 100%;
-  position: relative;
-}
-
-
-
-.admin-title h1, .admin-title p {
-  margin: 0; /* Remove default margin */
-  font-size: 4vw; /* Dynamic font size based on viewport width */
-  transition: font-size 0.3s ease;
-  white-space: nowrap; 
-}
-
-.admin-title h1 {
-  font-size: 45px ; /* Larger font size for desktops */
-}
-
-.admin-title p {
-  font-size: 18px ; /* Default size for paragraph on desktop */
 }
 
 .admin-icon {
@@ -42,6 +22,7 @@
   user-select: none; /* Standard rule to prevent selection */
   -webkit-user-drag: none; /* Prevent dragging in WebKit browsers like Chrome, Safari */
 }
+
 /* Additional HTML attribute to prevent dragging of the image */
 img.admin-icon {
   -webkit-user-drag: none; /* Prevent image from being dragged */
@@ -363,42 +344,7 @@ footer {
   gap: 20px; /* Reduced gap between cards */
   padding: 10px;
   width: 100%;
-  }
-  .admin-header {
-    display: flex; /* Make sure header is using flexbox */
-    justify-content: flex-start; /* Align title and profile image to the left */
-    padding: 0 10px; /* Add padding for better spacing */
-    transition: padding 0.3s ease; /* Add transition for padding */
-  }
-
-  .admin-icon {
-    width: 80px;  /* Keep the width fixed at 100px */
-    height: 80px;  /* Adjust height for tablet */
-  }
-   
-
-  .admin-title h1 {
-    font-size: 38px;
-    transition: font-size 0.3s ease; /* Add transition for font-size */
-  }
-
-  .admin-title p {
-    font-size: 16px; /* Adjust paragraph font for tablets */
-    transition: font-size 0.3s ease; /* Add transition for font-size */
-  }
-
-  /* Profile Button and Image */
-  .header-profile-container .profile-image-button {
-    width: 80px;
-    height: 80px;
-    transition: width 0.3s ease, height 0.3s ease; /* Transition for size */
-  }
-
-  .header-profile-container .profile-image-preview-homepage {
-    width: 80px;
-    height: 80px;
-    transition: width 0.3s ease, height 0.3s ease; /* Transition for size */
-  }
+  } 
 }
 
 /*  Responsive Styles for Tablets  */
@@ -416,39 +362,6 @@ footer {
   .admin-book-title {
     font-size: 14px; /* Adjust book title font size for smaller screens */
   }
-
-  .admin-header {
-    padding: 0 7px; /* Add padding for better spacing */
-    transition: padding 0.3s ease; /* Add transition for padding */
-  }
-
-  .admin-icon {
-    width: 40px;  /* Keep the width fixed at 100px */
-    height: 40px;  /* Adjust height for smaller tablets */
-  }
-
-  .admin-title h1 {
-    font-size: 20px; 
-    transition: font-size 0.3s ease; /* Add transition for font-size */
-  }
-
-  .admin-title p {
-    font-size: 10px;  /* Adjust paragraph font size for smaller screens */
-    transition: font-size 0.3s ease; /* Add transition for font-size */
-  }
-
-  /* Profile Button and Image */
-  .header-profile-container .profile-image-button {
-    width: 40px;
-    height: 40px;
-    transition: width 0.3s ease, height 0.3s ease; /* Transition for size */
-  }
-
-  .header-profile-container .profile-image-preview-homepage {
-    width: 40px;
-    height: 40px;
-    transition: width 0.3s ease, height 0.3s ease; /* Transition for size */
-  }
 }
 
 /*  Responsive Styles for Small Screens  */
@@ -460,38 +373,6 @@ footer {
   .admin-book-title {
     font-size: 16px; /* Adjust book title font size for very small screens */
   }
-
-  .admin-header {
-    padding: 0 5px; /* Add padding for better spacing */
-    transition: padding 0.3s ease; /* Add transition for padding */
-  }
-
-  .admin-icon {
-    width: 30px;  /* Adjust width for mobile */
-    height: 30px;  /* Adjust height for mobile */
-  }
-
-  .admin-title h1 {
-    font-size: 10px; /* Adjust h1 to be smaller, matching profile picture size */
-    transition: font-size 0.3s ease; /* Add transition for font-size */
-  }
-
-  .admin-title p {
-    font-size: 5px;  /* Adjust paragraph font size */
-    transition: font-size 0.3s ease; /* Add transition for font-size */
-  }
-
-  /* Profile Button and Image */
-  .header-profile-container .profile-image-button {
-    width: 30px;
-    height: 30px;
-    transition: width 0.3s ease, height 0.3s ease; /* Transition for size */
-  }
-
-  .header-profile-container .profile-image-preview-homepage {
-    width: 30px;
-    height: 30px;
-    transition: widt
 }
 
 /* ============================ Dropdown Styling ============================ */
@@ -1014,24 +895,6 @@ footer {
     align-items: center;
 }
 
-/* Profile Picture Upload and Preview */
-.header-profile-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 200px; /* Set a max-width for the profile container */
-  margin: 0 auto; /* Center it horizontally */
-  transition: all 0.3s ease;
-}
-
-
-
-/* Ensure profile preview stays circular */
-.header-profile-container input[type="file"]:focus {
-    outline: none;
-}
-
 .profile-label {
     font-weight: bold;
     color: #3e151a;
@@ -1096,14 +959,13 @@ footer {
     object-fit: cover;
 }
 
-/* Profile Image Button */
 .profile-image-button {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  outline: none;
-  box-shadow: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    outline: none; /* Removes the outline on click */
+    box-shadow: none; /* Removes any box-shadow on focus or hover */
 }
 
 /* Prevent hover or active styles for button */
@@ -1947,7 +1809,3 @@ button:disabled {
     cursor: not-allowed;
     transition: opacity 0.3s ease;
 }
-
-
-
-
