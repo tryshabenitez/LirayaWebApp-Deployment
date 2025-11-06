@@ -2419,7 +2419,11 @@ def admin_generatebookdetails_pdf(pdf_buffer, book_id, user_info):
 #------------------------------ BOOK RECORDS ------------------------------#
 def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
     try:
-        filter_date, display_range, window_start, window_end = _resolve_bookrecords_range(date_range)
+        # Apply Philippines timezone for date computations (consistent with other reports)
+        philippines_timezone = pytz.timezone('Asia/Manila')
+        philippines_now = timezone.now().astimezone(philippines_timezone)
+        # Pass the localized 'today' into range resolver so window aligns with PH time
+        filter_date, display_range, window_start, window_end = _resolve_bookrecords_range(date_range, today=philippines_now.date())
     
         # Step 2: Fetch uploaders (include LIBRARIAN and DEPARTMENT roles)
         librarian_accounts = UserAccounts.objects.filter(role__in=["LIBRARIAN", "DEPARTMENT"]) 
@@ -2944,8 +2948,10 @@ def generate_librarian_upload_chart(window=None, label=None, date_range=None):
     - (graph_path, graph_description)
     """
     try:
-        # 1) Resolve concrete window [ws, we]
-        today = datetime.now().date()
+        # 1) Resolve concrete window [ws, we] using Philippines timezone
+        philippines_timezone = pytz.timezone('Asia/Manila')
+        philippines_now = timezone.now().astimezone(philippines_timezone)
+        today = philippines_now.date()
         ws, we = None, None
 
         if window and isinstance(window, (tuple, list)) and len(window) == 2:
@@ -3079,16 +3085,21 @@ def generate_librarian_upload_chart(window=None, label=None, date_range=None):
 
         # 4) Chart - Collect data per librarian (LIBRARIAN + DEPARTMENT)
         librarian_accounts = UserAccounts.objects.filter(role__in=["LIBRARIAN", "DEPARTMENT"])  
-        librarian_names = []
-        uploads_by_lib = {}
+        uploads_by_lib = {}          # key: account_id, value: list[int] counts per bin
+        id_to_label = {}             # account_id -> display label (Full Name + ID)
 
         # Precompute date bounds (inclusive on both ends)
         start_d = ws
         end_d = we
 
         for ua in librarian_accounts.select_related('account'):
-            full_name = f"{ua.account.first_name} {ua.account.last_name}".strip()
-            librarian_names.append(full_name)
+            account_id = ua.account.account_id
+            # Use a more detailed full name (include middle name if present) to reduce ambiguity
+            middle = f" {ua.account.middle_name}" if getattr(ua.account, 'middle_name', None) else ''
+            full_name = f"{ua.account.first_name}{middle} {ua.account.last_name}".strip()
+            # Display label includes unique account ID to avoid merging same-named librarians
+            display_label = f"{full_name} (ID:{account_id})"
+            id_to_label[account_id] = display_label
 
             # Match counts with UI by excluding archived books
             qs = Books.objects.filter(
@@ -3134,21 +3145,22 @@ def generate_librarian_upload_chart(window=None, label=None, date_range=None):
                         if 0 <= idx < len(counts):
                             counts[idx] += 1
 
-            uploads_by_lib[full_name] = counts
+            uploads_by_lib[account_id] = counts
 
         # 5) Keep top 10 librarians by total
-        totals = {name: sum(vals) for name, vals in uploads_by_lib.items()}
+        totals = {acct_id: sum(vals) for acct_id, vals in uploads_by_lib.items()}
         top10 = sorted(totals.items(), key=lambda x: x[1], reverse=True)[:10]
-        top_names = [n for (n, _) in top10] if top10 else []
+        top_ids = [acct_id for (acct_id, _) in top10] if top10 else []
+        top_labels = [id_to_label[acct_id] for acct_id in top_ids]
 
         # 6) Build DataFrame for plotting
-        if top_names:
-            data = {name: uploads_by_lib.get(name, [0] * len(bins)) for name in top_names}
+        if top_ids:
+            data = {id_to_label[acct_id]: uploads_by_lib.get(acct_id, [0] * len(bins)) for acct_id in top_ids}
             df = pd.DataFrame(data, index=labels)
 
             # Plot
             plt.figure(figsize=(10, 6))
-            colors = plt.cm.get_cmap('tab20', len(top_names))
+            colors = plt.cm.get_cmap('tab20', len(df.columns))
             for idx, name in enumerate(df.columns):
                 plt.plot(df.index, df[name], label=name, color=colors(idx))
 
@@ -3208,7 +3220,7 @@ def generate_librarian_upload_chart(window=None, label=None, date_range=None):
 
         used_label = label or date_range or 'Selected Range'
 
-        if not top_names:
+        if not top_ids:
             graph_description = (
                 f"""
                 Figure 1 shows librarian upload activity for <b>{used_label}</b> (<i>{date_range_str}</i>).<br/>
@@ -3249,8 +3261,9 @@ def generate_librarian_upload_chart(window=None, label=None, date_range=None):
 
             denom_units = max(1e-9, denom_units)  # safety against division by zero
 
-            for name in top_names:
-                total_books = float(totals.get(name, 0))
+            for acct_id in top_ids:
+                name = id_to_label[acct_id]
+                total_books = float(totals.get(acct_id, 0))
                 number_librarians += 1
                 if int(total_books) == 0:
                     graph_description += (
