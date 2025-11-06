@@ -1104,8 +1104,6 @@ footer {
   cursor: pointer;
   outline: none;
   box-shadow: none;
-  width: 100px;  /* Default size for large screens */
-  height: auto; /* Default size for large screens */
 }
 
 /* Prevent hover or active styles for button */
