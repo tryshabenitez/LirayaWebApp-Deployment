@@ -80,6 +80,7 @@ from cloudinary.uploader import upload, destroy
 import pytz
 import matplotlib
 matplotlib.use('Agg') 
+from dateutil.relativedelta import relativedelta
 
 nlp = spacy.load('en_core_web_sm')
 
