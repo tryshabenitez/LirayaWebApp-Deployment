@@ -21,7 +21,7 @@
     <p>Manage Book Details</p> 
   </div>
   <button class="profile-image-button" onclick="window.location.href='{% url 'librarian_profile' %}'">
-    <div class="header-profile-container">
+    <div class="profile-image-container">
       <div class="profile-image-preview-homepage">
         <img id="profile-preview" src="{% if user_info.profile_picture %}{{ user_info.profile_picture }}{% else %}{% static 'images/default_profile-picture.png' %}{% endif %}" alt="Profile Picture">
       </div>
