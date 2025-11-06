@@ -1165,18 +1165,26 @@ def _personal_info_table(bio, styles):
     L = lambda text: Paragraph(f"<b>{text}</b>", styles["Cell"])
 
     data = [
-        [L("Birthday:"),           P(_format_date_words(bio.get("birth_date")))],
-        [L("Age:"),                P(str(bio.get("age_years","—")))],
-        [L("Email:"),              P(bio.get("email","—"))],
-        [L("Contact Number:"),     P(bio.get("contact","—"))],
-        [L("Gender:"),             P(bio.get("gender","—"))],
-        [L("Created by:"),         P(bio.get("created_by","—"))],
-        [L("Address:"),            P(bio.get("address","—"))],
-        [L("City/Municipality:"),  P(bio.get("city","—"))],
-        [L("Province:"),           P(bio.get("province","—"))],
-        [L("State:"),              P(bio.get("state","—"))],
-        [L("Zipcode:"),            P(bio.get("zipcode","—"))],
-    ]
+    [L("Birthday:"),           P(_format_date_words(bio.get("birth_date")))],
+    [
+        L("Age:"),
+        P(
+            "—"
+            if not bio.get("age_years")
+            else f"{bio['age_years']} year{'s' if int(bio['age_years']) != 1 else ''} old"
+        ),
+    ],
+
+    [L("Email:"),              P(bio.get("email","—"))],
+    [L("Contact Number:"),     P(bio.get("contact","—"))],
+    [L("Gender:"),             P(bio.get("gender","—"))],
+    [L("Created by:"),         P(bio.get("created_by","—"))],
+    [L("Address:"),            P(bio.get("address","—"))],
+    [L("City/Municipality:"),  P(bio.get("city","—"))],
+    [L("Province:"),           P(bio.get("province","—"))],
+    [L("State:"),              P(bio.get("state","—"))],
+    [L("Zipcode:"),            P(bio.get("zipcode","—"))],
+]
     #               Label         Value     (sum = 6.7")
     t = Table(data, colWidths=[1.8*inch, 3.8*inch])
     t.setStyle(TableStyle([
