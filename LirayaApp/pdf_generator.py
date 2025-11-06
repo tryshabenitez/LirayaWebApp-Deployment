@@ -1021,17 +1021,53 @@ def _style_sheet():
 MAROON = colors.Color(0.294, 0.055, 0.055)        # same deep maroon
 ROSE   = colors.HexColor("#f3e9e9")   
 
+DEFAULT_IMAGE_PATH = os.path.join(os.path.dirname(__file__), "static", "images", "default_profile-picture.png")
+
+def _placeholder_box(width, height, text="No Photo"):
+    """Used if even the default image file can't be loaded."""
+    d = Drawing(width, height)
+    d.add(Rect(0, 0, width, height, fillColor=colors.HexColor("#f1f1f1"),
+               strokeColor=MAROON, strokeWidth=0.8))
+    d.add(String(width/2, height/2, text, textAnchor="middle",
+                 fontName="Helvetica", fontSize=8, fillColor=colors.HexColor("#666666")))
+    return d
+
 def _fetch_image_from_url(url, width=1.0*inch, height=1.0*inch):
-    """Fetch image from a URL (e.g., Cloudinary) and return as ReportLab Image."""
+    """
+    Fetch image from a URL or base64 string.
+    If missing or invalid, fall back to static 'default_profile-picture.png'.
+    Always returns a ReportLab flowable.
+    """
+    # Case 1: No image URL provided → use default
     if not url:
-        return Spacer(1, height)
+        try:
+            return Image(DEFAULT_IMAGE_PATH, width, height)
+        except Exception:
+            return _placeholder_box(width, height)
+
+    # Case 2: Handle base64-encoded image (data:image/png;base64,...)
+    if isinstance(url, str) and url.startswith("data:image"):
+        try:
+            header, b64data = url.split(",", 1)
+            img_data = BytesIO(base64.b64decode(b64data))
+            return Image(img_data, width, height)
+        except Exception:
+            try:
+                return Image(DEFAULT_IMAGE_PATH, width, height)
+            except Exception:
+                return _placeholder_box(width, height)
+
+    # Case 3: Normal image URL
     try:
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()
         img_data = BytesIO(resp.content)
         return Image(img_data, width, height)
     except Exception:
-        return Spacer(1, height)
+        try:
+            return Image(DEFAULT_IMAGE_PATH, width, height)
+        except Exception:
+            return _placeholder_box(width, height)
 
 def _center_banner(meta, styles):
     """Maroon title bar (white text), gray subtitle, and a borderless one-line meta row."""
