@@ -1179,6 +1179,43 @@ def _format_date_words(date_value):
         dt = date_value
     return dt.strftime("%B %d, %Y")
 
+def _parse_any_date(s):
+    """Parse 'YYYY-MM-DD' or ISO 'YYYY-MM-DDTHH:MM:SS' to date, else None."""
+    if not s:
+        return None
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(str(s), fmt).date()
+        except Exception:
+            pass
+    return None
+
+def human_range(start_s, end_s):
+    """
+    Return a compact, human-friendly label for a date range.
+      - Same month & year:  Nov 01–07, 2025
+      - Same year, diff months: Oct 31 – Nov 06, 2025
+      - Diff years: Dec 31, 2025 – Jan 06, 2026
+    """
+    sd = _parse_any_date(start_s)
+    ed = _parse_any_date(end_s)
+    if not sd or not ed:
+        return f"{start_s} – {end_s}"
+
+    if sd == ed:
+        return sd.strftime("%b %d, %Y")
+
+    if sd.year == ed.year:
+        if sd.month == ed.month:
+            # Nov 01–07, 2025
+            return f"{sd.strftime('%b %d')}–{ed.strftime('%d, %Y')}"
+        else:
+            # Oct 31 – Nov 06, 2025
+            return f"{sd.strftime('%b %d')} – {ed.strftime('%b %d, %Y')}"
+    else:
+        # Dec 31, 2025 – Jan 06, 2026
+        return f"{sd.strftime('%b %d, %Y')} – {ed.strftime('%b %d, %Y')}"
+
 def _librarian_kpi_table(acct, styles, date_range_label):
     bio = acct.get("bio", {}) or {}
     perf = acct.get("performance", {}) or {}
@@ -1933,21 +1970,40 @@ def generate_account_information(output_stream, context):
     status  = totals.get("status", {}) or {}
 
     # Format range for human-readable titles
-    raw_label = (context.get("meta", {}) or {}).get("range_label", "the selected range")
-    raw_label_lower = raw_label.lower()
+    meta = (context.get("meta") or {})
+    start_s   = meta.get("start_date")
+    end_s     = meta.get("end_date")
+    raw_label = (meta.get("range_label") or "").strip()
 
-    if raw_label_lower == "all time":
+    rl_lower = raw_label.lower()
+
+    if rl_lower == "all time":
         scope_text = "overall"
     else:
-        try:
-            dt = datetime.strptime(raw_label, "%b %Y")  # e.g., "Sep 2025"
-            scope_text = "during " + dt.strftime("%B %Y")
-        except Exception:
+        # 1) Try to honor the label first (month/year/etc.)
+        parsed_ok = False
+        for fmt in ("%b %Y", "%B %Y"):  # e.g., "Sep 2025" or "September 2025"
+            try:
+                dt = datetime.strptime(raw_label, fmt)
+                scope_text = "during " + dt.strftime("%B %Y")
+                parsed_ok = True
+                break
+            except Exception:
+                pass
+        if not parsed_ok:
             try:
                 dt = datetime.strptime(raw_label, "%Y")  # e.g., "2025"
                 scope_text = "during " + dt.strftime("%Y")
+                parsed_ok = True
             except Exception:
-                scope_text = "during " + raw_label
+                pass
+
+        # 2) If label didn't parse, fall back to actual dates if present
+        if not parsed_ok and start_s and end_s:
+            scope_text = "during " + human_range(start_s, end_s)
+        # 3) Last resort: just echo the label
+        if not parsed_ok and not (start_s and end_s):
+            scope_text = "during " + (raw_label or "the selected range")
 
     data = [
         ["Category", "Count"],
