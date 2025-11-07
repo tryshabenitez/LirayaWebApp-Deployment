@@ -87,27 +87,24 @@
 
 </header>
 
-<!-- Top Back Button (outside border-container) -->
-<div class="top-back" style="display:flex;align-items:center;padding:10px 16px;gap:10px;">
-  <a href="{% url 'user_search' %}?{{ return_qs }}" class="back-link" title="Back to Previous Page"
-     style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#6d2932;font-weight:700;font-size:18px;">
-    <img
-      src="{% static 'images/user_return.png' %}"
-      alt="Back"
-      class="back-icon"
-      id="top-back-image"
-      data-default-src="{% static 'images/user_return.png' %}"
-      data-hover-src="{% static 'images/user_returnhover.png' %}"
-      onmouseover="this.src=this.getAttribute('data-hover-src');"
-      onmouseout="this.src=this.getAttribute('data-default-src');"
-      style="width:38px;height:38px;display:block;object-fit:contain;">
-    <span>Back to Previous Page</span>
-  </a>
-</div>
-
 <!-- Main Content -->
 <div class="main-content">
-  <!-- 2px Border Container -->
+  <!-- Top Back Button (inside main-content, above border-container) -->
+  <div class="top-back">
+    <a href="{% url 'user_search' %}?{{ return_qs }}" class="back-link" title="Back to Previous Page">
+      <img
+        src="{% static 'images/user_return.png' %}"
+        alt="Back"
+        class="back-icon"
+        id="top-back-image"
+        data-default-src="{% static 'images/user_return.png' %}"
+        data-hover-src="{% static 'images/user_returnhover.png' %}"
+        onmouseover="this.src=this.getAttribute('data-hover-src');"
+        onmouseout="this.src=this.getAttribute('data-default-src');">
+      <span>Back to Previous Page</span>
+    </a>
+  </div>
+  
   <div class="border-container" style="padding: 20px 5px;">
     
     <!-- Left Container (content-left) -->
