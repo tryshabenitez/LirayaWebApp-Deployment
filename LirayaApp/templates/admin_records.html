@@ -22,7 +22,20 @@
 
     <!-- SECOND HEADER CONTENTS-->
 
-    
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert 
+                    {% if message.tags == 'success' %}alert-success
+                    {% elif message.tags == 'error' %}alert-danger
+                    {% elif message.tags == 'warning' %}alert-warning
+                    {% elif message.tags == 'info' %}alert-info
+                    {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
     
     <form method="GET" action="">
       <div class="admin-search-section">
@@ -292,6 +305,13 @@
           </div>
 
           <div class="modal-actions">
+            <!-- Inline loader shown while report is generating -->
+            <div id="reportLoading" class="modal-loading-overlay" hidden aria-live="polite">
+              <div class="modal-loading-content">
+                <div class="spinner" aria-hidden="true"></div>
+                <p class="loading-text">Generating report… Please wait while we prepare your file.</p>
+              </div>
+            </div>
             <button type="submit" class="admin_button">Generate Report</button>
           </div>
         </form>
@@ -466,7 +486,8 @@
 
   .modal-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start; /* loader left; button pushed right with margin */
+    align-items: center;
     gap: 10px;
     padding: 14px 18px;
     border-top: 1px solid var(--line);
@@ -475,6 +496,7 @@
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
   }
+  .modal-actions .admin_button { margin-left: auto; }
 
   .admin_button {
     padding: 9px 16px;
@@ -570,6 +592,47 @@
     cursor: not-allowed;
   }
 
+  /* Loading overlay inside the modal card */
+  .modal-loading-overlay[hidden] {
+    display: none;
+  }
+  .modal-loading-overlay {
+    /* Make loader a normal block, not an overlay */
+    position: static;
+    inset: auto;
+    background: transparent;
+    display: flex;
+    justify-content: flex-start; /* align to the left */
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    z-index: auto;
+  }
+  .modal-loading-content {
+    display: flex;
+    flex-direction: column; /* spinner on top, text below */
+    align-items: center; /* center align spinner and text */
+    gap: 6px;
+    text-align: center;
+    color: #1f2328;
+    margin-left: 100px; /* slight nudge to the right */
+  }
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #e5e7eb;
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .loading-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
   .custom-date-inputs {
     display: flex;
     flex-direction: column;
@@ -615,6 +678,7 @@
     const openBtn = document.getElementById('openReportModal');
     const modal = document.getElementById('reportOptionsModal');
     const closeBtn = document.getElementById('closeReportOptions');
+    const loadingOverlay = document.getElementById('reportLoading');
     
     // Date preview elements
     const currentDateEl = document.getElementById('currentDate');
@@ -715,6 +779,9 @@
     // Open the modal
     openBtn.addEventListener('click', function() {
       modal.hidden = false;
+      if (loadingOverlay) {
+        loadingOverlay.hidden = true; // reset loader visibility
+      }
       updateDatePreviews();
     });
 
@@ -798,11 +865,89 @@
 
     // Before submit, ensure only the selected inputs are enabled and log params for debugging
     const form = document.getElementById('reportOptionsForm');
-    form.addEventListener('submit', function() {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
       const selectedPeriod = document.querySelector('input[name="period_type"]:checked').value;
       toggleInputsBySelection(selectedPeriod);
       const params = new URLSearchParams(new FormData(form));
       console.log('[DEBUG] Submitting account_bookrecords with params:', Object.fromEntries(params));
+
+      // Validate according to selection
+      let canSubmit = true;
+      if (selectedPeriod === 'custom') {
+        canSubmit = validateCustomDateRange();
+      } else if (['days','weeks','months','years'].includes(selectedPeriod)) {
+        const err = document.getElementById(`${selectedPeriod}Error`);
+        if (err) canSubmit = err.textContent === '';
+      }
+
+      if (!(canSubmit && form.checkValidity && form.checkValidity())) {
+        return; // don't attempt fetch
+      }
+
+      // Show loader and prepare UI
+      const submitBtn = document.querySelector('.modal-actions .admin_button');
+      const spinner = loadingOverlay ? loadingOverlay.querySelector('.spinner') : null;
+      const loadingText = loadingOverlay ? loadingOverlay.querySelector('.loading-text') : null;
+      if (loadingOverlay) {
+        loadingOverlay.hidden = false;
+      }
+      if (spinner) spinner.style.display = 'block';
+      if (loadingText) loadingText.textContent = 'Generating report… Please wait while we prepare your file.';
+      if (submitBtn) submitBtn.disabled = true;
+      if (closeBtn) closeBtn.disabled = true;
+
+      // Build URL and fetch the PDF
+      const url = form.action + (params.toString() ? `?${params.toString()}` : '');
+      try {
+        const resp = await fetch(url, { method: 'GET' });
+        if (!resp.ok) throw new Error(`Request failed: ${resp.status}`);
+
+        const contentType = (resp.headers.get('content-type') || '').toLowerCase();
+        if (!contentType.includes('application/pdf')) {
+          // Try to read error text
+          const errText = await resp.text();
+          throw new Error(errText || 'Unexpected response (not a PDF)');
+        }
+
+        // Derive filename from headers if available
+        let fileName = 'Liraya_AccountBookRecords_Report.pdf';
+        const disp = resp.headers.get('content-disposition') || '';
+        const match = disp.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+        if (match) {
+          fileName = decodeURIComponent(match[1] || match[2] || fileName);
+        }
+
+        const blob = await resp.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+
+        // Success: stop spinner and show completion message
+        if (spinner) spinner.style.display = 'none';
+        if (loadingText) loadingText.textContent = 'Report generated. Your download has started.';
+      } catch (err) {
+        // Error: stop spinner and show error message
+        console.error('[ERROR] Generate account_bookrecords:', err);
+        if (spinner) spinner.style.display = 'none';
+        if (loadingText) loadingText.textContent = 'Failed to generate report. Please try again.';
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+        if (closeBtn) closeBtn.disabled = false;
+        // Hide the loader after a short delay to let user read message
+        setTimeout(() => {
+          if (loadingOverlay) {
+            // reset spinner visibility for next time
+            if (spinner) spinner.style.display = '';
+            loadingOverlay.hidden = true;
+          }
+        }, 2000);
+      }
     });
 
     // Custom date range validation
