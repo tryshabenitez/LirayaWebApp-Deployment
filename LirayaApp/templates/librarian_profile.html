@@ -117,16 +117,16 @@
                 <div class="name-inputs">
                     <div class="name-col">
                         <label for="first-name">First Name</label>
-                        <input type="text" class="admin-input-field" id="first-name" name='first_name' placeholder="First Name" value="{{ account.first_name }}" readonly Required>
+                        <input type="text" class="admin-input-field" id="first-name" name='first_name' placeholder="First Name" value="{{ account.first_name }}" readonly Required oninput="this.value=this.value.replace(/[0-9]/g,'');">
                     </div>
                     <div class="name-col">
                         <label for="middle-name">Middle Name (N/A if none)</label>
                         <input type="text" class="admin-input-field" id="middle-name" name="middle_name" placeholder="Middle Name" 
-           value="{%    if account.middle_name %}{{ account.middle_name }}{% else %}{{ '' }}{% endif %}" readonly required>
+           value="{%    if account.middle_name %}{{ account.middle_name }}{% else %}{{ '' }}{% endif %}" readonly required oninput="this.value=this.value.replace(/[0-9]/g,'');">
                     </div>
                     <div class="name-col">
                         <label for="last-name">Last Name</label>
-                        <input type="text" class="admin-input-field" id="last-name" name='last_name'placeholder="Last Name" value="{{ account.last_name }}" readonly Required>
+                        <input type="text" class="admin-input-field" id="last-name" name='last_name'placeholder="Last Name" value="{{ account.last_name }}" readonly Required oninput="this.value=this.value.replace(/[0-9]/g,'');">
                     </div>
                 </div>
 
