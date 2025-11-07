@@ -543,6 +543,7 @@ def generate_book_view_graph(book_id):
         ax.set_ylabel('View Count')
         ax.set_xlabel('Book')
         ax.set_title(f"Total Views: 0")
+        ax.set_xticks([])
 
         # Save the graph in the 'graphs' directory under MEDIA_ROOT
         media_dir = os.path.join(os.getcwd(), 'LirayaApp', 'media', 'graphs')
@@ -610,9 +611,7 @@ def generate_book_view_graph(book_id):
     ax.set_ylabel('View Count')
     ax.set_xlabel('Book')
     ax.set_title(f"Total Views: {total_views} ")
-    
-    # Rotate the date labels for better visibility
-    plt.xticks(rotation=0)
+    ax.set_xticks([])
     
     # Save the graph in the 'graphs' directory under MEDIA_ROOT
     media_dir = os.path.join(os.getcwd(), 'LirayaApp', 'media', 'graphs')
