@@ -1672,3 +1672,26 @@ header .dropdown:focus {
   display: block;
   object-fit: contain;
 }
+
+
+/* Make ABOUT US stick to the bottom of the sidebar and style it */
+.sidebar {
+  display: flex;           /* already present, but reiterating for clarity */
+  flex-direction: column;  /* already present */
+}
+
+.sidebar .about-us {
+  margin-top: auto;        /* pushes it to the bottom */
+  display: block;
+  text-align: center;
+  color: #6d2932;
+  font-size: 20px;
+  font-weight: bold;
+  text-decoration: underline;
+  text-transform: uppercase; /* ensure ABOUT US is uppercase */
+  cursor: pointer;
+}
+
+.sidebar .about-us:hover {
+  color: #db2525;
+}
