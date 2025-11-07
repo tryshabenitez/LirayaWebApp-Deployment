@@ -1645,11 +1645,13 @@ header .dropdown:focus {
 
 /* Top Back Button (outside border-container, under header, left side) */
 .top-back {
-  display: flex;
-  align-items: center;
-  padding: 10px 16px;
-  gap: 10px;
-  background: transparent; /* matches page */
+  margin-left: 16px;
+  position: relative;
+  z-index: 2; /* above the sidebar just in case */
+}
+
+.sidebar.open ~ .top-back {
+  margin-left: 270px; /* sidebar width (250) + padding gap */
 }
 
 .back-link {
@@ -1675,23 +1677,27 @@ header .dropdown:focus {
 
 
 /* Make ABOUT US stick to the bottom of the sidebar and style it */
+/* Ensure the sidebar is a column flexbox (reassert here to win on order) */
 .sidebar {
-  display: flex;           /* already present, but reiterating for clarity */
-  flex-direction: column;  /* already present */
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar .about-us {
-  margin-top: auto;        /* pushes it to the bottom */
+/* Force ABOUT US to the bottom of the sidebar */
+.sidebar a.about-us {
+  margin-top: auto !important;   /* push to bottom */
   display: block;
   text-align: center;
   color: #6d2932;
   font-size: 20px;
   font-weight: bold;
   text-decoration: underline;
-  text-transform: uppercase; /* ensure ABOUT US is uppercase */
+  text-transform: uppercase;
   cursor: pointer;
+  padding-top: 10px;
+  padding-bottom: 8px;
 }
 
-.sidebar .about-us:hover {
-  color: #db2525;
-}
+/* Optional: keep a little breathing room at the very bottom */
+.sidebar { padding-bottom: 12px; }
+
