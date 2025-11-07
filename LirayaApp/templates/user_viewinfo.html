@@ -33,7 +33,7 @@
   </div>
 
   <!-- About Us Button (Redirects to About Us Page) -->
-  <a href="{% url 'user_aboutus' %}" class="about-us">About Us</a>
+  <a href="{% url 'user_aboutus' %}" class="about-us">ABOUT US</a>
 </div>
 
 <!-- Header -->
@@ -87,6 +87,24 @@
 
 </header>
 
+<!-- Top Back Button (outside border-container) -->
+<div class="top-back" style="display:flex;align-items:center;padding:10px 16px;gap:10px;">
+  <a href="{% url 'user_search' %}?{{ return_qs }}" class="back-link" title="Back to Previous Page"
+     style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#6d2932;font-weight:700;font-size:18px;">
+    <img
+      src="{% static 'images/user_return.png' %}"
+      alt="Back"
+      class="back-icon"
+      id="top-back-image"
+      data-default-src="{% static 'images/user_return.png' %}"
+      data-hover-src="{% static 'images/user_returnhover.png' %}"
+      onmouseover="this.src=this.getAttribute('data-hover-src');"
+      onmouseout="this.src=this.getAttribute('data-default-src');"
+      style="width:38px;height:38px;display:block;object-fit:contain;">
+    <span>Back to Previous Page</span>
+  </a>
+</div>
+
 <!-- Main Content -->
 <div class="main-content">
   <!-- 2px Border Container -->
@@ -102,22 +120,7 @@
           <img src="{% static 'images/book_placeholder.png' %}" alt="No Cover Available" class="cover-image">
         {% endif %}
       </div>
-      <!-- Return Button positioned bottom-left relative to image -->
-      <div style="width: 100%; text-align: left;">
-        <a href="{% url 'user_search' %}?{{ return_qs }}" title="Return">
-          <button class="return-btn" style="margin-top: 100px;">
-            <img 
-              src="{% static 'images/user_return.png' %}" 
-              alt="Return" 
-              class="return-img"
-              id="return-image"
-              data-default-src="{% static 'images/user_return.png' %}"
-              data-hover-src="{% static 'images/user_returnhover.png' %}" 
-              onmouseover="this.src=this.getAttribute('data-hover-src');" 
-              onmouseout="this.src=this.getAttribute('data-default-src');">
-          </button>
-        </a>
-      </div>
+      <!-- (Old return button removed – now at the top outside the border) -->
     </div>
 
     <!-- Right Container (content-right) -->
@@ -302,12 +305,7 @@
   </div>
 </div>
 
-
-
-
-
 <script src="{% static 'script/user_script.js' %}"></script> <!-- Link to the JavaScript file -->
-
 <script src="{% static 'script/user_viewinfo.js' %}"></script> <!-- Link to the JavaScript file for viewinfo page -->
 
 </body>
