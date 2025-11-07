@@ -1643,22 +1643,27 @@ header .dropdown:focus {
 }
 
 
-/* Back button: align with left column, sit above border-container, animate like content */
-.top-back {
-  /* main-content has 20px left padding; border-container has 5px left padding; 
-     content-left starts with 30px margin-left → 20 + 5 + 30 = 55px */
+/* =========================
+   Back button (above border-container)
+   ========================= */
+.main-content .top-back{
+  /* Align with the left column: 
+     main-content padding-left (20) + border-container padding-left (5) + content-left margin-left (30) = 55 */
   margin: 10px 0 12px 55px;
-  transition: margin-left 0.3s ease-in-out; /* same feel as content shift */
+  align-self: flex-start;                 /* override main-content's align-items:center */
+  transition: margin-left 0.3s ease-in-out;
   display: flex;
   align-items: center;
 }
 
-.sidebar.open ~ .main-content .top-back {
-  /* shift right when sidebar is open: sidebar 250px + ~20px breathing room + base 55px */
+/* When sidebar is open, slide the back button so it doesn't get covered */
+.sidebar.open ~ .main-content .top-back{
+  /* 250 (sidebar width) + ~20 breathing + base 55 = 325 */
   margin-left: 325px;
 }
 
-.back-link {
+/* Make it a clean text+icon link (no border/bg) */
+.main-content .top-back .back-link{
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1666,42 +1671,43 @@ header .dropdown:focus {
   color: #6d2932;
   font-weight: 700;
   font-size: 18px;
-  background: #fff7f7;
-  border: 1px solid #6d2932;
-  border-radius: 10px;
-  padding: 8px 12px;
+  background: transparent;   /* no background */
+  border: 0;                 /* no border */
+  padding: 0;                /* no padding box */
 }
 
-.back-link:hover { color: #be0b23; }
+.main-content .top-back .back-link:hover{ color:#be0b23; }
 
-.back-icon {
+.main-content .top-back .back-icon{
   width: 38px;
   height: 38px;
   display: block;
   object-fit: contain;
 }
 
-/* ABOUT US pinned bottom with extra bottom padding */
-.sidebar {
-  display: flex !important;
-  flex-direction: column !important;
+/* =========================
+   ABOUT US at the bottom of sidebar
+   ========================= */
+.sidebar{
+  display:flex !important;
+  flex-direction:column !important;
+  padding-bottom: 32px !important;   /* extra bottom spacing for whole sidebar */
 }
 
-.sidebar a.about-us {
-  margin-top: auto !important;     /* pin to bottom */
-  position: sticky;
-  bottom: 0;
-  background: #d7d1d3;
-  display: block;
-  text-align: center;
-  color: #6d2932;
-  font-size: 20px;
-  font-weight: bold;
+.sidebar a.about-us{
+  margin-top:auto !important;        /* push to bottom */
+  margin-bottom: 8px !important;     /* lift a bit so it’s not hugging the edge */
+  display:block;
+  text-align:center;
+  color:#6d2932;
+  font-size:20px;
+  font-weight:bold;
   text-decoration: underline;
   text-transform: uppercase;
-  cursor: pointer;
-  padding: 12px 0 28px !important; /* more bottom padding so it isn't too low */
+  cursor:pointer;
+  padding: 12px 0 28px !important;   /* more bottom padding as requested */
 }
-.sidebar a.about-us:hover { color: #db2525; }
+.sidebar a.about-us:hover{ color:#db2525; }
+
 
 
