@@ -1656,12 +1656,6 @@ header .dropdown:focus {
   align-items: center;
 }
 
-/* When sidebar is open, slide the back button so it doesn't get covered */
-.sidebar.open ~ .main-content .top-back{
-  /* 250 (sidebar width) + ~20 breathing + base 55 = 325 */
-  margin-left: 325px;
-}
-
 /* Make it a clean text+icon link (no border/bg) */
 .main-content .top-back .back-link{
   display: inline-flex;
