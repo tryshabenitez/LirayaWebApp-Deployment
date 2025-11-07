@@ -301,93 +301,105 @@ header h1 {
 
 /* Book Item (Inside Total Books Uploaded) */
 .book-item {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 100%;
-    height: auto; /* Adjusts height automatically */
+    display: flex;              /* use flex to center the card */
+    justify-content: center;    /* horizontally center the card inside the grid cell */
+    align-items: stretch;       /* make it stretch evenly if needed */
+    width: 100%;                /* allow grid column to control width */
+    height: 100%;               /* make each grid item uniform in height if possible */
     text-align: center;
-    box-sizing: border-box; /* Ensures the width includes padding and border */
+    box-sizing: border-box;
 }
 
 /* Book Container with Background and Shadow */
+
 .book-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* Ensures content is spaced out */
-    align-items: center;
-    padding: 10px;
-    background-color: #f0f0f0; /* Light gray background */
-    border-radius: 10px; /* Rounded corners */
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow to give a floating effect */
-    border: 2px solid #555; /* Darker border color */
-    transition: box-shadow 0.3s ease, background-color 0.3s ease; /* Smooth transition on hover */
-    max-width: 230px; /* Ensure uniform sizing */
-    width: 100%; /* Make sure the container takes full available width */
-    box-sizing: border-box; /* Ensure padding is considered in the width */
-    text-align: center; /* Centers the content inside */
-    height: 380px; /* Set a fixed height for consistent sizing */
-    overflow: hidden; /* Prevent text from overflowing the box */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  /* --- SIZE CONTROL --- */
+  width: 230px;          /* Fixed card width — consistent across all */
+  height: 380px;         /* Fixed height for all cards */
+  flex-shrink: 0;        /* Prevent cards from shrinking unevenly in grid */
+  box-sizing: border-box;
+
+  /* --- VISUAL STYLE --- */
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border: 2px solid #555;
+  text-align: center;
+  overflow: hidden;      /* Keeps the content tidy inside fixed height */
+  padding: 10px;
+
+  /* --- ANIMATION --- */
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.book-container:hover {
+  background-color: #e0e0e0;
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* Book Title (Bold and expandable) */
 .book-container h3 {
-    font-weight: bold; /* Makes the book title bold */
-    font-size: 16px; /* Adjust font size */
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* Limits the text to 2 lines */
-    -webkit-box-orient: vertical;
-    overflow: hidden; /* Prevents text overflow */
-    text-overflow: ellipsis; /* Adds '...' when the text is too long */
-    width: 100%; /* Ensures title fits inside the container */
-    text-align: center; /* Centers the title */
-    margin-top: 10px; /* Adds some space above the title */
-    margin-bottom: 10px; /* Adds space below the title */
-    line-height: 1.4; /* Adjust the line height for readability */
-    padding: 0 5px; /* Ensures text is spaced from the container edges */
+  font-weight: 600;
+  font-size: 15px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  margin: 8px 0 6px;
+  line-height: 1.4;
+  padding: 0 8px;
+  color: #333;
+  cursor: default;
+  transition: all 0.3s ease-in-out;
+}
+
+.book-container h3:hover {
+  color: #222; /* subtle highlight */
 }
 
 /* Book Placeholder (Image) */
 .book-placeholder {
-    width: 180px;  /* Fixed width for images */
-    height: 200px; /* Adjusted height for images */
-    object-fit: cover; /* Ensures the image maintains aspect ratio and is cropped if necessary */
-    margin: 10px auto;  /* Center the image inside its container */
-    -webkit-user-drag: none;  /* Prevent dragging in WebKit browsers */
-    -moz-user-drag: none;  /* Firefox-specific */
-    user-drag: none;  /* Standard rule to prevent dragging */
-    -webkit-user-select: none;  /* Prevent text selection in WebKit browsers */
-    -moz-user-select: none;  /* Firefox-specific */
-    user-select: none;  /* Standard rule to prevent text selection */
-    pointer-events: none;  /* Disable mouse interaction entirely */
+  width: 100%;                 /* fill the card width */
+  height: 200px;               /* consistent height for all images */
+  object-fit: cover;           /* keep proportion and crop overflow */
+  border-radius: 6px;          /* small rounding for style */
+  user-select: none;
+  -webkit-user-drag: none;
+  margin: 5px 0 10px;
 }
 
 /* Book Info container (adjusting text and title layout) */
 .book-info-hp {
-    display: flex;
-    flex: 1; 
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    text-align: center;
-    overflow: hidden; /* Prevents text from overflowing */
-    width: 100%;
-    padding: 10px; /* Adds some space around the text */
-    box-sizing: border-box; /* Ensures padding is considered */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  padding: 5px 8px 10px;
+  box-sizing: border-box;
 }
+
 
 /* push the button row to the bottom of the card */
 .book-info-hp form {
-  margin-top: auto;             /* key: anchors the button to the bottom */
-  display: flex;                /* keep the button centered */
+  margin-top: auto;      /* push button to bottom */
+  display: flex;
   justify-content: center;
   width: 100%;
+  padding-top: 8px;      /* small visual breathing room */
 }
 
-.book-container:hover {
-    background-color: #e0e0e0; /* Darken the background on hover */
-    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2); /* Increase shadow on hover for floating effect */
-}
+
 
 /* View Details Button */
 .view-details {
@@ -407,7 +419,6 @@ header h1 {
     background-color: #3e151a; /* Brown background on hover */
     color: white; /* White text on hover */
 }
-
 
 
 /* Search bar container */
@@ -1923,35 +1934,32 @@ h2 {
 
   /* Adjust book grid layout for tablets and small laptops */
   .total-uploaded .book-grid-horizontal {
-      grid-template-columns: repeat(5, 1fr); /* 4 books per row */
+      grid-template-columns: repeat(4, 1fr); /* 4 books per row */
   }
 
   /* Adjust book container and image size */
   .book-container {
-      padding: 12px; /* Slightly increase padding for better spacing */
+    width: 170px;  /* smaller from 190px */
+    height: 280px; /* reduced height */
   }
 
-  .book-item {
-    width: 100%;  /* Full width for each book item inside grid */
-    height: auto; /* Adjusts height automatically */
-  }
-
-  /* Adjust book image and container size */
   .book-placeholder {
-    width: 100%;  /* Full width for image */
-    height: auto; /* Auto adjust height */
-    max-width: 150px;  /* Max width for images */
+    width: 130px;
+    height: 150px;
   }
 
   .book-container h3 {
-      font-size: 16px; /* Slightly smaller title for medium screens */
+    font-size: 9px; /* smaller text */
   }
 
+  .book-item {
+    width: 100%;
+    height: auto;
+  }
 
-  
   .view-details {
-      font-size: 13px; /* Smaller button text */
-      padding: 4px 12px; /* Adjust padding for better fit */
+    font-size: 11px; /* smaller button text */
+    padding: 3px 10px; /* tighter fit */
   }
 
   .book-section h2 {
@@ -2170,7 +2178,7 @@ h2 {
 
   /* Adjust book grid layout for smaller devices */
   .total-uploaded .book-grid-horizontal {
-    grid-template-columns: repeat(5, 1fr); /* 3 books per row */
+    grid-template-columns: repeat(3, 1fr); /* 3 books per row */
   }
 
   .book-section h2 {
@@ -2182,25 +2190,27 @@ h2 {
     height: auto; /* Adjusts height automatically */
   }
 
-  .book-placeholder {
-    width: 100%;  /* Full width for image */
-    height: auto; /* Auto adjust height */
-    max-width: 130px;  /* Max width for images */
+  .book-container {
+    width: 120px;  /* smaller container */
+    height: 210px;
   }
 
-  .book-container {
-    padding: 8px; /* Reduce padding for smaller screens */
+  .book-placeholder {
+    width: 95px;
+    height: 110px;
   }
 
   .book-container h3 {
-    font-size: 14px; /* Smaller font for book title */
+    font-size: 6px;
+    line-height: 1.1;
+    -webkit-line-clamp: 2;
   }
 
   .view-details {
-    font-size: 12px; /* Even smaller button text */
-    padding: 4px 10px; /* Reduce padding for mobile */
+    font-size: 6px;
+    padding: 2px 6px;
+    border-radius: 30px;
   }
-
   
 
   .book-section h2 {
@@ -2470,7 +2480,7 @@ h2 {
 
   /* Adjust book grid layout for mobile devices */
   .total-uploaded .book-grid-horizontal {
-    grid-template-columns: repeat(5, 1fr); /* 2 books per row */
+    grid-template-columns: repeat(2, 1fr); /* 2 books per row */
   }
 
   .book-section h2 {
@@ -2483,25 +2493,27 @@ h2 {
     height: auto; /* Auto adjust height */
   }
 
-  .book-placeholder {
-    width: 100%;  /* Full width for image */
-    height: auto; /* Auto adjust height */
-    max-width: 100%;  /* Max width for images */
+  .book-container {
+    width: 95px;  /* smaller */
+    height: 170px;
   }
 
-  .book-container {
-    padding: 5px; /* Even smaller padding for mobile */
+  .book-placeholder {
+    width: 75px;
+    height: 90px;
   }
 
   .book-container h3 {
-    font-size: 12px; /* Even smaller title font for mobile */
+    font-size: 4px;
+    line-height: 1;
+    -webkit-line-clamp: 2;
   }
 
-  /* Adjust the "View Details" button for mobile */
   .view-details {
-    width: 100%; /* Make the 'View Details' button full-width */
-    font-size: 14px; /* Adjust font size for mobile */
-    padding: 6px 20px; /* Adjust padding for mobile */
+    width: 100%;
+    font-size: 5px;
+    padding: 2px 10px;
+    border-radius: 25px;
   }
 
   .book-section h2 {
