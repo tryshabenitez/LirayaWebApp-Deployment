@@ -1643,16 +1643,19 @@ header .dropdown:focus {
 }
 
 
-/* Top Back Button (fixed under the header; never covered by sidebar) */
+/* Back button: align with left column, sit above border-container, animate like content */
 .top-back {
-  position: fixed;
-  top: 100px;   /* header ≈85px; adjust if needed */
-  left: 16px;
-  z-index: 10000; /* above sidebar (z:1) and safely below content overlap */
+  /* main-content has 20px left padding; border-container has 5px left padding; 
+     content-left starts with 30px margin-left → 20 + 5 + 30 = 55px */
+  margin: 10px 0 12px 55px;
+  transition: margin-left 0.3s ease-in-out; /* same feel as content shift */
+  display: flex;
+  align-items: center;
 }
 
-.sidebar.open ~ .top-back {
-  left: 270px; /* 250 sidebar + ~20px breathing room */
+.sidebar.open ~ .main-content .top-back {
+  /* shift right when sidebar is open: sidebar 250px + ~20px breathing room + base 55px */
+  margin-left: 325px;
 }
 
 .back-link {
@@ -1668,6 +1671,7 @@ header .dropdown:focus {
   border-radius: 10px;
   padding: 8px 12px;
 }
+
 .back-link:hover { color: #be0b23; }
 
 .back-icon {
@@ -1677,15 +1681,14 @@ header .dropdown:focus {
   object-fit: contain;
 }
 
-/* Make ABOUT US stick to the bottom of the sidebar and style it */
+/* ABOUT US pinned bottom with extra bottom padding */
 .sidebar {
   display: flex !important;
   flex-direction: column !important;
-  padding-bottom: 12px;
 }
 
 .sidebar a.about-us {
-  margin-top: auto !important;   /* push to bottom */
+  margin-top: auto !important;     /* pin to bottom */
   position: sticky;
   bottom: 0;
   background: #d7d1d3;
@@ -1695,9 +1698,10 @@ header .dropdown:focus {
   font-size: 20px;
   font-weight: bold;
   text-decoration: underline;
-  text-transform: uppercase;      /* shows as ABOUT US */
+  text-transform: uppercase;
   cursor: pointer;
-  padding: 10px 0 8px;
+  padding: 12px 0 28px !important; /* more bottom padding so it isn't too low */
 }
 .sidebar a.about-us:hover { color: #db2525; }
+
 
