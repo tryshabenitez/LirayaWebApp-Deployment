@@ -43,7 +43,6 @@
         </select>
     </div>
 
-
     <form method="GET" action="" id="searchForm">
         <div class="admin-search-section">
             <input type="text" name="q" placeholder="Search keywords..." value="{{ query|default:'' }}">
@@ -59,7 +58,7 @@
                 <tr>
                     <th>Searched Keyword</th>
                     <th>Search Count</th>
-                    <th>Book Results Count</th> <!-- renamed -->
+                    <th>Results</th> <!-- renamed -->
                     <th>Last Searched</th>
                 </tr>
             </thead>
@@ -68,7 +67,13 @@
                     <tr>
                         <td>{{ log.user_keyword_search }}</td>
                         <td>{{ log.user_search_count }}</td>
-                        <td>{{ log.book_results_count }}</td>
+                        <td>
+                            {% if log.book_results_count == 0 %}
+                                No results found
+                            {% else %}
+                                Results available
+                            {% endif %}
+                        </td>
                         <td>{{ log.updated_at }}</td>
                     </tr>
                 {% empty %}
@@ -161,8 +166,6 @@
     const url = new URL(window.location.href);
     url.searchParams.set('timeFilter', tf);
     url.searchParams.delete('page'); // reset to first page on filter change
-
-    // Full page load so Django renders fresh data + pagination
     window.location.href = url.toString();
   }
 </script>
