@@ -1696,7 +1696,7 @@ header .dropdown:focus {
   color:#6d2932;
   font-size:20px;
   text-decoration: underline;
-  text-transform: uppercase;
+  text-transform: none !important;
   cursor:pointer;
   padding: 12px 0 28px !important;   /* more bottom padding as requested */
 }
