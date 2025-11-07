@@ -540,7 +540,8 @@ def generate_book_view_graph(book_id):
             bar.set_capstyle('round')  # Round the top corners
 
         ax.set_ylabel('View Count')
-        ax.set_title(f"Total Views for {dummy_title} Book: 0")
+        ax.set_xlabel('Book')
+        ax.set_title(f"Total Views: 0")
 
         # Save the graph in the 'graphs' directory under MEDIA_ROOT
         media_dir = os.path.join(os.getcwd(), 'LirayaApp', 'media', 'graphs')
@@ -606,7 +607,8 @@ def generate_book_view_graph(book_id):
     ax.set_ylim(0, max_count + buffer)  # Set the range from 0 to max_count + buffer
     
     ax.set_ylabel('View Count')
-    ax.set_title(f"Total Views for {title} Book: {total_views} ")
+    ax.set_xlabel('Book')
+    ax.set_title(f"Total Views: {total_views} ")
     
     # Rotate the date labels for better visibility
     plt.xticks(rotation=0)
