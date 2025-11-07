@@ -703,11 +703,9 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
             flowables.append(Paragraph(f"({start_date_str})", daterange_header_style))
         else:
             flowables.append(Paragraph(f"({start_date_str} to {end_date_str})", daterange_header_style))
-        flowables.append(Spacer(1, 12))
     elif start_date_str or end_date_str:
         single = start_date_str or end_date_str
         flowables.append(Paragraph(f"({single})", daterange_header_style))
-        flowables.append(Spacer(1, 12))
 
     # Call create_user_info_table to generate the user info table
     user_info_table = create_user_info_table_header(user_info)
