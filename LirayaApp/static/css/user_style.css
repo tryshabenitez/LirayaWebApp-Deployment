@@ -1621,7 +1621,7 @@ header .dropdown:focus {
   align-items: center;
   justify-content: center;
   z-index: 9990; /* header is higher via isolation: isolate + higher z-index */
-
+}
 
 #liraya-loading .box{
   display:flex;
@@ -1643,15 +1643,16 @@ header .dropdown:focus {
 }
 
 
-/* Top Back Button (outside border-container, under header, left side) */
+/* Top Back Button (fixed under the header; never covered by sidebar) */
 .top-back {
-  margin-left: 16px;
-  position: relative;
-  z-index: 2; /* above the sidebar just in case */
+  position: fixed;
+  top: 100px;   /* header ≈85px; adjust if needed */
+  left: 16px;
+  z-index: 10000; /* above sidebar (z:1) and safely below content overlap */
 }
 
 .sidebar.open ~ .top-back {
-  margin-left: 270px; /* sidebar width (250) + padding gap */
+  left: 270px; /* 250 sidebar + ~20px breathing room */
 }
 
 .back-link {
@@ -1662,11 +1663,12 @@ header .dropdown:focus {
   color: #6d2932;
   font-weight: 700;
   font-size: 18px;
+  background: #fff7f7;
+  border: 1px solid #6d2932;
+  border-radius: 10px;
+  padding: 8px 12px;
 }
-
-.back-link:hover {
-  color: #be0b23;
-}
+.back-link:hover { color: #be0b23; }
 
 .back-icon {
   width: 38px;
@@ -1675,29 +1677,27 @@ header .dropdown:focus {
   object-fit: contain;
 }
 
-
 /* Make ABOUT US stick to the bottom of the sidebar and style it */
-/* Ensure the sidebar is a column flexbox (reassert here to win on order) */
 .sidebar {
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
+  padding-bottom: 12px;
 }
 
-/* Force ABOUT US to the bottom of the sidebar */
 .sidebar a.about-us {
   margin-top: auto !important;   /* push to bottom */
+  position: sticky;
+  bottom: 0;
+  background: #d7d1d3;
   display: block;
   text-align: center;
   color: #6d2932;
   font-size: 20px;
   font-weight: bold;
   text-decoration: underline;
-  text-transform: uppercase;
+  text-transform: uppercase;      /* shows as ABOUT US */
   cursor: pointer;
-  padding-top: 10px;
-  padding-bottom: 8px;
+  padding: 10px 0 8px;
 }
-
-/* Optional: keep a little breathing room at the very bottom */
-.sidebar { padding-bottom: 12px; }
+.sidebar a.about-us:hover { color: #db2525; }
 
