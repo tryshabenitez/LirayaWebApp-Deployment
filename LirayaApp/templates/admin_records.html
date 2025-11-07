@@ -910,13 +910,8 @@
           throw new Error(errText || 'Unexpected response (not a PDF)');
         }
 
-        // Derive filename from headers if available
-        let fileName = 'Liraya_AccountBookRecords_Report.pdf';
-        const disp = resp.headers.get('content-disposition') || '';
-        const match = disp.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
-        if (match) {
-          fileName = decodeURIComponent(match[1] || match[2] || fileName);
-        }
+        // Use a stable, explicit filename regardless of headers
+        const fileName = 'Liraya_AccountBookRecords_Report.pdf';
 
         const blob = await resp.blob();
         const blobUrl = URL.createObjectURL(blob);
