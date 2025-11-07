@@ -1616,12 +1616,12 @@ header .dropdown:focus {
   position: fixed;
   top: var(--header-height, 85px);
   left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.35);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 9990; /* header is higher via isolation: isolate + higher z-index */
-}
+
 
 #liraya-loading .box{
   display:flex;
@@ -1630,16 +1630,6 @@ header .dropdown:focus {
   gap:14px;
   background: transparent; /* no white box */
   color:#fff;               /* not used now but fine to keep */
-}
-
-/* The spinner itself */
-.liraya-spinner{
-  width: var(--spinner-size);
-  height: var(--spinner-size);
-  border-radius: 50%;
-  border: var(--spinner-thickness) solid var(--spinner-track);
-  border-top-color: var(--spinner-color);   /* the moving colored arc */
-  animation: liraya-rotate 0.9s linear infinite;
 }
 
 /* Motion reduce */
