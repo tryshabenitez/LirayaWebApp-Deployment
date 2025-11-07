@@ -37,7 +37,7 @@ def create_header(canvas, doc):
     text2 = "TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES - CAVITE"
     text3 = "Technological University of the Philippines – Cavite"
     text4 = "Bachelor of Engineering Technology Major In Computer Engineering Technology"
-    text5 = "Email: lirayaautomated@gmail.com | Website: www.liraya.com"
+    text5 = "Email: lirayaautomated@gmail.com | Website: www.tupcliraya.site"
 
     # Set font for the text
     canvas.setFont("Helvetica-Bold", 12)
