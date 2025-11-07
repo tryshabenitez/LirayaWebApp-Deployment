@@ -215,8 +215,6 @@ def generate_pdf_format(output_pdf_path, file_name):
         fontName='Helvetica-Bold',
         fontSize=15,  # Font size for topic titles
         alignment=0,  # Left alignment
-        leading=18, 
-        spaceBefore=6,
         spaceAfter=10  # Space after the title
     )
 
