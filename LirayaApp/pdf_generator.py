@@ -302,7 +302,8 @@ def generate_book_details(output_pdf_path, dynamic_data=None, file_name="Unknown
         fontName='Helvetica-Bold',  # Font style
         fontSize=15,  # Font size for topic titles
         alignment=0,  # Center alignment
-        spaceAfter=10  # Space after the title
+        leading=15,
+        spaceAfter=5,  # Space after the title
     )
     
     # Content style (12 font size)
