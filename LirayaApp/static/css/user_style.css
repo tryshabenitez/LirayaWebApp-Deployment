@@ -1649,7 +1649,7 @@ header .dropdown:focus {
 .main-content .top-back{
   /* Align with the left column: 
      main-content padding-left (20) + border-container padding-left (5) + content-left margin-left (30) = 55 */
-  margin: 10px 0 12px 55px;
+  margin: 10px 0 12px 25px;
   align-self: flex-start;                 /* override main-content's align-items:center */
   transition: margin-left 0.3s ease-in-out;
   display: flex;
