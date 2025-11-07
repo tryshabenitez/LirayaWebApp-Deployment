@@ -2852,5 +2852,3 @@ def generate_keyword_search_history(output_pdf_buffer, context=None, user_info=N
                 os.remove(p)
         except Exception:
             pass
-
-
