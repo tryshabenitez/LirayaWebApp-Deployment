@@ -815,14 +815,19 @@ footer {
 .create-account {
   display: flex;
   flex-direction: column; /* Stack the fields vertically */
-  align-items: center; /* Center the content horizontally */
-  justify-content: center; /* Center the content vertically */
-  max-width: 1500px; /* Limit the width of the form for better centering */
-  margin: 0 auto; /* Center the form horizontally */
-  padding: 20px; /* Center in viewport: use min-height and center content */
+  align-items: stretch; /* Let internal grid control horizontal alignment */
+  justify-content: flex-start; /* Avoid vertical centering pushing into tabs */
+  max-width: none; /* Full width */
+  margin: 0 auto 40px; /* Space below, centered horizontally */
+  padding: 25px 30px; /* Internal breathing room */
   width: 100%;
   box-sizing: border-box;
-  height: 60vh;
+  background: transparent; /* Make container background invisible */
+  border: none; /* Remove border to keep it invisible */
+  border-radius: 12px;
+  height: auto; /* Let content dictate height */
+  position: relative;
+  z-index: 1; /* Stay below fixed messages overlay */
 }
 
 .profile-container {
@@ -845,8 +850,8 @@ footer {
 /* If you want to center the form within its parent exactly in the middle */
 .main-content .create-account {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch; /* Allow children (form) to fill full width */
+  justify-content: flex-start; /* Start at top/left, not centered */
 }
 
 
@@ -860,9 +865,28 @@ footer {
 }
 
 .role-email-container {
-  display: flex;
-  gap: 20px;
+  /* Two columns: Role (label+field) | Email (label+field), labels on top */
+  display: grid !important; /* override inline flex from template */
+  grid-template-columns: repeat(2, minmax(280px, 420px));
+  column-gap: 24px;
+  row-gap: 8px;
   width: 100%;
+  align-items: start; /* top-align label+input stacks */
+  justify-content: center; /* center the two columns within full-width container */
+}
+
+/* Keep each label with its control in the same column */
+/* Place role label+field in column 1, email label+field in column 2 */
+.create-account .role-email-container label[for="role"] { grid-column: 1; grid-row: 1; align-self: start; }
+.create-account .role-email-container .admin-dropdown-section { grid-column: 1; grid-row: 2; }
+.create-account .role-email-container label[for="email"] { grid-column: 2; grid-row: 1; align-self: start; }
+.create-account .role-email-container .email-input { grid-column: 2; grid-row: 2; }
+
+/* Ensure the dropdown fills its column like other inputs */
+.create-account .admin-dropdown-section select {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0; /* remove inline spacing that can push layout */
 }
 
 .role-select {
@@ -870,8 +894,70 @@ footer {
 }
 
 .email-input {
-  max-width: 300px; /* Add a max-width to the email input */
-  min-width: 300px;
+  /* Match behavior of name fields: full width within its column */
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Limit the maximum visual width of inputs so fields don't stretch too far */
+.create-account .admin-input-field {
+  max-width: 420px;
+}
+
+/* Narrower Role dropdown only within Create Account */
+.create-account .admin-dropdown-section select {
+  max-width: 360px;
+}
+
+/* ====== Responsive adjustments specifically for Create Account ====== */
+@media (max-width: 1024px) {
+  .create-account { max-width: 100%; padding: 20px 22px; }
+  /* Name fields: adaptive grid wrapping at 1024 */
+  .create-account .name-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px 22px;
+  }
+}
+
+@media (max-width: 768px) {
+  .create-account { max-width: 100%; margin: 0 12px 32px; padding: 18px 18px; }
+  /* Keep stacked at 768 for clarity */
+  .create-account .role-email-container {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 12px;
+  }
+  .create-account .role-email-container label[for="role"],
+  .create-account .role-email-container .admin-dropdown-section,
+  .create-account .role-email-container label[for="email"],
+  .create-account .role-email-container .email-input { grid-column: 1; grid-row: auto; }
+  .create-account .admin-dropdown-section select,
+  .create-account .email-input { width: 100% !important; max-width: 100% !important; }
+  /* Name fields: single column stack at 768 */
+  .create-account .name-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .create-account { padding: 16px 14px; margin: 0 10px 28px; }
+  /* Collapse to two lines: labels above inputs for clarity on very small screens */
+  .create-account .role-email-container {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 8px;
+  }
+  .create-account .role-email-container label[for="role"],
+  .create-account .role-email-container .admin-dropdown-section,
+  .create-account .role-email-container label[for="email"],
+  .create-account .role-email-container .email-input { grid-column: 1; grid-row: auto; }
+  .create-account .admin-dropdown-section select,
+  .create-account .email-input { width: 100% !important; }
+  /* Name fields: tighter spacing on phones */
+  .create-account .name-inputs { gap: 12px; }
 }
 
 /* Styling for the Name Fields (First Name, Middle Name, Last Name) */
@@ -2036,4 +2122,3 @@ button:disabled {
   .action_button { font-size: 9.5px; padding: 5px 8px; width: 90px; }
   button.admin_button { max-width: 110px; }
 }
-
