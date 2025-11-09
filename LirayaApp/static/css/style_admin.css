@@ -409,6 +409,24 @@ footer {
   color: #000; /* Keep black text */
 }
 
+/* Keep dropdown original styling but add sane min/max sizing */
+/* Global dropdown size constraints (non-destructive) */
+.admin-dropdown-section select {
+  min-width: 160px; /* Never collapse too small */
+  max-width: 280px; /* Prevent growing too wide when container is huge */
+  width: 210px; /* Default base width consistent with original */
+}
+
+/* Treat label + dropdown as a single unit */
+.admin-dropdown-wrapper,
+.dropdown-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;     /* prevent label and select from splitting lines */
+  white-space: nowrap;   /* keep the pair together */
+}
+
 
 /* ============================ Pagination Styles ============================ */
 .pagination {
@@ -507,7 +525,7 @@ footer {
     padding: 0px;
     -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
     -moz-user-drag: none; /* Firefox-specific */
-    user-drag: none; /* Standard rule to prevent dragging */
+  /* user-drag is non-standard; relying on vendor prefixes already present */
     -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
     -moz-user-select: none; /* Firefox-specific */
     -ms-user-select: none; /* Internet Explorer-specific */
@@ -526,7 +544,7 @@ footer {
   margin-left: -20px; /* Move the image further to the left */
   -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
   -moz-user-drag: none; /* Firefox-specific */
-  user-drag: none; /* Standard rule to prevent dragging */
+  /* user-drag is non-standard; relying on vendor prefixes already present */
   -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
   -moz-user-select: none; /* Firefox-specific */
   -ms-user-select: none; /* Internet Explorer-specific */
@@ -917,7 +935,7 @@ footer {
     margin-bottom: 15px;
     -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
     -moz-user-drag: none; /* Firefox-specific */
-    user-drag: none; /* Standard rule to prevent dragging */
+  /* user-drag is non-standard; relying on vendor prefixes already present */
     -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
     -moz-user-select: none; /* Firefox-specific */
     -ms-user-select: none; /* Internet Explorer-specific */
@@ -944,7 +962,7 @@ footer {
     overflow: hidden;
     -webkit-user-drag: none; /* Prevent dragging in WebKit browsers */
     -moz-user-drag: none; /* Firefox-specific */
-    user-drag: none; /* Standard rule to prevent dragging */
+  /* user-drag is non-standard; relying on vendor prefixes already present */
     -webkit-user-select: none; /* Prevent text selection in WebKit browsers */
     -moz-user-select: none; /* Firefox-specific */
     -ms-user-select: none; /* Internet Explorer-specific */
@@ -1398,6 +1416,7 @@ button.admin_button:hover {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2; /* Limit to two lines */
+  line-clamp: 2; /* Add standard property for broader compatibility */
   -webkit-box-orient: vertical;
   line-height: 1.2em;
   max-height: 2.4em;
@@ -1809,3 +1828,212 @@ button:disabled {
     cursor: not-allowed;
     transition: opacity 0.3s ease;
 }
+
+/* ============================ Responsive Tweaks (Non-destructive) ============================ */
+/* These override sizes only; original styles above remain intact. */
+
+@media (max-width: 1024px) {
+  /* Slightly reduce search section max width and internal spacing */
+  .admin-search-section {max-width: 750px;}
+  .admin-search-section input[type="text"] {font-size: 15px; padding: 8px 14px;}
+  .admin-search-section button {font-size: 15px; padding: 8px 18px;}
+
+  /* Dropdown narrower */
+  .admin-dropdown-section select {width:180px; font-size:15px; padding:10px;}
+
+  /* Profile container width tightening */
+  .profile-container, .create-account {max-width: 1200px; padding:15px;}
+
+  /* Input fields slightly smaller */
+  .admin-input-field, .admin-password-input-field {font-size:15px; padding:10px;}
+
+  /* Profile header text shrink */
+  .profile-right h1 {font-size:34px;}
+  .profile-right p {font-size:24px;}
+
+  /* Circular profile previews reduced */
+  .profile-image-preview {width:170px; height:170px;}
+  .profile-image-preview-homepage {width:70px; height:70px;}
+}
+
+@media (max-width: 768px) {
+  /* Stack search elements if cramped */
+  .admin-search-section {flex-direction: column !important; max-width: 100%; gap:8px;}
+  .admin-search-section input[type="text"] {border-radius:20px; font-size:14px;}
+  .admin-search-section button {width:100%; border-radius:20px; font-size:14px;}
+
+  /* Dropdown full width when below search */
+  .admin-dropdown-section select {width:100%; margin-left:0; font-size:14px;}
+
+  /* Profile container padding + centering */
+  .profile-container, .create-account {padding:15px; max-width: 100%;}
+  .profile-header {flex-direction: column; align-items: center; text-align: center;}
+  .profile-right h1 {font-size:28px;}
+  .profile-right p {font-size:20px;}
+
+  /* Inputs full width with reduced min-width */
+  .admin-input-field, .admin-password-input-field {min-width: unset; font-size:14px; padding:10px;}
+  .name-inputs {flex-direction: column; gap:12px;}
+  .form-row-inline, .role-email-container {flex-direction: column; gap:12px;}
+
+  .profile-image-preview {width:150px; height:150px;}
+  .profile-image-preview-homepage {width:65px; height:65px;}
+}
+
+@media (max-width: 480px) {
+  /* Compact search */
+  .admin-search-section input[type="text"] {font-size:13px; padding:8px 12px;}
+  .admin-search-section button {font-size:13px; padding:8px 12px;}
+
+  /* Dropdown smaller font */
+  .admin-dropdown-section select {font-size:13px; padding:8px 14px;}
+
+  /* Profile container spacing */
+  .profile-container, .create-account {padding:10px;}
+  .profile-right h1 {font-size:24px; letter-spacing:1px;}
+  .profile-right p {font-size:18px;}
+
+  /* Inputs tighten */
+  .admin-input-field, .admin-password-input-field {font-size:13px; padding:8px;}
+  .admin-password-input-field {padding-right:40px;}
+
+  .profile-image-preview {width:130px; height:130px;}
+  .profile-image-preview-homepage {width:60px; height:60px;}
+
+  /* Buttons narrower */
+  .admin_button, .action_button {font-size:13px; padding:8px 18px;}
+}
+
+/* Ensure dropdown has a minimum usable width globally */
+.admin-dropdown-section select { min-width: 160px; }
+
+/* Keep search input + button as one inline unit across sizes (overrides earlier tweaks) */
+@media (max-width: 1024px) {
+  .pagination { margin-top: 16px; }
+  .pagination a { padding: 7px 14px; font-size: 15px; }
+}
+
+@media (max-width: 768px) {
+  .admin-search-section { flex-direction: row !important; flex-wrap: nowrap !important; gap: 0; }
+  .search-box-wrap { flex: 1 1 auto; width: auto; }
+  .admin-search-section input[type="text"] { border-radius: 20px 0 0 20px; width: 100%; }
+  .admin-search-section button { width: auto; flex: 0 0 auto; border-radius: 0 20px 20px 0; }
+
+  /* Dropdown sizing: avoid full-width, keep reasonable bounds */
+  .admin-dropdown-section select { width: auto; max-width: 100%; min-width: 160px; }
+}
+
+@media (max-width: 480px) {
+  .admin-search-section { flex-direction: row !important; }
+  .admin-search-section input[type="text"] { min-width: 0; flex: 1 1 auto; }
+  .admin-search-section button { min-width: 88px; padding: 8px 10px; }
+
+  /* Dropdown bounds for very small screens */
+  .admin-dropdown-section select { width: auto; max-width: 100%; min-width: 150px; }
+}
+
+/* ============================ Pagination Responsive Wrap ============================ */
+/* Make pagination shrink and wrap into new lines at 1024, 768, 480 */
+@media (max-width: 1024px) {
+  .pagination { flex-wrap: wrap; justify-content: center; overflow-x: visible; gap: 6px 8px; }
+  .pagination a { padding: 7px 12px; font-size: 15px; margin: 2px; }
+}
+
+@media (max-width: 768px) {
+  .pagination { flex-wrap: wrap; justify-content: center; overflow-x: visible; gap: 6px 6px; }
+  .pagination a { padding: 6px 10px; font-size: 14px; min-width: 28px; margin: 2px; }
+}
+
+@media (max-width: 480px) {
+  .pagination { flex-wrap: wrap; justify-content: center; overflow-x: visible; gap: 4px 6px; }
+  .pagination a { padding: 4px 8px; font-size: 12px; min-width: 26px; margin: 2px; }
+}
+
+/* ============================ Inline Dropdowns stack on smaller screens ============================ */
+/* Allow inline dropdown areas (like Sort/Filter) to wrap and then stack */
+@media (max-width: 1024px) {
+  .admin-section-container,
+  .admin-sort-container,
+  .managing_account_section .admin-sort-container {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-section-container,
+  .admin-sort-container,
+  .managing_account_section .admin-sort-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* Dropdown keeps styling; controlled width */
+  .admin-dropdown-section select { width: auto; min-width:160px; max-width:230px; margin-left:0; }
+}
+
+@media (max-width: 480px) {
+  .admin-section-container,
+  .admin-sort-container,
+  .managing_account_section .admin-sort-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .admin-dropdown-section select { width:auto; min-width:150px; max-width:210px; }
+}
+
+/* Finalize dropdown at 1024 while preserving style */
+@media (max-width: 1024px) {
+  .admin-dropdown-section select {
+    font-size: 15px;   /* slightly smaller text */
+    padding: 10px;     /* slightly tighter padding */
+    width: 180px;      /* smaller at 1024 */
+    min-width: 150px;  /* allow a touch narrower */
+    max-width: 250px;  /* tighten max for consistency */
+  }
+}
+
+/* Make dropdown progressively smaller while preserving style */
+@media (max-width: 768px) {
+  .admin-dropdown-section select {
+    width: 160px;              /* smaller than 1024 */
+    min-width: 145px;          /* allow slight compression */
+    font-size: 14px;           /* smaller text */
+    padding: 8px 10px;         /* tighter padding */
+    /* max-width from earlier rule still applies (<= 230px in this stack) */
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dropdown-section select {
+    width: 150px;              /* tighter on phones */
+    min-width: 140px;          /* absolute lower bound */
+    font-size: 13px;           /* smallest readable */
+    padding: 6px 10px;         /* compact padding */
+    /* existing max-width (210px) remains */
+  }
+}
+
+/* ============================ Buttons: responsive size reductions ============================ */
+@media (max-width: 1024px) {
+  .admin_button { font-size: 14px; padding: 8px 18px; }
+  .action_button { font-size: 10px; padding: 7px 9px; width: 100px; }
+  button.admin_button { max-width: 130px; }
+}
+
+@media (max-width: 768px) {
+  .admin_button { font-size: 13px; padding: 7px 16px; }
+  .action_button { font-size: 10px; padding: 6px 8px; width: 95px; }
+  button.admin_button { max-width: 120px; }
+}
+
+@media (max-width: 480px) {
+  .admin_button { font-size: 12px; padding: 6px 14px; }
+  .action_button { font-size: 9.5px; padding: 5px 8px; width: 90px; }
+  button.admin_button { max-width: 110px; }
+}
+
