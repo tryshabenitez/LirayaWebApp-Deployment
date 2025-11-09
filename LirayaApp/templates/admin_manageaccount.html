@@ -50,42 +50,46 @@
           <button type="submit">Search</button>
         </div>
         <!-- Sort Section -->
-        <div class="admin-sort-container">
-          <div class="admin-dropdown-wrapper" style="display: flex; gap: 20px; align-items: center;">
-            <label class="admin_normal_bold">Sort By:</label>
-            <div class="admin-dropdown-section">
-                <select name="sort" id="sort" onchange="this.form.submit()">
+    <div class="admin-sort-container">
+      <div class="admin-dropdown-wrapper" style="display: flex; gap: 20px; align-items: center;">
+        <label class="admin_normal_bold">Sort By:</label>
+        <div class="admin-dropdown-section">
+        <select name="sort" id="sort" onchange="this.form.submit()">
                     <option value="all" {% if request.GET.sort == 'all' %}selected{% endif %}>All</option> <!-- Added "All" option -->
                     <option value="az" {% if request.GET.sort == 'az' %}selected{% endif %}>Alphabetically A-Z</option>
                     <option value="za" {% if request.GET.sort == 'za' %}selected{% endif %}>Alphabetically Z-A</option>
-                </select>
-            </div>
+        </select>
+        </div>
+      </div>
                 <!-- Filter Role Section -->
-            <div class="admin-sort-container">
-                <label class="admin_normal_bold">Filter Role:</label>
-                <div class="admin-dropdown-section">
-                    <select name="role" id="role" onchange="this.form.submit()">
+      <div class="admin-sort-container">
+        <div class="admin-dropdown-wrapper" style="display: flex; gap: 20px; align-items: center;">
+          <label class="admin_normal_bold">Filter Role:</label>
+          <div class="admin-dropdown-section">
+          <select name="role" id="role" onchange="this.form.submit()">
                         <option value="all" {% if role_filter == 'all' %}selected{% endif %}>All Roles</option>
                         <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
                         <option value="librarian" {% if role_filter == 'librarian' %}selected{% endif %}>Librarian</option>
                         <option value="department" {% if role_filter == 'department' %}selected{% endif %}>Department User</option> 
-                    </select>
-                </div>
+          </select>
+          </div>
+        </div>
             </div>
 
             <!-- Filter Status Section -->
-            <div class="admin-sort-container">
-                <label class="admin_normal_bold">Filter Status:</label>
-                <div class="admin-dropdown-section">
-                    <select name="status" id="status" onchange="this.form.submit()">
+      <div class="admin-sort-container">
+        <div class="admin-dropdown-wrapper" style="display: flex; gap: 20px; align-items: center;">
+          <label class="admin_normal_bold">Filter Status:</label>
+          <div class="admin-dropdown-section">
+          <select name="status" id="status" onchange="this.form.submit()">
                         <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
                         <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
                         <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
                         <option value="deactivated" {% if status_filter == 'deactivated' %}selected{% endif %}>Deactivated</option>
-                    </select>
-                </div>
-            </div>
+          </select>
           </div>
+        </div>
+            </div>
         </div>  
     </form>
     
