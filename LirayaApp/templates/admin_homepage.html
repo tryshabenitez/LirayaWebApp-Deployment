@@ -59,23 +59,25 @@
       <div class="admin-section-title">Books Uploaded: {{ book_count }}</div>
       
       <div class="admin-sort-container">
-        <span class="admin_normal_bold">Sort</span>
-        <div class="admin-dropdown-section">
-          <form method="GET" action="">
-            <select name="sort" id="sort-select" onchange="this.form.submit()">
-              <option value="all" {% if sort_by == "all" %}selected{% endif %}>All</option>
-              <option value="newest_to_oldest" {% if sort_by == "newest_to_oldest" %}selected{% endif %}>Newest to Oldest</option>
-              <option value="oldest_to_newest" {% if sort_by == "oldest_to_newest" %}selected{% endif %}>Oldest to Newest</option>
-              <option value="author" {% if sort_by == "author" %}selected{% endif %}>Author</option>
-              <option value="keyword" {% if sort_by == "keyword" %}selected{% endif %}>Keyword</option>
-              <option value="subject" {% if sort_by == "subject" %}selected{% endif %}>Subject</option>
-              <option value="title" {% if sort_by == "title" %}selected{% endif %}>Title</option>
-            </select>
-
-            <!-- keep search state while sorting -->
-              <input type="hidden" name="q" value="{{ query }}">
-              <input type="hidden" name="field" value="{{ field }}">
-          </form>
+        <div class="admin-dropdown-wrapper" style="display: flex; gap: 10px; align-items: center;">
+          <span class="admin_normal_bold">Sort</span>
+          <div class="admin-dropdown-section">
+            <form method="GET" action="">
+              <select name="sort" id="sort-select" onchange="this.form.submit()">
+                <option value="all" {% if sort_by == "all" %}selected{% endif %}>All</option>
+                <option value="newest_to_oldest" {% if sort_by == "newest_to_oldest" %}selected{% endif %}>Newest to Oldest</option>
+                <option value="oldest_to_newest" {% if sort_by == "oldest_to_newest" %}selected{% endif %}>Oldest to Newest</option>
+                <option value="author" {% if sort_by == "author" %}selected{% endif %}>Author</option>
+                <option value="keyword" {% if sort_by == "keyword" %}selected{% endif %}>Keyword</option>
+                <option value="subject" {% if sort_by == "subject" %}selected{% endif %}>Subject</option>
+                <option value="title" {% if sort_by == "title" %}selected{% endif %}>Title</option>
+              </select>
+  
+              <!-- keep search state while sorting -->
+                <input type="hidden" name="q" value="{{ query }}">
+                <input type="hidden" name="field" value="{{ field }}">
+            </form>
+          </div>
         </div>
       </div>
     </div>
