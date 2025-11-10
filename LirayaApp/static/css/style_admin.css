@@ -225,6 +225,37 @@ footer {
   background-color: #9e0a1c; /* Even darker red when clicked */
 }
 
+/* ============================ Inline Admin Homepage Form ============================ */
+/* Ensure the search form and dropdown sit inline and override global form column layout */
+.admin-inline-homepage {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 12px; /* space between search section and dropdown */
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto 10px;
+  padding: 0;
+}
+
+/* Keep search compact on admin homepage */
+.admin-inline-homepage .admin-search-section {
+  flex: 1 1 auto;
+  margin: 0;
+  max-width: 700px; /* prevent overly long search bar */
+}
+
+/* Dropdown remains compact */
+.admin-inline-homepage .admin-dropdown-section {
+  flex: 0 0 auto;
+}
+
+
+
+
+
 
 /* ============================ Section Container ============================ */
 .admin-section-container {
@@ -308,6 +339,7 @@ footer {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2; /* Limit the text to two lines */
+  line-clamp: 2; /* Standard property for broader compatibility */
   -webkit-box-orient: vertical;
   line-height: 1.2em;
   max-height: 2.4em; /* Max height for two lines */
@@ -2173,4 +2205,41 @@ select,
     min-height: 34px;
     height: fit-content;
   }
+}
+
+
+/* ====== Responsive behavior for the inline admin homepage row (scoped, bottom of file) ====== */
+@media (max-width: 1024px) {
+  .admin-inline-homepage { max-width: 950px; gap: 10px; }
+  .admin-inline-homepage .admin-search-section { max-width: 600px; }
+  .admin-inline-homepage .admin-dropdown-section select { max-width: 100% !important; }
+}
+
+@media (max-width: 768px) {
+  .admin-inline-homepage {
+    flex-direction: column !important;
+    align-items: stretch;
+    justify-content: center;
+    gap: 10px;
+    max-width: 100%;
+  }
+  .admin-inline-homepage .admin-search-section {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .admin-inline-homepage .admin-dropdown-section {
+    display: flex;
+    justify-content: center;
+  }
+  .admin-inline-homepage .admin-dropdown-section select {
+    max-width: 100% !important;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-inline-homepage { gap: 8px; margin: 0 auto 8px; }
+  .admin-inline-homepage .admin-search-section button { min-width: 88px; }
 }
