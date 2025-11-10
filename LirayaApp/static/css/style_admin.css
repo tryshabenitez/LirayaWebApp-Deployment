@@ -1355,6 +1355,15 @@ button.admin_button:hover {
   width: 100%; /* Ensure the container takes the full width */
 }
 
+/* Center the button group on tablets and phones */
+@media (max-width: 768px) {
+  .button-container { justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .button-container { justify-content: center; }
+}
+
 
 /* Styling for inline fields */
 .admin_change_password_inline_fields {
@@ -2126,45 +2135,17 @@ button:disabled {
 
 
 
-/* ============================ Dropdown min-heights + fit-content ============================ */
-/* Ensure all dropdowns are comfortably tall and text is never clipped.
-   Applied broadly to select elements used across admin pages. */
+/* ============================ Dropdown fixed minimum height ============================ */
+/* Ensure all dropdowns have a consistent, fixed minimum height across sizes. */
 select,
 .admin-dropdown-section select,
 .book-info .form-row select {
   /* Provide a comfortable default minimum height for readability */
-  min-height: 40px;
-  /* Let the control size itself to content while respecting min-height */
-  height: fit-content;
+  min-height: 50px;
+  /* Default automatic height; respects min-height above */
+  height: auto;
   line-height: normal; /* Avoid overly tight text */
 }
 
-/* Responsive adjustments at common breakpoints */
-@media (max-width: 1024px) {
-  select,
-  .admin-dropdown-section select,
-  .book-info .form-row select {
-    min-height: 38px;
-    height: fit-content;
-  }
-}
-
-@media (max-width: 768px) {
-  select,
-  .admin-dropdown-section select,
-  .book-info .form-row select {
-    min-height: 36px;
-    height: fit-content;
-  }
-}
-
-@media (max-width: 480px) {
-  select,
-  .admin-dropdown-section select,
-  .book-info .form-row select {
-    min-height: 34px;
-    height: fit-content;
-  }
-}
 
 
