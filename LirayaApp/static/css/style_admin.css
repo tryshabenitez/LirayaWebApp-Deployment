@@ -1943,10 +1943,10 @@ button:disabled {
 }
 
 @media (max-width: 768px) {
-  /* Stack search elements if cramped */
-  .admin-search-section {flex-direction: column !important; max-width: 100%; gap:8px;}
-  .admin-search-section input[type="text"] {border-radius:20px; font-size:14px;}
-  .admin-search-section button {width:100%; border-radius:20px; font-size:14px;}
+  /* Maintain horizontal (no-wrap) search layout with zero gap */
+  .admin-search-section {flex-direction: row !important; flex-wrap: nowrap !important; gap:0 !important; max-width:100%;}
+  .admin-search-section input[type="text"] {border-radius:20px 0 0 20px; font-size:14px; width:100%;}
+  .admin-search-section button {width:auto; flex:0 0 auto; border-radius:0 20px 20px 0; font-size:14px;}
 
   /* Dropdown full width when below search */
   .admin-dropdown-section select {width:100%; margin-left:0; font-size:14px;}
@@ -1967,9 +1967,10 @@ button:disabled {
 }
 
 @media (max-width: 480px) {
-  /* Compact search */
-  .admin-search-section input[type="text"] {font-size:13px; padding:8px 12px;}
-  .admin-search-section button {font-size:13px; padding:8px 12px;}
+  /* Compact search (keep row + flush edges) */
+  .admin-search-section {flex-direction: row !important; flex-wrap: nowrap !important;}
+  .admin-search-section input[type="text"] {font-size:13px; padding:8px 12px; min-width:0; flex:1 1 auto;}
+  .admin-search-section button {font-size:13px; padding:8px 12px; min-width:80px;}
 
   /* Dropdown smaller font */
   .admin-dropdown-section select {font-size:13px; padding:8px 14px;}
@@ -2122,3 +2123,48 @@ button:disabled {
   .action_button { font-size: 9.5px; padding: 5px 8px; width: 90px; }
   button.admin_button { max-width: 110px; }
 }
+
+
+
+/* ============================ Dropdown min-heights + fit-content ============================ */
+/* Ensure all dropdowns are comfortably tall and text is never clipped.
+   Applied broadly to select elements used across admin pages. */
+select,
+.admin-dropdown-section select,
+.book-info .form-row select {
+  /* Provide a comfortable default minimum height for readability */
+  min-height: 40px;
+  /* Let the control size itself to content while respecting min-height */
+  height: fit-content;
+  line-height: normal; /* Avoid overly tight text */
+}
+
+/* Responsive adjustments at common breakpoints */
+@media (max-width: 1024px) {
+  select,
+  .admin-dropdown-section select,
+  .book-info .form-row select {
+    min-height: 38px;
+    height: fit-content;
+  }
+}
+
+@media (max-width: 768px) {
+  select,
+  .admin-dropdown-section select,
+  .book-info .form-row select {
+    min-height: 36px;
+    height: fit-content;
+  }
+}
+
+@media (max-width: 480px) {
+  select,
+  .admin-dropdown-section select,
+  .book-info .form-row select {
+    min-height: 34px;
+    height: fit-content;
+  }
+}
+
+
