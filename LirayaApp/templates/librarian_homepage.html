@@ -49,10 +49,12 @@
 {% endif %}
 
 <!-- Search Bar -->
-<form class="admin-search-section" id="search-form" method="GET" action="{% url 'librarian_homepage' %}">
-    <div class="search-box-wrap">
-        <input type="text" name="q" id="search-input" placeholder="Search" autocomplete="off" value="{{ query }}">
-        <div class="typeahead" id="suggestions-box" style="display:none;"></div>
+<form class="admin-inline-homepage" id="search-form" method="GET" action="{% url 'librarian_homepage' %}">
+    <div class="admin-search-section">
+        <div class="search-box-wrap">
+            <input type="text" name="q" id="search-input" placeholder="Search" autocomplete="off" value="{{ query }}">
+            <div class="typeahead" id="suggestions-box" style="display:none;"></div>
+        </div>
     </div>
     <button type="submit">Search</button>
     <div class="admin-dropdown-section">
