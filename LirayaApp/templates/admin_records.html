@@ -192,22 +192,9 @@
                 <p>Today's Date: <span id="currentDate"></span></p>
               </div>
 
-              <div id="todaySection" class="admin_records_section">
-                <label>
-                  <input type="radio" name="period_type" value="today" checked> Today
-                </label>
-                <div class="admin_records_period_inputs" style="display: flex;">
-                  <div class="admin_records_date_hint">
-                    <strong>Guide:</strong>
-                    <br>
-                    Will show records from today: <span id="todayPreview" class="admin_records_preview_date"></span>
-                  </div>
-                </div>
-              </div>
-
               <div id="daysSection" class="admin_records_section">
                 <label>
-                  <input type="radio" name="period_type" value="days"> Days
+                  <input type="radio" name="period_type" value="days" checked> Days
                 </label>
                 <div class="admin_records_period_inputs" style="display: none;">
                   Last <input type="number" name="days" min="1" max="365" value="1" class="admin_records_number" required oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value > 365) this.value = 365; if(this.value < 1) this.value = 1;"> days
