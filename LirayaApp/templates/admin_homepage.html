@@ -41,8 +41,8 @@
           <input type="text" name="q" id="search-input" placeholder="Search" autocomplete="off" value="{{ query }}">
           <div class="typeahead" id="suggestions-box" style="display:none;"></div>
         </div>
+        <button type="submit">Search</button>
       </div>
-      <button type="submit">Search</button>
       <div class="admin-dropdown-section">
         <select name="field" id="search-field">
           <option value="allFields" {% if field == 'allFields' %}selected{% endif %}>All Fields</option>
