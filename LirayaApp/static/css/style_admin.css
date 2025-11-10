@@ -2122,3 +2122,72 @@ button:disabled {
   .action_button { font-size: 9.5px; padding: 5px 8px; width: 90px; }
   button.admin_button { max-width: 110px; }
 }
+
+/* ============================ Admin Search: force dropdown below on small screens ============================ */
+/* Ensure the dropdown in the admin search area moves below the search input+button on <=768 and <=480 */
+@media (max-width: 768px) {
+  /* Allow wrapping so the dropdown can go to the next line */
+  .admin-search-section { flex-wrap: wrap !important; gap: 0; }
+
+  /* Keep search input and button on the first row */
+  .search-box-wrap { order: 1; flex: 0 0 calc(100% - 110px); min-width: 0; }
+  .admin-search-section button { order: 1; flex: 0 0 110px; width: 110px; }
+
+  /* Move dropdown to second row and stretch full width */
+  .admin-dropdown-section { order: 2; flex: 1 1 100%; margin-top: 8px; }
+  .admin-dropdown-section select { width: 100% !important; margin-left: 0 !important; }
+}
+
+@media (max-width: 480px) {
+  .admin-search-section { gap: 0; }
+  .search-box-wrap { flex-basis: calc(100% - 96px); }
+  .admin-search-section button { flex: 0 0 96px; width: 96px; }
+  .admin-dropdown-section { margin-top: 6px; }
+  .admin-dropdown-section select { font-size: 13px; padding: 8px 10px; }
+}
+
+/* ============================ Dropdown Height Normalization ============================ */
+/* Keep all admin dropdowns a consistent tappable height across breakpoints */
+.admin-dropdown-section select,
+.admin-sort-container select,
+.admin-dropdown-wrapper select,
+.dropdown-pair select {
+  line-height: normal;        /* Let the browser compute appropriate line height */
+  min-height: 44px;           /* Base comfortable height */
+  padding-top: 10px !important;
+  padding-bottom: 10px !important; /* Ensure vertical comfort */
+  box-sizing: border-box;
+  white-space: nowrap;        /* Keep selected text on one line */
+  overflow: hidden;           /* Avoid text spilling */
+  text-overflow: ellipsis;    /* Indicate overflow gracefully */
+  padding-right: 2.2em;       /* Reserve space for native caret */
+}
+
+@media (max-width: 1024px) {
+  .admin-dropdown-section select,
+  .admin-sort-container select,
+  .admin-dropdown-wrapper select,
+  .dropdown-pair select { min-height: 42px; }
+}
+
+@media (max-width: 768px) {
+  .admin-dropdown-section select,
+  .admin-sort-container select,
+  .admin-dropdown-wrapper select,
+  .dropdown-pair select { min-height: 40px; }
+}
+
+@media (max-width: 480px) {
+  .admin-dropdown-section select,
+  .admin-sort-container select,
+  .admin-dropdown-wrapper select,
+  .dropdown-pair select { min-height: 38px; }
+}
+
+/* Allow wrapping for items in the expanded list where supported */
+.admin-dropdown-section select option,
+.admin-sort-container select option,
+.admin-dropdown-wrapper select option,
+.dropdown-pair select option {
+  white-space: normal; /* Let list items wrap in dropdown menu if the UA allows */
+}
