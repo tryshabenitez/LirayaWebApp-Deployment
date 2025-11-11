@@ -302,30 +302,52 @@
   </div>
 </div>
 
-<script src="{% static 'script/user_script.js' %}"></script> <!-- Link to the JavaScript file -->
-<script src="{% static 'script/user_viewinfo.js' %}"></script> <!-- Link to the JavaScript file for viewinfo page -->
-  <script>
-// --- Auto-resize logic (no modal) ---
-(function() {
-  function applyDesktopScale() {
+<script>
+/* === LIRAYA: Desktop-view emulation for user_viewinfo (mobile only) === */
+(function () {
+  const DESKTOP_WIDTH = 1280; // target layout width (matches search page feel)
+
+  function ensureViewportMeta() {
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'viewport';
+      document.head.appendChild(meta);
+    }
+    return meta;
+  }
+
+  function setDesktopViewport() {
+    const meta = ensureViewportMeta();
+    // Emulate desktop: wide CSS width; keep scale at 1 to preserve sticky/fixed behavior
+    meta.setAttribute('content', `width=${DESKTOP_WIDTH}, initial-scale=1, maximum-scale=1`);
+    document.documentElement.classList.add('force-desktop');
+  }
+
+  function setDefaultViewport() {
+    const meta = ensureViewportMeta();
+    meta.setAttribute('content', 'width=device-width, initial-scale=1');
+    document.documentElement.classList.remove('force-desktop');
+  }
+
+  function syncViewport() {
     if (window.innerWidth < 1024) {
-      // Automatically zoom out for better visibility
-      document.body.style.zoom = "0.75";
-      document.body.style.transformOrigin = "top center";
+      setDesktopViewport();
     } else {
-      // Reset to normal on desktop view
-      document.body.style.zoom = "1";
+      setDefaultViewport();
     }
   }
 
-  // Run immediately on load
-  applyDesktopScale();
-
-  // Re-check when device orientation or size changes
-  window.addEventListener('resize', applyDesktopScale);
-  window.addEventListener('orientationchange', applyDesktopScale);
+  // Initial run + listeners
+  syncViewport();
+  window.addEventListener('resize', syncViewport, { passive: true });
+  window.addEventListener('orientationchange', syncViewport);
 })();
 </script>
+
+<script src="{% static 'script/user_script.js' %}"></script> <!-- Link to the JavaScript file -->
+<script src="{% static 'script/user_viewinfo.js' %}"></script> <!-- Link to the JavaScript file for viewinfo page -->
+
 
 
 </body>
