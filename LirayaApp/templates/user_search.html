@@ -15,15 +15,33 @@
   <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
 </head>
 
-<!-- Mobile Gate -->
-<div id="mobile-gate" role="dialog" aria-modal="true" aria-labelledby="mg-title" style="display:none;">
-  <div class="mg-backdrop"></div>
-  <div class="mg-box" role="document">
-    <div id="mg-title" class="mg-title">ENABLE DESKTOP VIEW FOR A CLEANER UI</div>
-    <button type="button" class="mg-btn" id="mg-ok">OK</button>
+<!-- Mobile Desktop-Preference (MDP) Modal -->
+<div id="mdp-modal"
+     role="dialog" aria-modal="true" aria-labelledby="mdp-title"
+     style="display:none; position:fixed; inset:0; z-index:5000;
+            background:rgba(0,0,0,.45); align-items:center; justify-content:center;">
+  <div style="background:#fff; width:min(92vw, 560px); border-radius:12px;
+              padding:22px 20px; text-align:center; box-shadow:0 12px 36px rgba(0,0,0,.35);">
+    <div id="mdp-title" style="font-size:22px; font-weight:800; color:#3e151a; margin-bottom:8px;">
+      ENABLE DESKTOP VIEW FOR A CLEANER UI
+    </div>
+    <div style="font-size:15px; color:#5a3a3f; line-height:1.5; margin-bottom:14px;">
+      Some features are optimized for desktop rendering.
+    </div>
+
+    <!-- keep this helper exactly as requested -->
+    <div id="mdp-help" style="display:block; margin-top:12px; font-size:13px; color:#6d2932;">
+      Tip: In Chrome, tap ⋮ → <b>Desktop site</b>. In Safari, “aA” → <b>Request Desktop Website</b>.
+    </div>
+
+    <button id="mdp-ok"
+            style="margin-top:16px; background:#6d2932; color:#fff7f7; border:none;
+                   border-radius:10px; padding:10px 18px; font-weight:700; cursor:pointer;">
+      OK
+    </button>
   </div>
 </div>
-  
+
 <body>
 
 <!-- Sidebar -->
@@ -257,40 +275,50 @@
 <script src="{% static 'script/user_script.js' %}"></script>
 
 <script>
-(function mobileGate(){
-  // Only show on small viewports + if not already accepted this session
-  var isSmall = Math.min(window.innerWidth, screen.width) <= 768;
-  if (!isSmall || sessionStorage.getItem('mgAccepted') === '1') return;
-
-  // Ensure there is a viewport meta; if not, create it
-  var vp = document.querySelector('meta[name="viewport"]');
-  if (!vp) {
-    vp = document.createElement('meta');
-    vp.setAttribute('name','viewport');
-    vp.setAttribute('content','width=device-width, initial-scale=1.0');
-    document.head.appendChild(vp);
+/*
+  Shows the modal on every page load when the environment is “not desktop view.”
+  No session/local storage — always evaluates fresh. Dismiss only hides for the current page.
+*/
+(function () {
+  // Heuristic: touch-first OR small viewport === mobile-like
+  function isMobileLike() {
+    return window.matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth < 768;
   }
 
-  var gate = document.getElementById('mobile-gate');
-  var ok = document.getElementById('mg-ok');
+  function showModalIfNeeded() {
+    if (!isMobileLike()) return;
+    var modal = document.getElementById('mdp-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
 
-  // Lock background scroll and show
-  document.documentElement.style.overflow = 'hidden';
-  document.body.style.overflow = 'hidden';
-  gate.style.display = 'block';
-
-  ok.addEventListener('click', function(){
-    // Best-effort "desktop-like" render: widen the layout viewport
-    // (This does not toggle the browser’s system-level “Desktop Site” setting.)
-    vp.setAttribute('content','width=1280, initial-scale=1.0, maximum-scale=1.0');
-
-    sessionStorage.setItem('mgAccepted','1');
-
-    // Hide and restore scroll
-    gate.style.display = 'none';
-    document.documentElement.style.overflow = '';
+  function hideModal() {
+    var modal = document.getElementById('mdp-modal');
+    if (!modal) return;
+    modal.style.display = 'none';
     document.body.style.overflow = '';
-  }, { once: true });
+    // Intentionally no persistence; will reappear on the next navigation if still mobile-like
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    showModalIfNeeded();
+    var ok = document.getElementById('mdp-ok');
+    if (ok) ok.addEventListener('click', hideModal);
+  });
+
+  // Optional: if user resizes back into mobile-like during the session, re-surface the prompt
+  var resizeTO;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTO);
+    resizeTO = setTimeout(function () {
+      // Only re-open if currently hidden and the environment is mobile-like
+      var modal = document.getElementById('mdp-modal');
+      if (modal && modal.style.display === 'none' && isMobileLike()) {
+        showModalIfNeeded();
+      }
+    }, 200);
+  });
 })();
 </script>
   
