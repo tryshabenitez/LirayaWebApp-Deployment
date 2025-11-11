@@ -31,21 +31,24 @@
   <div class="liraya-main-content">
     <div class="about-us-container">
     
-      <!-- CSS-ONLY TABS: place above the left container -->
-      <input type="radio" name="aboutTabs" id="tabAbout" class="liraya-tab-input" checked>
-      <input type="radio" name="aboutTabs" id="tabContact" class="liraya-tab-input">
-    
-      <div class="about-tabs" role="tablist" aria-label="About & Contact Tabs">
-        <label class="tab-btn" for="tabAbout" role="tab" aria-controls="panel-about">About LIRAYA</label>
-        <label class="tab-btn" for="tabContact" role="tab" aria-controls="panel-contact">Contact Us</label>
-      </div>
-    
       <!-- Left Container (75% width) -->
       <div class="liraya-left-container">
+        <!-- Tabs (above the left column content) -->
+        <div class="about-tabs" role="tablist" aria-label="About & Contact Tabs">
+          <button class="tab-btn active" type="button" role="tab"
+                  aria-selected="true" aria-controls="tab-about" data-tab="about">
+            About LIRAYA
+          </button>
+          <button class="tab-btn" type="button" role="tab"
+                  aria-selected="false" aria-controls="tab-contact" data-tab="contact">
+            Contact Us
+          </button>
+        </div>
+          
         <div class="liraya-left-content">
     
           <!-- Wrap ALL your current About content in here -->
-          <section id="panel-about" class="tab-panel" role="tabpanel" aria-labelledby="tabAbout">
+          <section id="tab-about" class="tab-panel" role="tabpanel">
             <h1>About Us:</h1>
             <p>LIRAYA is the official Library Information Resource and Access platform developed for the Technological University of the Philippines - Cavite (TUPC). This platform aims to modernize and improve the accessibility of the university’s vast academic resources. By providing a seamless, efficient, and user-friendly system, LIRAYA ensures that students, faculty, and staff have access to books, research papers, articles, multimedia content, and much more—all from the comfort of their own devices.</p>
             <p>The system is designed to support various library functions, enabling users to find, borrow, and access academic materials, research tools, and digital media relevant to their courses and research needs. LIRAYA enhances the traditional library experience by integrating modern technologies that make library resources more accessible and easier to navigate.</p>
@@ -84,7 +87,7 @@
           </section>
     
           <!-- Empty Contact panel (stays hidden until Contact is selected) -->
-          <section id="panel-contact" class="tab-panel" role="tabpanel" aria-labelledby="tabContact">
+          <section id="tab-contact" class="tab-panel" role="tabpanel" hidden>
             <!-- Intentionally left blank for now -->
           </section>
     
@@ -106,6 +109,38 @@
     <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
   </footer>
 
+  <script>
+    (function () {
+      const tabsWrap = document.querySelector('.about-us-container .liraya-left-container .about-tabs');
+      if (!tabsWrap) return;
+  
+      const buttons = tabsWrap.querySelectorAll('.tab-btn');
+      const panels = {
+        about: document.getElementById('tab-about'),
+        contact: document.getElementById('tab-contact')
+      };
+  
+      function activate(target) {
+        buttons.forEach(b => {
+          const on = b.dataset.tab === target;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-selected', String(on));
+        });
+        Object.keys(panels).forEach(key => {
+          panels[key].hidden = (key !== target);
+        });
+      }
+  
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => activate(btn.dataset.tab));
+      });
+  
+      // default state
+      activate('about');
+    })();
+  </script>
+
+  
 </body>
 
 </html>
