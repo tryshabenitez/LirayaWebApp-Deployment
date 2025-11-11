@@ -2232,6 +2232,15 @@ footer .footer-text{
 /* safety: prevent stray bottom spacing above footer */
 .main-content, .liraya-main-content{ margin-bottom:0; }
 
+/* Sidebar button ↔ logo alignment (header-only, safe) */
+header .logo-container { display:flex; align-items:center; gap:12px; }
+header .sidebar-button {
+  display:flex; align-items:center; justify-content:center;
+  width: clamp(36px, 2.8vw, 46px); height: clamp(36px, 2.8vw, 46px);
+  margin-left: 12px;
+}
+header .sidebar-button img { width:100%; height:100%; object-fit:contain; display:block; }
+
 
 
 
