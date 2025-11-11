@@ -1,17 +1,39 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- ...existing head content... -->
-  <link rel="stylesheet" href="{% static 'css/user_style.css' %}">
-</head>
-<body>
-  <!-- Header (unchanged) -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LIRAYA - Home</title>
 
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'css/user_style.css' %}"/>
+
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}"/>
+  <link rel="shortcut icon" href="https://www.tupcliraya.site/static/images/favicon.ico" type="image/x-icon"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}"/>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="liraya-header">
+    <div class="logo-container">
+      <img src="{% static 'images/usericon.png' %}" alt="Logo"/>
+      <div class="page-name">LIRAYA</div>
+    </div>
+    <a href="{% url 'user_homepage' %}" class="home" style="cursor:pointer;">Home</a>
+  </header>
+
+  <!-- Main Content -->
   <div class="liraya-main-content">
     <div class="about-us-container">
 
-      <!-- NEW: Tabs just above the left container -->
+      <!-- Tabs: About & Contact -->
       <div class="about-tabs" role="tablist" aria-label="About & Contact Tabs">
         <button
           class="tab-btn active"
@@ -37,9 +59,8 @@
       <div class="liraya-left-container">
         <div class="liraya-left-content">
 
-          <!-- Panel: About (current content) -->
+          <!-- Panel: About (wraps your existing content) -->
           <section class="tab-panel" id="tab-about" role="tabpanel" aria-labelledby="tab-about-btn">
-            <!-- ✅ Keep your existing About content below as-is -->
             <h1>About Us:</h1>
             <p>LIRAYA is the official Library Information Resource and Access platform developed for the Technological University of the Philippines - Cavite (TUPC). This platform aims to modernize and improve the accessibility of the university’s vast academic resources. By providing a seamless, efficient, and user-friendly system, LIRAYA ensures that students, faculty, and staff have access to books, research papers, articles, multimedia content, and much more—all from the comfort of their own devices.</p>
             <p>The system is designed to support various library functions, enabling users to find, borrow, and access academic materials, research tools, and digital media relevant to their courses and research needs. LIRAYA enhances the traditional library experience by integrating modern technologies that make library resources more accessible and easier to navigate.</p>
@@ -77,55 +98,52 @@
             </ul>
           </section>
 
-          <!-- Panel: Contact (empty state) -->
+          <!-- Panel: Contact (empty for now) -->
           <section class="tab-panel" id="tab-contact" role="tabpanel" aria-labelledby="tab-contact-btn" hidden>
-            <!-- Intentionally empty for now -->
+            <!-- intentionally empty -->
           </section>
 
         </div>
       </div>
 
-      <!-- Right Container (unchanged) -->
+      <!-- Right Container -->
       <div class="liraya-right-container">
         <div class="liraya-right-content">
-          <img src="{% static 'images/user_about.png' %}" alt="About Image" class="about-image">
+          <img src="{% static 'images/user_about.png' %}" alt="About Image" class="about-image"/>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Footer (unchanged) -->
+  <!-- Footer -->
+  <footer>
+    <p class="footer-text">LIRAYA: Library Information Resource and Access</p>
+    <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
+  </footer>
 
-  <!-- NEW: Lightweight tab script -->
+  <!-- Tabs JS -->
   <script>
-    (function () {
-      const buttons = document.querySelectorAll('.tab-btn');
+    document.addEventListener('DOMContentLoaded', function () {
+      const buttons = document.querySelectorAll('.about-us-container .tab-btn');
       const panels = {
         about: document.getElementById('tab-about'),
-        contact: document.getElementById('tab-contact'),
+        contact: document.getElementById('tab-contact')
       };
 
       buttons.forEach(btn => {
         btn.addEventListener('click', () => {
-          // update button states
           buttons.forEach(b => {
             const isActive = b === btn;
             b.classList.toggle('active', isActive);
             b.setAttribute('aria-selected', String(isActive));
           });
-
-          // toggle panels
           const target = btn.dataset.tab;
           Object.keys(panels).forEach(key => {
-            if (key === target) {
-              panels[key].hidden = false;
-            } else {
-              panels[key].hidden = true;
-            }
+            panels[key].hidden = (key !== target);
           });
         });
       });
-    })();
+    });
   </script>
 </body>
 </html>
