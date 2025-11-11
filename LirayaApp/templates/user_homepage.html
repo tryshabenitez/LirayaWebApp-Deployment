@@ -46,19 +46,18 @@
          autocapitalize="off"
          spellcheck="false"
          inputmode="search">
+  <div class="actions-row">
+    <select class="dropdown" name="field">
+      <option value="allFields" {% if request.GET.field|default:'allFields' == 'allFields' %}selected{% endif %}>All Fields</option>
+      <option value="title"     {% if request.GET.field == 'title' %}selected{% endif %}>Title</option>
+      <option value="author"    {% if request.GET.field == 'author' %}selected{% endif %}>Author</option>
+      <option value="keywords"  {% if request.GET.field == 'keywords' %}selected{% endif %}>Keywords</option>
+    </select>
 
-  <select class="dropdown" name="field">
-    <option value="allFields" {% if request.GET.field|default:'allFields' == 'allFields' %}selected{% endif %}>All Fields</option>
-    <option value="title"     {% if request.GET.field == 'title' %}selected{% endif %}>Title</option>
-    <option value="author"    {% if request.GET.field == 'author' %}selected{% endif %}>Author</option>
-    <option value="keywords"  {% if request.GET.field == 'keywords' %}selected{% endif %}>Keywords</option>
-  </select>
-
-  <input type="hidden" name="sort" value="{{ request.GET.sort|default:'Relevance' }}">
-
-  <button class="search-button" type="submit">
-    <img src="{% static 'images/user_search_homepage.png' %}" alt="Search Icon">
-  </button>
+    <button class="search-button" type="submit">
+      <img src="{% static 'images/user_search_homepage.png' %}" alt="Search Icon">
+    </button>
+  </div>
 </form>
 </div>
 
