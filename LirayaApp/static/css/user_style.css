@@ -2241,6 +2241,74 @@ header .sidebar-button {
 }
 header .sidebar-button img { width:100%; height:100%; object-fit:contain; display:block; }
 
+/* --- FIX: Header search icon ring & hover (scoped, override-safe) --- */
+header .search-button{
+  width: clamp(36px, 2.8vw, 46px);
+  height: clamp(36px, 2.8vw, 46px);
+  padding: 0;
+  background: transparent;
+  border: 3px solid #3e151a;     /* ← ring lives on the button */
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+header .search-button:hover{ border-color:#be0b23; }
+header .search-button img{
+  width: 72% !important; height: 72% !important; display:block; object-fit:contain;
+  border: 0 !important; border-radius: 0 !important;   /* keep img clean */
+}
+
+
+/* --- FIX: Sidebar never hides under header --- */
+:root{ --header-h: 78px; }  /* conservative baseline; safe with your header min/max */
+.sidebar{
+  top: max(78px, var(--header-h, 78px));
+  height: calc(100vh - max(78px, var(--header-h, 78px)));
+  z-index: 1;  /* stays below header visually, but fully visible below it */
+}
+
+/* --- FIX: Book info cards are overflow-safe --- */
+.book-info{
+  display:flex; gap:20px; align-items:flex-start;
+  width: 85%; padding:20px; border-radius:15px; box-sizing:border-box;
+  flex-wrap: wrap;                /* allow wrap on tight screens */
+}
+.book-details{ 
+  flex: 1 1 260px; 
+  min-width: 0;                   /* enables text wrapping inside flex */
+  text-align: left;
+}
+.book-title{
+  font-size: 20px; font-weight: 700; color:#000;
+  margin-bottom:8px;
+  overflow-wrap: anywhere;        /* break very long tokens */
+  word-break: break-word;
+}
+.book-details p{ 
+  font-size:16px; margin:4px 0; color:#000;
+  overflow-wrap:anywhere; word-break:break-word;
+}
+
+/* Keep cover fixed and non-intrusive */
+.book-cover{
+  flex: 0 0 150px; width:150px; height:200px; border-radius:10px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; background:#f0f0f0;
+}
+.book-cover img{ width:100%; height:100%; object-fit:cover; }
+
+/* Keyword line stays inside the card */
+.keywords-container{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.keywords{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+
+/* Buttons don’t force overflow */
+.view-info-btn{ max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Mobile stacking */
+@media (max-width: 600px){
+  .book-info{ width: 92%; }               /* slight inner padding on phones */
+  .book-cover{ order: -1; margin: 0 auto; } /* show cover first on mobile */
+}
+
 
 
 
