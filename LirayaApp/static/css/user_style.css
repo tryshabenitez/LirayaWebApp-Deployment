@@ -2388,44 +2388,58 @@ header .search-button img{
 
 
 
-/* ===== Connected Tabs (segmented) — scoped to About page ===== */
+/* ===== LIRAYA About Page: CSS-only Tabs (connected) ===== */
+/* hide the radios */
+.about-us-container .liraya-tab-input { position: absolute; opacity: 0; pointer-events: none; }
+
+/* connected segmented control */
 .about-us-container .about-tabs{
   display: inline-flex;
   align-items: stretch;
   border: 1px solid #d7dce3;
   border-radius: 12px;
-  overflow: hidden;                /* stitches buttons together */
-  margin: 0 0 14px 20px;           /* sits above the left column */
+  overflow: hidden;
+  margin: 0 0 14px 20px;   /* sits above left column; adjust left as needed */
   background: #f6f8fb;
 }
 
+/* tab labels */
 .about-us-container .about-tabs .tab-btn{
-  appearance: none;
-  border: 0;                       /* borders handled by wrapper */
-  background: transparent;
-  color: #1e2a3a;
   padding: .6rem 1rem;
   font: 600 0.95rem/1 Arial, sans-serif;
+  color: #1e2a3a;
+  background: transparent;
   cursor: pointer;
+  user-select: none;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;               /* borders handled by wrapper */
 }
 
+/* vertical divider between segments */
 .about-us-container .about-tabs .tab-btn + .tab-btn{
-  border-left: 1px solid #d7dce3;  /* vertical divider | */
+  border-left: 1px solid #d7dce3;
 }
 
-/* Active segment */
-.about-us-container .about-tabs .tab-btn.active{
+/* active segment via radio state */
+#tabAbout:checked ~ .about-tabs label[for="tabAbout"],
+#tabContact:checked ~ .about-tabs label[for="tabContact"]{
   background: #1f4db8;
   color: #fff;
 }
 
-/* Hover affordance */
-.about-us-container .about-tabs .tab-btn:hover:not(.active){
+/* hover affordance on inactive tabs */
+.about-us-container .about-tabs .tab-btn:hover{
   background: #eef2f7;
 }
 
-/* Panels remain hidden/shown by JS */
-.about-us-container .tab-panel[hidden]{ display: none !important; }
+/* panels default state */
+.about-us-container .tab-panel{ display: none; }
+
+/* show the selected panel (order matters: inputs → tabs → containers) */
+#tabAbout:checked ~ .liraya-left-container .liraya-left-content #panel-about{ display: block; }
+#tabContact:checked ~ .liraya-left-container .liraya-left-content #panel-contact{ display: block; }
 
 
