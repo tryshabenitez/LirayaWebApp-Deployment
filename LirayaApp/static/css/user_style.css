@@ -2388,58 +2388,45 @@ header .search-button img{
 
 
 
-/* ===== LIRAYA About Page: CSS-only Tabs (connected) ===== */
-/* hide the radios */
-.about-us-container .liraya-tab-input { position: absolute; opacity: 0; pointer-events: none; }
 
-/* connected segmented control */
-.about-us-container .about-tabs{
+/* ===== LIRAYA: Tabs above left column (scoped, no header impact) ===== */
+.about-us-container .liraya-left-container .about-tabs{
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid #d7dce3;
+  background: #fff7f7;                  /* matches site bg */
+  border: 2px solid #6d2932;            /* brand border */
   border-radius: 12px;
-  overflow: hidden;
-  margin: 0 0 14px 20px;   /* sits above left column; adjust left as needed */
-  background: #f6f8fb;
+  overflow: hidden;                      /* connects buttons: | A | B | */
+  margin: 0 0 12px 0;                    /* sits above left content */
 }
 
-/* tab labels */
-.about-us-container .about-tabs .tab-btn{
-  padding: .6rem 1rem;
-  font: 600 0.95rem/1 Arial, sans-serif;
-  color: #1e2a3a;
+.about-us-container .liraya-left-container .about-tabs .tab-btn{
+  appearance: none;
+  border: 0;
   background: transparent;
+  color: #3e151a;
+  padding: .55rem 1rem;
+  font: 700 0.95rem/1 'Arial', sans-serif;
   cursor: pointer;
-  user-select: none;
   white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;               /* borders handled by wrapper */
 }
 
-/* vertical divider between segments */
-.about-us-container .about-tabs .tab-btn + .tab-btn{
-  border-left: 1px solid #d7dce3;
+.about-us-container .liraya-left-container .about-tabs .tab-btn + .tab-btn{
+  border-left: 2px solid #6d2932;       /* vertical divider | */
 }
 
-/* active segment via radio state */
-#tabAbout:checked ~ .about-tabs label[for="tabAbout"],
-#tabContact:checked ~ .about-tabs label[for="tabContact"]{
-  background: #1f4db8;
-  color: #fff;
+.about-us-container .liraya-left-container .about-tabs .tab-btn:hover{
+  background: #feecec;                   /* subtle hover in-brand */
 }
 
-/* hover affordance on inactive tabs */
-.about-us-container .about-tabs .tab-btn:hover{
-  background: #eef2f7;
+/* Active segment */
+.about-us-container .liraya-left-container .about-tabs .tab-btn.active{
+  background: #3e151a;                   /* brand primary */
+  color: #fff7f7;
 }
 
-/* panels default state */
-.about-us-container .tab-panel{ display: none; }
+/* Panels: JS toggles [hidden]; keep default visible behavior clean */
+.about-us-container .liraya-left-content .tab-panel[hidden]{ display: none !important; }
 
-/* show the selected panel (order matters: inputs → tabs → containers) */
-#tabAbout:checked ~ .liraya-left-container .liraya-left-content #panel-about{ display: block; }
-#tabContact:checked ~ .liraya-left-container .liraya-left-content #panel-contact{ display: block; }
 
 
