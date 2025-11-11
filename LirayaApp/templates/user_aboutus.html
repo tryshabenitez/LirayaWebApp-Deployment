@@ -3,68 +3,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LIRAYA - Home</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="{% static 'css/user_style.css' %}"/>
-
-  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}"/>
-  <link rel="shortcut icon" href="https://www.tupcliraya.site/static/images/favicon.ico" type="image/x-icon"/>
-  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}"/>
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}"/>
-  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}"/>
-  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}"/>
-  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/user_style.css' %}">
+  <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+  <link rel="shortcut icon" href="https://www.tupcliraya.site/static/images/favicon.ico" type="image/x-icon">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/favicon-16x16.png' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32x32.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
 </head>
-
 <body>
+
   <!-- Header -->
   <header class="liraya-header">
     <div class="logo-container">
-      <img src="{% static 'images/usericon.png' %}" alt="Logo"/>
+      <img src="{% static 'images/usericon.png' %}" alt="Logo">
       <div class="page-name">LIRAYA</div>
     </div>
-    <a href="{% url 'user_homepage' %}" class="home" style="cursor:pointer;">Home</a>
+    <a href="{% url 'user_homepage' %}" class="home" style="cursor: pointer;">Home</a> <!-- Make "Home" clickable -->
   </header>
 
   <!-- Main Content -->
   <div class="liraya-main-content">
     <div class="about-us-container">
-
-      <!-- Tabs: About & Contact -->
+    
+      <!-- CSS-ONLY TABS: place above the left container -->
+      <input type="radio" name="aboutTabs" id="tabAbout" class="liraya-tab-input" checked>
+      <input type="radio" name="aboutTabs" id="tabContact" class="liraya-tab-input">
+    
       <div class="about-tabs" role="tablist" aria-label="About & Contact Tabs">
-        <button
-          class="tab-btn active"
-          role="tab"
-          aria-selected="true"
-          aria-controls="tab-about"
-          id="tab-about-btn"
-          data-tab="about">
-          About LIRAYA
-        </button>
-        <button
-          class="tab-btn"
-          role="tab"
-          aria-selected="false"
-          aria-controls="tab-contact"
-          id="tab-contact-btn"
-          data-tab="contact">
-          Contact Us
-        </button>
+        <label class="tab-btn" for="tabAbout" role="tab" aria-controls="panel-about">About LIRAYA</label>
+        <label class="tab-btn" for="tabContact" role="tab" aria-controls="panel-contact">Contact Us</label>
       </div>
-
-      <!-- Left Container -->
+    
+      <!-- Left Container (75% width) -->
       <div class="liraya-left-container">
         <div class="liraya-left-content">
-
-          <!-- Panel: About (wraps your existing content) -->
-          <section class="tab-panel" id="tab-about" role="tabpanel" aria-labelledby="tab-about-btn">
+    
+          <!-- Wrap ALL your current About content in here -->
+          <section id="panel-about" class="tab-panel" role="tabpanel" aria-labelledby="tabAbout">
             <h1>About Us:</h1>
             <p>LIRAYA is the official Library Information Resource and Access platform developed for the Technological University of the Philippines - Cavite (TUPC). This platform aims to modernize and improve the accessibility of the university’s vast academic resources. By providing a seamless, efficient, and user-friendly system, LIRAYA ensures that students, faculty, and staff have access to books, research papers, articles, multimedia content, and much more—all from the comfort of their own devices.</p>
             <p>The system is designed to support various library functions, enabling users to find, borrow, and access academic materials, research tools, and digital media relevant to their courses and research needs. LIRAYA enhances the traditional library experience by integrating modern technologies that make library resources more accessible and easier to navigate.</p>
-
+    
             <h2>Our Mission:</h2>
             <p>The mission of LIRAYA is to provide an efficient, comprehensive, and user-centric platform that allows students, faculty, and staff of TUPC to access academic materials and resources in an effortless and timely manner. We aim to:</p>
             <ul>
@@ -73,7 +58,7 @@
               <li><strong>Support Collaborative Learning:</strong> We aim to foster a collaborative learning environment by providing a centralized hub where students and faculty can access shared academic resources and research tools.</li><br>
               <li><strong>Promote Academic Excellence:</strong> Through easy access to a wide range of educational materials, LIRAYA helps improve the learning experience and academic outcomes for students, while supporting faculty in their teaching and research activities.</li><br>
             </ul>
-
+    
             <h2>Our Vision:</h2>
             <p>LIRAYA envisions becoming a leading digital library platform that transforms how academic resources are accessed and utilized by educational institutions. Our goal is to:</p>
             <ul>
@@ -82,7 +67,7 @@
               <li><strong>Enhance Collaboration Across Departments:</strong> By digitizing resources and making them available in a centralized system, we aspire to support interdisciplinary collaboration, making research and resource sharing easier among various departments and faculties.</li><br>
               <li><strong>Set a Standard for University Libraries in the Region:</strong> We aim to set a model for university library systems, not only within TUPC but also in the broader academic community, by leveraging technology to create an optimized, seamless user experience.</li><br>
             </ul>
-
+    
             <h2>Our Features:</h2>
             <p>LIRAYA incorporates several innovative features designed to improve the library experience for everyone involved. Some of the key features include:</p>
             <ul>
@@ -97,19 +82,19 @@
               <li><strong>Collaboration and Resource Sharing:</strong> LIRAYA encourages collaboration by allowing users to share their research or materials with others in the university. This feature promotes teamwork, knowledge sharing, and collective learning, enabling students and faculty to collaborate on projects and academic work efficiently.</li><br>
             </ul>
           </section>
-
-          <!-- Panel: Contact (empty for now) -->
-          <section class="tab-panel" id="tab-contact" role="tabpanel" aria-labelledby="tab-contact-btn" hidden>
-            <!-- intentionally empty -->
+    
+          <!-- Empty Contact panel (stays hidden until Contact is selected) -->
+          <section id="panel-contact" class="tab-panel" role="tabpanel" aria-labelledby="tabContact">
+            <!-- Intentionally left blank for now -->
           </section>
-
+    
         </div>
       </div>
-
-      <!-- Right Container -->
+    
+      <!-- Right Container (unchanged) -->
       <div class="liraya-right-container">
         <div class="liraya-right-content">
-          <img src="{% static 'images/user_about.png' %}" alt="About Image" class="about-image"/>
+          <img src="{% static 'images/user_about.png' %}" alt="About Image" class="about-image">
         </div>
       </div>
     </div>
@@ -121,29 +106,6 @@
     <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
   </footer>
 
-  <!-- Tabs JS -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const buttons = document.querySelectorAll('.about-us-container .tab-btn');
-      const panels = {
-        about: document.getElementById('tab-about'),
-        contact: document.getElementById('tab-contact')
-      };
-
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          buttons.forEach(b => {
-            const isActive = b === btn;
-            b.classList.toggle('active', isActive);
-            b.setAttribute('aria-selected', String(isActive));
-          });
-          const target = btn.dataset.tab;
-          Object.keys(panels).forEach(key => {
-            panels[key].hidden = (key !== target);
-          });
-        });
-      });
-    });
-  </script>
 </body>
+
 </html>
