@@ -2369,3 +2369,11 @@ header .search-button img{
     height: 16px;
   }
 }
+
+/* --- Safari Sidebar Zoom Fix --- */
+@supports (-webkit-touch-callout: none) {
+  .sidebar {
+    transform: scale(1.333);          /* scales sidebar proportionally when zoomed out */
+    transform-origin: top left;       /* anchor scaling at top-left corner */
+  }
+}
