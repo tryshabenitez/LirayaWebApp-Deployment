@@ -303,47 +303,68 @@
 </div>
 
 <script>
-/* === LIRAYA: Desktop-view emulation for user_viewinfo (mobile only) === */
+/**
+ * Stable desktop-view emulation for mobile
+ * - Avoids CSS zoom/transform (causes jitter + breaks position: sticky)
+ * - Uses a dynamic viewport width with a locked scale for smooth scrolling
+ * - Re-applies on back/forward cache (iOS Safari) and orientation changes
+ */
 (function () {
-  const DESKTOP_WIDTH = 1280; // target layout width (matches search page feel)
+  var DESKTOP_WIDTH = 1280; // target desktop canvas width
 
-  function ensureViewportMeta() {
-    let meta = document.querySelector('meta[name="viewport"]');
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.name = 'viewport';
-      document.head.appendChild(meta);
+  function getViewportMeta() {
+    var m = document.querySelector('meta[name="viewport"]');
+    if (!m) {
+      m = document.createElement('meta');
+      m.setAttribute('name', 'viewport');
+      document.head.appendChild(m);
     }
-    return meta;
+    return m;
   }
 
-  function setDesktopViewport() {
-    const meta = ensureViewportMeta();
-    // Emulate desktop: wide CSS width; keep scale at 1 to preserve sticky/fixed behavior
-    meta.setAttribute('content', `width=${DESKTOP_WIDTH}, initial-scale=1, maximum-scale=1`);
-    document.documentElement.classList.add('force-desktop');
-  }
-
-  function setDefaultViewport() {
-    const meta = ensureViewportMeta();
-    meta.setAttribute('content', 'width=device-width, initial-scale=1');
-    document.documentElement.classList.remove('force-desktop');
-  }
-
-  function syncViewport() {
-    if (window.innerWidth < 1024) {
-      setDesktopViewport();
+  function applyDesktopViewport() {
+    var vp = getViewportMeta();
+    var isMobile = window.innerWidth < 1024; // heuristic: treat as mobile
+    if (isMobile) {
+      // scale to fit screen width against the desktop canvas
+      var scale = Math.max(0.3, Math.min(1, window.screen.width / DESKTOP_WIDTH));
+      // lock min/max to eliminate pinch-zoom jitter during pan/scroll
+      vp.setAttribute('content',
+        'width=' + DESKTOP_WIDTH +
+        ', initial-scale=' + scale.toFixed(3) +
+        ', minimum-scale=' + scale.toFixed(3) +
+        ', maximum-scale=' + scale.toFixed(3) +
+        ', viewport-fit=cover'
+      );
+      // ensure no legacy zoom/transform persists
+      document.body.style.zoom = '';
+      document.body.style.transform = '';
+      document.body.style.transformOrigin = '';
     } else {
-      setDefaultViewport();
+      // restore standard responsive behavior on desktop/tablet-wide
+      vp.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
     }
   }
 
-  // Initial run + listeners
-  syncViewport();
-  window.addEventListener('resize', syncViewport, { passive: true });
-  window.addEventListener('orientationchange', syncViewport);
+  // Apply immediately
+  applyDesktopViewport();
+
+  // Re-apply on rotate / resizes
+  window.addEventListener('orientationchange', applyDesktopViewport, { passive: true });
+  window.addEventListener('resize', applyDesktopViewport);
+
+  // Re-apply when navigating back with BFCache (iOS Safari/Chrome)
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) applyDesktopViewport();
+  });
+
+  // Safety: ensure sticky header remains stable by avoiding transforms on ancestors
+  document.addEventListener('DOMContentLoaded', function () {
+    document.documentElement.style.willChange = 'auto';
+  });
 })();
 </script>
+
 
 <script src="{% static 'script/user_script.js' %}"></script> <!-- Link to the JavaScript file -->
 <script src="{% static 'script/user_viewinfo.js' %}"></script> <!-- Link to the JavaScript file for viewinfo page -->
