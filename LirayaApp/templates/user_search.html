@@ -15,14 +15,12 @@
   <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
 </head>
 
-<!-- Mobile Desktop Prompt -->
-<div id="mobile-gate" role="dialog" aria-modal="true" aria-labelledby="mg-title" hidden>
+<!-- Mobile Desktop Prompt (always-on when not desktop) -->
+<div id="mobile-gate" aria-modal="true" role="dialog" style="display:none;">
   <div class="mg-backdrop"></div>
-  <div class="mg-box">
-    <div id="mg-title" class="mg-title">ENABLE DESKTOP VIEW FOR A CLEANER UI</div>
-    <button type="button" id="mg-ok" class="mg-btn" aria-label="OK">OK</button>
-
-    <!-- keep this helper verbatim -->
+  <div class="mg-box" role="document">
+    <div class="mg-title">ENABLE DESKTOP VIEW FOR A CLEANER UI</div>
+    <button type="button" class="mg-btn" id="mg-ok">OK</button>
     <div id="mdp-help" style="display:none; margin-top:12px; font-size:13px; color:#6d2932;">
       Tip: In Chrome, tap ⋮ → <b>Desktop site</b>. In Safari, “aA” → <b>Request Desktop Website</b>.
     </div>
@@ -262,36 +260,77 @@
 <script src="{% static 'script/user_script.js' %}"></script>
 
 <script>
-  (function () {
-    // Treat <= 768px as “mobile view”
-    const isMobileView = () => window.matchMedia('(max-width: 768px)').matches;
+(function () {
+  // --- Config
+  const DESKTOP_MIN_WIDTH = 1024;      // treat <1024px as “not desktop”
+  const DESKTOP_TARGET_WIDTH = 1280;   // emulate desktop layout width
 
-    function showMobileGateIfNeeded() {
-      const gate = document.getElementById('mobile-gate');
-      if (!gate) return;
-      if (isMobileView()) {
-        gate.hidden = false;             // unhide
-        // Optional: reveal tip copy automatically
-        const tip = document.getElementById('mdp-help');
-        if (tip) tip.style.display = 'block';
-      } else {
-        gate.hidden = true;
-      }
+  const isLikelyMobile = () => {
+    return (window.innerWidth < DESKTOP_MIN_WIDTH) ||
+           /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  };
+
+  const ensureViewportMeta = () => {
+    let tag = document.querySelector('meta[name="viewport"]');
+    if (!tag) {
+      tag = document.createElement('meta');
+      tag.setAttribute('name','viewport');
+      document.head.appendChild(tag);
     }
+    return tag;
+  };
 
-    // Wire up OK button (no persistence; shows again next time on mobile)
-    document.addEventListener('click', function (e) {
-      if (e.target && e.target.id === 'mg-ok') {
-        const gate = document.getElementById('mobile-gate');
-        if (gate) gate.hidden = true;
-      }
-    });
+  const emulateDesktopLayout = () => {
+    // Emulate desktop by widening the layout viewport
+    const meta = ensureViewportMeta();
+    meta.setAttribute('content', `width=${DESKTOP_TARGET_WIDTH}, initial-scale=1`);
+  };
 
-    // Initial paint + viewport changes + BFCache restores
-    document.addEventListener('DOMContentLoaded', showMobileGateIfNeeded);
-    window.addEventListener('resize', showMobileGateIfNeeded);
-    window.addEventListener('pageshow', showMobileGateIfNeeded);
-  })();
+  const restoreResponsiveLayout = () => {
+    const meta = ensureViewportMeta();
+    meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+  };
+
+  const showGate = () => {
+    const gate = document.getElementById('mobile-gate');
+    if (!gate) return;
+    gate.style.display = 'block';
+    document.body.style.overflow = 'hidden';      // lock scroll
+    document.documentElement.style.overflow = 'hidden';
+    // keep help visible as requested
+    const help = document.getElementById('mdp-help');
+    if (help) help.style.display = 'block';
+  };
+
+  const hideGate = () => {
+    const gate = document.getElementById('mobile-gate');
+    if (!gate) return;
+    gate.style.display = 'none';
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+  };
+
+  const applyMobilePolicy = () => {
+    if (isLikelyMobile()) {
+      // Auto-resize on load—no click needed
+      emulateDesktopLayout();
+      showGate(); // still display every time for guidance
+    } else {
+      hideGate();
+      restoreResponsiveLayout();
+    }
+  };
+
+  // Fire on load and on resize/orientation changes
+  window.addEventListener('load', applyMobilePolicy, { once: true });
+  window.addEventListener('resize', applyMobilePolicy);
+  window.addEventListener('orientationchange', applyMobilePolicy);
+
+  // OK button only dismisses the modal; desktop emulation stays applied
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'mg-ok') hideGate();
+  });
+})();
 </script>
 
   
