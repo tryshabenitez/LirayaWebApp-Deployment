@@ -5,7 +5,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIRAYA - Home</title>
+  <title>LIRAYA - About Us</title>
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/user_style.css' %}">
   <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
@@ -24,16 +24,15 @@
       <img src="{% static 'images/usericon.png' %}" alt="Logo">
       <div class="page-name">LIRAYA</div>
     </div>
-    <a href="{% url 'user_homepage' %}" class="home" style="cursor: pointer;">Home</a> <!-- Make "Home" clickable -->
+    <a href="{% url 'user_homepage' %}" class="home" style="cursor: pointer;">Home</a>
   </header>
 
   <!-- Main Content -->
   <div class="liraya-main-content">
     <div class="about-us-container">
     
-      <!-- Left Container (75% width) -->
+      <!-- Left Container -->
       <div class="liraya-left-container">
-        <!-- Tabs (above the left column content) -->
         <div class="about-tabs" role="tablist" aria-label="About & Contact Tabs">
           <button class="tab-btn active" type="button" role="tab"
                   aria-selected="true" aria-controls="tab-about" data-tab="about">
@@ -47,54 +46,43 @@
           
         <div class="liraya-left-content">
     
-          <!-- Wrap ALL your current About content in here -->
+          <!-- About Section -->
           <section id="tab-about" class="tab-panel" role="tabpanel">
-            <h1>About Us:</h1>
-            <p>LIRAYA is the official Library Information Resource and Access platform developed for the Technological University of the Philippines - Cavite (TUPC). This platform aims to modernize and improve the accessibility of the university’s vast academic resources. By providing a seamless, efficient, and user-friendly system, LIRAYA ensures that students, faculty, and staff have access to books, research papers, articles, multimedia content, and much more—all from the comfort of their own devices.</p>
-            <p>The system is designed to support various library functions, enabling users to find, borrow, and access academic materials, research tools, and digital media relevant to their courses and research needs. LIRAYA enhances the traditional library experience by integrating modern technologies that make library resources more accessible and easier to navigate.</p>
-    
-            <h2>Our Mission:</h2>
-            <p>The mission of LIRAYA is to provide an efficient, comprehensive, and user-centric platform that allows students, faculty, and staff of TUPC to access academic materials and resources in an effortless and timely manner. We aim to:</p>
-            <ul>
-              <li><strong>Enhance Accessibility:</strong> By offering a digital platform, LIRAYA ensures that students and faculty can access learning materials anytime, anywhere, without the need to physically visit the library.</li><br>
-              <li><strong>Streamline Library Operations:</strong> The platform improves the operational efficiency of the library by digitizing resource management, inventory, and cataloging processes.</li><br>
-              <li><strong>Support Collaborative Learning:</strong> We aim to foster a collaborative learning environment by providing a centralized hub where students and faculty can access shared academic resources and research tools.</li><br>
-              <li><strong>Promote Academic Excellence:</strong> Through easy access to a wide range of educational materials, LIRAYA helps improve the learning experience and academic outcomes for students, while supporting faculty in their teaching and research activities.</li><br>
-            </ul>
-    
-            <h2>Our Vision:</h2>
-            <p>LIRAYA envisions becoming a leading digital library platform that transforms how academic resources are accessed and utilized by educational institutions. Our goal is to:</p>
-            <ul>
-              <li><strong>Become the Go-To Platform for Resource Management:</strong> We aim to establish LIRAYA as the primary platform for managing and accessing library resources at TUPC, ensuring comprehensive and user-friendly solutions for students, faculty, and staff.</li><br>
-              <li><strong>Provide a Sustainable, Scalable Solution:</strong> We envision LIRAYA growing beyond the current capabilities, incorporating advanced features like AI-based recommendations, personalized learning paths, and better integration with external academic resources.</li><br>
-              <li><strong>Enhance Collaboration Across Departments:</strong> By digitizing resources and making them available in a centralized system, we aspire to support interdisciplinary collaboration, making research and resource sharing easier among various departments and faculties.</li><br>
-              <li><strong>Set a Standard for University Libraries in the Region:</strong> We aim to set a model for university library systems, not only within TUPC but also in the broader academic community, by leveraging technology to create an optimized, seamless user experience.</li><br>
-            </ul>
-    
-            <h2>Our Features:</h2>
-            <p>LIRAYA incorporates several innovative features designed to improve the library experience for everyone involved. Some of the key features include:</p>
-            <ul>
-              <li><strong>Optical Character Recognition (OCR):</strong> OCR technology allows users to convert scanned images of text into editable and searchable text. This feature is particularly useful for digitizing older resources, making them accessible to the wider university community.</li><br>
-              <li><strong>Keyword-Based Searching:</strong> The platform includes an advanced search function that allows users to quickly find resources based on keywords. This makes it easier for students and faculty to locate books, articles, and research materials across various subjects without having to sift through physical catalogs or hard-to-navigate systems.</li><br>
-              <li><strong>Library Management System (LMS):</strong> The LMS feature provides a comprehensive digital cataloging and management system for library materials. This includes checking in and out books, managing overdue materials, and tracking inventory with ease. The system also allows users to reserve materials online and receive notifications when resources are available for pickup.</li><br>
-              <li><strong>Personalized User Profiles:</strong> LIRAYA allows users to create personalized accounts, track borrowed materials, and receive recommendations based on their search and reading history. This feature aims to tailor the library experience to the individual needs of each user, whether they are a student, faculty member, or staff.</li><br>
-              <li><strong>Integration with External Databases:</strong> LIRAYA is designed to integrate with external academic databases and repositories. This allows users to access a vast array of resources beyond those physically available in the library, including journals, articles, and digital books from a variety of online platforms.</li><br>
-              <li><strong>Real-Time Notifications and Alerts:</strong> Users are notified in real-time about the status of their loans, new arrivals, available books, or upcoming library events. This keeps users up-to-date and informed about relevant resources and deadlines.</li><br>
-              <li><strong>Research Support Tools:</strong> LIRAYA provides additional features for research support, including citation management tools, research paper templates, and access to academic writing guides to help students and faculty conduct effective research.</li><br>
-              <li><strong>Multimedia Resources:</strong> The platform also offers access to multimedia content, including educational videos, audio lectures, and other multimedia materials that complement academic texts. These resources are available for students to access directly through the platform, supporting diverse learning styles.</li><br>
-              <li><strong>Collaboration and Resource Sharing:</strong> LIRAYA encourages collaboration by allowing users to share their research or materials with others in the university. This feature promotes teamwork, knowledge sharing, and collective learning, enabling students and faculty to collaborate on projects and academic work efficiently.</li><br>
-            </ul>
+            <h1>About LIRAYA</h1>
+
+            <h2>LIRAYA – Library Information Retrieval and Your Access</h2>
+            <p>
+              LIRAYA is a keyword-based library search system developed for the Technological University of the Philippines - Cavite. 
+              It was designed to make research faster and more convenient by allowing users to search using specific keywords instead of only book titles. 
+              The system uses Optical Character Recognition (OCR) to scan and convert book tables of contents, indexes, and thesis abstracts into searchable text. 
+              It supports the university’s initiative to build a more efficient and accessible digital library for both students and faculty.
+            </p>
+
+            <h2>System Process</h2>
+            <p>
+              Books and theses are uploaded by researchers, librarians, and department heads through scanning and OCR processing. 
+              The system automatically extracts keywords, page numbers, and relevant content, then stores them in the database. 
+              Each search made by users is recorded to help track usage and assist the library in returning books to their proper locations. 
+              This improves cataloging accuracy and ensures that all library materials remain organized and easy to find.
+            </p>
+
+            <h2>Project Statement</h2>
+            <p>
+              This system was created by the researchers as part of their thesis titled 
+              <strong>“Development of Keyword-Based Search for Technological University of the Philippines - Cavite.”</strong> 
+              It serves as both an academic requirement and a contribution to advancing the university library’s digital services, 
+              promoting innovation and accessibility for future learners.
+            </p>
           </section>
     
-          <!-- Empty Contact panel (stays hidden until Contact is selected) -->
+          <!-- Contact Panel (Empty) -->
           <section id="tab-contact" class="tab-panel" role="tabpanel" hidden>
-            <!-- Intentionally left blank for now -->
           </section>
     
         </div>
       </div>
     
-      <!-- Right Container (unchanged) -->
+      <!-- Right Container -->
       <div class="liraya-right-container">
         <div class="liraya-right-content">
           <img src="{% static 'images/user_about.png' %}" alt="About Image" class="about-image">
@@ -105,7 +93,7 @@
 
   <!-- Footer -->
   <footer>
-    <p class="footer-text">LIRAYA: Library Information Resource and Access</p>
+    <p class="footer-text">LIRAYA: Library Information Retrieval and Your Access</p>
     <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
   </footer>
 
@@ -135,12 +123,9 @@
         btn.addEventListener('click', () => activate(btn.dataset.tab));
       });
   
-      // default state
       activate('about');
     })();
   </script>
 
-  
 </body>
-
 </html>
