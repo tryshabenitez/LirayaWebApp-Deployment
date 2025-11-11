@@ -2247,7 +2247,7 @@ header .search-button{
   height: clamp(36px, 2.8vw, 46px);
   padding: 0;
   background: transparent;
-  border: 3px solid #3e151a;     /* ← ring lives on the button */
+  border: 3px solid #6d2932;     /* ← ring lives on the button */
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -2316,3 +2316,27 @@ header .search-button img{
 
 
 
+/* Mobile Gate (scoped, non-invasive) */
+#mobile-gate { 
+  position: fixed; inset: 0; z-index: 4000; 
+}
+#mobile-gate .mg-backdrop{
+  position: absolute; inset: 0; background: rgba(0,0,0,.55);
+}
+#mobile-gate .mg-box{
+  position: absolute; left: 50%; top: 28%;
+  transform: translateX(-50%);
+  width: min(92vw, 520px);
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+  padding: 22px 18px; text-align: center;
+  border: 2px solid #6d2932;
+}
+#mobile-gate .mg-title{
+  font-weight: 800; font-size: 18px; color: #3e151a; margin-bottom: 14px;
+}
+#mobile-gate .mg-btn{
+  background: #6d2932; color: #fff7f7; border: none;
+  border-radius: 10px; padding: 10px 18px; font-weight: 700; cursor: pointer;
+}
+#mobile-gate .mg-btn:hover{ background:#541e29; }
