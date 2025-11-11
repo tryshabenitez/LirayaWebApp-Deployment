@@ -14,6 +14,16 @@
   <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/android-chrome-192x192.png' %}">
   <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/android-chrome-512x512.png' %}">
 </head>
+
+<!-- Mobile Gate -->
+<div id="mobile-gate" role="dialog" aria-modal="true" aria-labelledby="mg-title" style="display:none;">
+  <div class="mg-backdrop"></div>
+  <div class="mg-box" role="document">
+    <div id="mg-title" class="mg-title">ENABLE DESKTOP VIEW FOR A CLEANER UI</div>
+    <button type="button" class="mg-btn" id="mg-ok">OK</button>
+  </div>
+</div>
+  
 <body>
 
 <!-- Sidebar -->
@@ -246,6 +256,44 @@
 
 <script src="{% static 'script/user_script.js' %}"></script>
 
+<script>
+(function mobileGate(){
+  // Only show on small viewports + if not already accepted this session
+  var isSmall = Math.min(window.innerWidth, screen.width) <= 768;
+  if (!isSmall || sessionStorage.getItem('mgAccepted') === '1') return;
+
+  // Ensure there is a viewport meta; if not, create it
+  var vp = document.querySelector('meta[name="viewport"]');
+  if (!vp) {
+    vp = document.createElement('meta');
+    vp.setAttribute('name','viewport');
+    vp.setAttribute('content','width=device-width, initial-scale=1.0');
+    document.head.appendChild(vp);
+  }
+
+  var gate = document.getElementById('mobile-gate');
+  var ok = document.getElementById('mg-ok');
+
+  // Lock background scroll and show
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  gate.style.display = 'block';
+
+  ok.addEventListener('click', function(){
+    // Best-effort "desktop-like" render: widen the layout viewport
+    // (This does not toggle the browser’s system-level “Desktop Site” setting.)
+    vp.setAttribute('content','width=1280, initial-scale=1.0, maximum-scale=1.0');
+
+    sessionStorage.setItem('mgAccepted','1');
+
+    // Hide and restore scroll
+    gate.style.display = 'none';
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+  }, { once: true });
+})();
+</script>
+  
 <script>
 // Active categories on load (use repeated params, not comma split)
 document.addEventListener('DOMContentLoaded', function() {
