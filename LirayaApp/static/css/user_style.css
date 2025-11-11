@@ -25,7 +25,7 @@
       position: sticky;
       top: 0;
       width: 100%;
-      z-index: 9999;
+      z-index: 1000;
     }
 
     /* Logo and Sidebar Button Container */
@@ -1137,9 +1137,7 @@ border-radius: 8px; /* Optional: rounded corners for image */
 
 
 
-/* Keep fixed widths for the other controls */
-.liraya-main-content .dropdown { flex: 0 0 210px; }
-.liraya-main-content .search-button { flex: 0 0 50px; }
+
 
 /* Keep the icon nicely centered */
 .liraya-main-content .search-button {
@@ -1701,6 +1699,543 @@ header .dropdown:focus {
   padding: 12px 0 28px !important;   /* more bottom padding as requested */
 }
 .sidebar a.about-us:hover{ color:#db2525; }
+
+
+
+                                               /*HOMEPAGE RESPONSIVE ON MOBILE*/
+.search-box {
+  flex: 1;
+  max-width: 520px;
+  padding: 12px;
+  font-size: 18px;
+  border-radius: 25px;
+  border: 3px solid #3e151a;
+  background-color: #fff7f7;
+  transition: border-color 0.15s ease;
+}
+
+.search-box {
+  flex: 1; /* grows to take remaining space */
+  min-width: 0;
+}
+
+.dropdown, .search-button {
+  width: 180px; /* fixed size */
+}
+
+/* Mobile layout */
+@media (max-width: 768px) {
+  .search-form {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .search-box,
+  .dropdown {
+    width: 80%;
+    max-width: none;
+  }
+
+  .search-button {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+/* Keep the icon centered and prevent overflow (scoped to homepage) */
+.liraya-main-content .search-button img {
+  width: 100%;
+  height: 100%;
+  border: 3px solid #3e151a;
+  border-radius: 25px;
+  transition: border-color 0.15s ease;
+}
+.liraya-main-content .search-button img:hover { border-color: #be0b23; }
+
+/* Mobile layout — exact structure requested:
+   [ Search Here... ]
+   [ All Fields ][ 🔍 ]                                  */
+@media (max-width: 576px) {
+  .liraya-main-content .search-form {
+    display: flex;
+    flex-direction: column;   /* stack rows */
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Full but with a comfy 16px gutter on each side */
+  .liraya-main-content .search-box {
+    width: min(640px, calc(100% - 32px));
+    margin: 0 auto;           /* keep it centered */
+  }
+
+  
+
+  
+
+  .liraya-main-content .actions-row .dropdown {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-left: 0;           /* override any previous margin-left */
+  }
+
+  .liraya-main-content .actions-row .search-button {
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    flex: 0 0 auto;
+  }
+}
+
+/* --- Desktop / default: single line ------------------------------------ */
+.liraya-main-content .search-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;           /* space between input and actions */
+  flex-wrap: nowrap;   /* keep in one line on big screens */
+}
+
+/* keep input a reasonable size on desktop */
+.liraya-main-content .search-box {
+  width: clamp(340px, 40vw, 520px);
+}
+
+/* dropdown + button sit on the same row */
+.liraya-main-content .actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* avoid stray margins that push things down */
+.liraya-main-content .actions-row .dropdown { margin-left: 0; }
+
+/* keep the icon neatly inside the button */
+.liraya-main-content .search-button {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+}
+.liraya-main-content .search-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 3px solid #3e151a;
+  border-radius: 25px;
+  transition: border-color 0.15s ease;
+}
+
+/* --- Mobile: stack as requested ---------------------------------------- */
+@media (max-width: 576px) {
+  .liraya-main-content .search-form {
+    flex-direction: column;         /* stack rows on small screens */
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Row 1: full-width search box */
+  .liraya-main-content .search-box {
+    width: 80%;
+    max-width: 520px;
+  }
+
+  /* Row 2: dropdown + button aligned horizontally */
+  .liraya-main-content .actions-row {
+    width: 92%;
+    max-width: 480px;
+  }
+  .liraya-main-content .actions-row .dropdown {
+    flex: 1 1 auto;                 /* fill the row */
+    min-width: 0;
+  }
+
+  .liraya-main-content .actions-row .search-button {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Fix the too-large search icon on desktop header */
+header .search-button img {
+  width: 100%;
+  height: 100%;
+  border: 3px solid #3e151a;
+  border-radius: 25px;
+  transition: border-color 0.15s ease;
+}
+
+/* Slight hover effect (optional, consistent with your theme) */
+header .search-button img:hover {
+  border-color: #be0b23;
+}
+
+/* Keep it as-is on mobile */
+@media (max-width: 768px) {
+  header .search-button img {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Header-only sizing for the magnifying-glass button (search results page, etc.) */
+header .search-button {
+  /* smaller on desktop, still responsive */
+  width: clamp(70px, 70vw, 70px);
+  height: clamp(28px, 2.2vw, 36px);
+}
+
+/* --- Header search button: tidy, responsive, NOT stretched --- */
+header .search-button {
+  /* square button that scales a bit with the viewport */
+  width: clamp(36px, 2.8vw, 46px);
+  height: clamp(36px, 2.8vw, 46px);
+  padding: 0;
+  border: none;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+/* make the icon fill the button without 130% stretch */
+header .search-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border: 3px solid #3e151a;
+  border-radius: 25px;
+  transition: border-color 0.15s ease;
+}
+
+header .search-button img:hover {
+  border-color: #be0b23;
+}
+
+/* keep your nice small size on mobile */
+@media (max-width: 768px) {
+  header .search-button {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* --- Consistent Header Height Across Devices --- */
+header {
+  background-color: #3e151a;
+  color: #fff7f7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  /* responsive padding — smaller on desktop, same structure on mobile */
+  padding: clamp(8px, 1vw, 14px) clamp(12px, 2vw, 20px);
+
+  /* prevent tall stretching */
+  min-height: 64px;
+  max-height: 78px;
+
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+/* Make logo + sidebar button stay aligned */
+header .logo-container img {
+  width: clamp(42px, 4vw, 60px);
+  height: auto;
+}
+
+/* Make the search container shrink properly */
+header .search-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+/* Keep smaller header look on mobile */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px;
+  }
+}
+
+/* --- Header: fluid sizes on desktop, tidy on mobile --- */
+
+/* Make the search area flexible */
+header .search-container{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;          /* allow wrapping when space is tight */
+  padding:8px 0;
+}
+
+/* Fluid input/dropdown sizes on larger screens */
+header .search-box{
+  width: clamp(240px, 60vw, 520px);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+header .dropdown{
+  width: clamp(140px, 30vw, 210px);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Keep the icon square and not stretched */
+header .search-button{
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex: 0 0 auto;
+}
+header .search-button img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit: contain;
+  border: 3px solid #3e151a;
+  border-radius: 25px;
+  transition: border-color .15s ease;
+}
+
+/* --- Mobile layout: stack input, then row with dropdown + icon --- */
+@media (max-width: 576px){
+  header{
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px;
+    box-sizing:border-box;
+    padding:clamp(8px,1vw,14px) clamp(12px,2vw,20px);
+    min-height:var(--header-h);
+  }
+
+  /* Stack the search pieces vertically */
+  header .search-container{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding:0;
+    gap:8px; 
+    flex-wrap:nowrap;
+  }
+
+  /* Row 1: full-width search box */
+  header .search-box{
+    width: 100%;
+  }
+
+  /* Row 2: dropdown + button on one line */
+  header .actions-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+  }
+  header .actions-row .dropdown{
+    flex: 1 1 auto;   /* fill the row */
+    min-width: 0;
+  }
+  header .actions-row .search-button{
+    width: 48px;
+    height: 48px;
+    flex: 0 0 auto;
+  }
+}
+
+/* Safety: kill any older 130% image rules */
+.search-button img{ width:100%; height:100%; }
+
+/* --- LIRAYA HEADER: mobile-safe, one-row, auto height --- */
+header, .liraya-header{
+  flex-direction: row !important;     /* keep a single row on mobile */
+  align-items: center !important;
+  justify-content: space-between;
+  flex-wrap: nowrap;                   /* prevent wrapping */
+  max-height: none !important;         /* let height grow if needed */
+  min-height: 56px;                    /* sensible floor */
+  box-sizing: border-box;
+}
+
+/* shrink visuals so they fit on small screens */
+header .logo-container img,
+.liraya-header .logo-container img{
+  width: clamp(36px, 8vw, 60px);
+  height: auto;
+}
+
+.liraya-header .about-us,
+.liraya-header .home{
+  margin: 0 12px 0 0;                 /* remove bottom margin that pushes it down */
+  line-height: 1;
+  white-space: nowrap;                 /* keep text on one line */
+  font-size: clamp(16px, 4.2vw, 22px);
+}
+
+/* stop header from getting taller because of the embedded search area */
+header .search-container{
+  padding: 0 !important;
+  gap: 8px;
+}
+
+/* keep the icon square and small on mobile */
+header .search-button{
+  width: 40px;
+  height: 40px;
+  padding:0; 
+  flex:0 0 auto;
+}
+header .search-button img{ object-fit: contain; }
+
+/* Optional: align your fixed sidebar to the actual header height */
+:root{ --header-h: 56px; }            /* tune if you change min-height */
+.sidebar{
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+}
+
+/* Homepage search input — fully fluid, no fixed width */
+.liraya-main-content .search-box {
+  box-sizing: border-box;
+  width: clamp(260px, 92vw, 520px);   /* min 260px, scales with screen, caps at 520px */
+}
+
+/* Keep the layout tidy on very small phones */
+@media (max-width: 576px) {
+  .liraya-main-content .search-form { 
+    flex-direction: column; 
+    gap: 12px; 
+    width: 100%;
+  }
+  .liraya-main-content .actions-row { 
+    width: min(480px, 92vw); 
+  }
+}
+
+
+/* --- LIRAYA: Final Unified Search Button Spec --- */
+
+/* Button = perfect circle */
+.liraya-main-content .search-button {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    background: transparent;
+    border: 3px solid #3e151a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Icon = fill the circle (same size as your hover state BEFORE hover) */
+.liraya-main-content .search-button img {
+    height: 130%;
+    object-fit: contain;
+    display: block;
+
+    /* remove old styling conflicts */
+    border: none !important;
+    border-radius: 0 !important;
+}
+
+/* Hover = ONLY the outline changes (icon stays SAME size) */
+.liraya-main-content .search-button:hover {
+    border-color: #be0b23;
+}
+
+/* Permanent kill switch for all legacy rules */
+.search-button img {
+    border: none !important;
+    border-radius: 0 !important;
+}
+
+/* --- LIRAYA: single source of truth for the homepage search icon --- */
+
+/* Circle button container */
+.liraya-main-content .search-button{
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border: 3px solid #3e151a;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;          /* prevent inline-img baseline shift */
+  overflow: hidden;        /* safety: clip any overflow */
+  flex-shrink: 0;
+}
+
+/* Icon fits inside the circle; no borders on the img */
+.liraya-main-content .search-button > img{
+  width: 72% !important;   /* sweet spot; adjust 70–76% as desired */
+  height: 72% !important;
+  display: block;
+  object-fit: contain;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Hover only changes the ring color; the icon stays put */
+.liraya-main-content .search-button:hover{ border-color:#be0b23; }
+
+/* Global kill-switch to neutralize any legacy 130% rules anywhere */
+.search-button img{
+  width: 72% !important;
+  height: 72% !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* ==== Footer fix: stack lines, center, responsive, no extra gap ==== */
+footer{
+  background-color:#3e151a;
+  color:#fff7f7;
+  width:100%;
+  padding: clamp(8px,1vw,14px) clamp(12px,2vw,20px);
+  box-sizing:border-box;
+
+  /* page layout */
+  margin-top:auto;      /* anchors footer to bottom in the flex page */
+  position: static;
+
+  /* content layout */
+  display:flex;
+  flex-direction: column;     /* ⬅ stack the two <p> vertically */
+  align-items:center;
+  justify-content:center;
+  gap: 4px;                   /* small space between lines */
+  text-align:center;
+}
+
+footer p{
+  margin:0;                   /* remove default <p> gaps */
+}
+
+footer .footer-text{
+  font-family:'Libre Baskerville', serif;
+  font-size: clamp(11px,1.6vw,13px);
+  line-height: 1.4;
+}
+
+/* safety: prevent stray bottom spacing above footer */
+.main-content, .liraya-main-content{ margin-bottom:0; }
+
+
+
+
+
 
 
 
