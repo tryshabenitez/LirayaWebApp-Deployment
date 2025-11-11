@@ -2332,3 +2332,40 @@ header .search-button img{
 #mobile-gate .mg-title{ font-weight:800; font-size:18px; color:#3e151a; margin-bottom:14px; }
 #mobile-gate .mg-btn{ background:#6d2932; color:#fff7f7; border:0; border-radius:10px; padding:10px 18px; font-weight:700; cursor:pointer; }
 #mobile-gate .mg-btn:hover{ background:#541e29; }
+
+
+/* --- Sidebar mobile hardening: keep About Us visible --- */
+@media (max-width: 768px) {
+  /* Ensure the sidebar is a proper overlay with its own scroll */
+  .sidebar {
+    position: fixed;                  /* not static on mobile */
+    left: -100vw;                     /* hidden by default */
+    top: var(--header-h, 56px);       /* align under header */
+    height: calc(100vh - var(--header-h, 56px));
+    width: 86vw;                      /* comfortable sheet width */
+    z-index: 3000;                    /* above page chrome */
+    overflow-y: auto;                 /* internal scroll */
+    background-color: #d7d1d3;        /* keep brand tone */
+    transition: left .3s ease-in-out; /* smooth slide-in */
+  }
+  .sidebar.open { left: 0; }
+
+  /* Make About Us persist at the bottom while scrolling */
+  .sidebar a.about-us {
+    position: sticky;    /* anchors within sidebar scrollport */
+    bottom: 0;           /* stick to bottom edge */
+    display: block;
+    background: #fff7f7; /* subtle surface to differentiate */
+    border-top: 1px solid #e9d9dc;
+    padding: 12px 0 16px !important;
+    margin-top: 8px !important;
+    z-index: 1;          /* sit above list content */
+  }
+
+  /* Give a little breathing room so it never overlaps content */
+  .sidebar::after {
+    content: "";
+    display: block;
+    height: 16px;
+  }
+}
