@@ -17,7 +17,7 @@
 
 
 
-<body>
+<body class="page-user-search">
 
 <!-- Sidebar -->
 <div class="sidebar">
@@ -402,6 +402,23 @@ function openAlsoSearchAll(e){
   document.body.style.overflow = "hidden";
 }
 </script>
+
+<script>
+(function(){
+  function setHeaderVar(){
+    var header = document.querySelector('header');
+    if(!header) return;
+    var h = Math.round(header.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--header-h', h + 'px');
+  }
+  setHeaderVar();
+  window.addEventListener('resize', setHeaderVar, { passive:true });
+  window.addEventListener('orientationchange', setHeaderVar, { passive:true });
+  // Some Safari builds need a tick after paint
+  setTimeout(setHeaderVar, 50);
+})();
+</script>
+
 
 {% if books.paginator.count == 0 %}
 <!-- No Results Overlay (doesn't cover header) -->
