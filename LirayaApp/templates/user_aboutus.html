@@ -68,7 +68,7 @@
 
             <h2>Project Statement</h2>
             <p>
-              This system was created by the researchers as part of their thesis titled 
+              The researchers created this system as part of their thesis titled 
               <strong>“Development of Keyword-Based Search for Technological University of the Philippines - Cavite.”</strong> 
               It serves as both an academic requirement and a contribution to advancing the university library’s digital services, 
               promoting innovation and accessibility for future learners.
@@ -76,8 +76,27 @@
           </section>
     
           <!-- Contact Panel (Empty) -->
+          <!-- Contact Panel -->
           <section id="tab-contact" class="tab-panel" role="tabpanel" hidden>
+            <h1>Contact Us</h1>
+          
+            <h2>Library Staff</h2>
+            <p><strong>Ms. Rosario Noriel</strong> – Library Head – <u>?</u></p>
+            <p><strong>?</strong> – ? – <u>?</u></p>
+            <p><strong>?</strong> – ? – <u>?</u></p>
+          
+            <h2>Department Staff</h2>
+            <p><strong>?</strong> – ? – <u>?</u></p>
+            <p><strong>?</strong> – ? – <u>?</u></p>
+            <p><strong>?</strong> – ? – <u>?</u></p>
+          
+            <h2>Researchers</h2>
+            <p><strong>Trysha Rhoy Benitez</strong> – <u>?</u></p>
+            <p><strong>Wein Jazfer Marito</strong> – <u>weinjazfer@gmail.com</u></p>
+            <p><strong>John Michael Quiambao</strong> – <u>?</u></p>
+            <p><strong>Irish Mae Rodriguez</strong> – <u>?</u></p>
           </section>
+
     
         </div>
       </div>
@@ -97,6 +116,59 @@
     <p class="footer-text">Copyright © 2025, Technological University of the Philippines - Cavite</p>
   </footer>
 
+  <!-- Auto desktop-view for mobile -->
+  <script>
+  /**
+   * Stable desktop-view emulation for mobile
+   * - Avoids CSS zoom/transform (causes jitter + breaks position: sticky)
+   * - Uses a dynamic viewport width with a locked scale for smooth scrolling
+   * - Re-applies on back/forward cache (iOS Safari) and orientation changes
+   */
+  (function () {
+    var DESKTOP_WIDTH = 1280; // target desktop canvas width
+
+    function getViewportMeta() {
+      var m = document.querySelector('meta[name="viewport"]');
+      if (!m) {
+        m = document.createElement('meta');
+        m.setAttribute('name', 'viewport');
+        document.head.appendChild(m);
+      }
+      return m;
+    }
+
+    function applyDesktopViewport() {
+      var vp = getViewportMeta();
+      var isMobile = window.innerWidth < 1024; // heuristic: treat as mobile
+      if (isMobile) {
+        var scale = Math.max(0.3, Math.min(1, window.screen.width / DESKTOP_WIDTH));
+        vp.setAttribute('content',
+          'width=' + DESKTOP_WIDTH +
+          ', initial-scale=' + scale.toFixed(3) +
+          ', minimum-scale=' + scale.toFixed(3) +
+          ', maximum-scale=' + scale.toFixed(3) +
+          ', viewport-fit=cover'
+        );
+        document.body.style.zoom = '';
+        document.body.style.transform = '';
+        document.body.style.transformOrigin = '';
+      } else {
+        vp.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+      }
+    }
+
+    applyDesktopViewport();
+    window.addEventListener('orientationchange', applyDesktopViewport, { passive: true });
+    window.addEventListener('resize', applyDesktopViewport);
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) applyDesktopViewport();
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+      document.documentElement.style.willChange = 'auto';
+    });
+  })();
+  </script>
+  
   <script>
     (function () {
       const tabsWrap = document.querySelector('.about-us-container .liraya-left-container .about-tabs');
