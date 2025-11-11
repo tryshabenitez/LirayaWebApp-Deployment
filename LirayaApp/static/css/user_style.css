@@ -2370,10 +2370,18 @@ header .search-button img{
   }
 }
 
-/* --- Safari Sidebar Zoom Fix --- */
+/* --- user_search: Safari zoom/viewport-safe sidebar --- */
+.page-search .sidebar{
+  position: fixed;
+  top: var(--header-h, 64px);   /* header height token you already use */
+  bottom: 0;                    /* pin to bottom instead of calc() */
+  height: auto;                 /* let top/bottom drive the height */
+  overflow-y: auto;
+}
+
+/* iOS/Safari viewport unit quirks (address bar, zoom) */
 @supports (-webkit-touch-callout: none) {
-  .sidebar {
-    transform: scale(1.333);          /* scales sidebar proportionally when zoomed out */
-    transform-origin: top left;       /* anchor scaling at top-left corner */
+  .page-search .sidebar{
+    min-height: calc(100dvh - var(--header-h, 64px));  /* dvh tracks dynamic viewport */
   }
 }
