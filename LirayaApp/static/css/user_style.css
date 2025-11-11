@@ -2386,12 +2386,31 @@ header .search-button img{
   }
 }
 
-/* ===== Tabs: About LIRAYA / Contact Us (2025-11-12) ===== */
-.about-tabs { display:flex; gap:.5rem; margin-bottom:1rem; align-items:center; flex-wrap:wrap; }
-.tab-btn { appearance:none; border:1px solid #d7dce3; background:#f6f8fb; color:#1e2a3a; padding:.55rem .9rem; border-radius:10px; font-weight:600; font-size:.95rem; line-height:1; cursor:pointer; transition:background .18s, box-shadow .18s, border-color .18s, transform .12s; }
-.tab-btn:hover { background:#eef2f7; box-shadow:0 2px 8px rgba(20,35,60,.08); }
-.tab-btn:active { transform:translateY(1px); }
-.tab-btn.active { background:#1f4db8; color:#fff; border-color:#1f4db8; box-shadow:0 4px 14px rgba(31,77,184,.28); }
-.tab-panel[hidden] { display:none !important; }
-.liraya-left-content .tab-panel h1,
-.liraya-left-content .tab-panel h2 { margin-top:.6rem; }
+
+
+/* ===== Tabs: About LIRAYA / Contact Us (scoped) ===== */
+.about-us-container .about-tabs {
+  display: flex; gap: .5rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap;
+}
+
+.about-us-container .tab-btn {
+  appearance: none; border: 1px solid #d7dce3; background: #f6f8fb; color: #1e2a3a;
+  padding: .55rem .9rem; border-radius: 10px; font-weight: 600; font-size: .95rem; line-height: 1;
+  cursor: pointer; transition: background .18s, box-shadow .18s, border-color .18s, transform .12s;
+}
+.about-us-container .tab-btn:hover { background: #eef2f7; box-shadow: 0 2px 8px rgba(20,35,60,.08); }
+.about-us-container .tab-btn:active { transform: translateY(1px); }
+.about-us-container .tab-btn.active {
+  background: #1f4db8; color: #fff; border-color: #1f4db8; box-shadow: 0 4px 14px rgba(31,77,184,.28);
+}
+
+.about-us-container .tab-panel[hidden] { display: none !important; }
+
+/* Header resiliency */
+.liraya-header {
+  position: sticky; top: 0; z-index: 1000;
+  display: flex; justify-content: space-between; align-items: center;
+  background: #ffffff; /* adjust to your theme */ padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+}
+
