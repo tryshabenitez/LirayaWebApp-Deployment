@@ -405,30 +405,61 @@ def user_search(request):
                     Q(author__icontains=term) |
                     Q(primary_keyword__icontains=term)
                 )
-
+    
+        def is_reasonable_alt(base, alt):
+            """
+            Decide if 'alt' is worth showing in 'Also searching for'.
+            - Skip empty, identical, very short, or digit-containing variants.
+            - If base is purely alphabetic, alt must be purely alphabetic too.
+            """
+            base = (base or "").strip().lower()
+            alt  = (alt or "").strip().lower()
+    
+            if not base or not alt:
+                return False
+            if alt == base:
+                return False
+            if len(alt) <= 3:
+                return False
+    
+            # Drop anything with digits, e.g. 'computer13'
+            if any(ch.isdigit() for ch in alt):
+                return False
+    
+            # If the original term is alphabetic, ignore non-alphabetic variants
+            if base.isalpha() and not alt.isalpha():
+                return False
+    
+            return True
 
 
         def apply_field_filters(qs, field_name, toks):
-            """Apply icontains / regex across safer fuzzy variants per token."""
+            """Apply fuzzy variants per token + build clean 'Also searching for' list."""
             for t in toks:
-                # for very short tokens, skip fuzzy variants completely
-                if len(t) <= 3:
-                    variants = [t.lower()]
-                else:
-                    variants = fuzzy_variants(t, n=5)  # original first
+                t_norm = (t or "").strip().lower()
+                if not t_norm:
+                    continue
 
-                # remember extras for "Also searching for" only on longer tokens
-                if len(t) > 3:
-                    for v in variants[1:]:
-                        if v not in also_terms:
+                # For very short tokens, skip fuzzy; use the raw token only
+                if len(t_norm) <= 3:
+                    variants = [t_norm]
+                else:
+                    variants = fuzzy_variants(t_norm, n=5)  # original first
+
+                # Build 'Also searching for' only from *reasonable* longer variants
+                if len(t_norm) > 3:
+                    for v in variants[1:]:  # skip original at index 0
+                        if is_reasonable_alt(t_norm, v) and v not in also_terms:
                             also_terms.append(v)
 
+                # Build the OR Q for all variants (search behaviour can stay generous)
                 q_or = Q()
                 for v in variants:
                     q_or |= build_token_q(field_name, v)
 
                 qs = qs.filter(q_or)
             return qs
+
 
 
         if field == 'author':
