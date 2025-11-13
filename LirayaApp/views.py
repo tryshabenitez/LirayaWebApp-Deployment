@@ -199,10 +199,11 @@ def user_search(request):
     field = (request.GET.get('field') or "allFields").strip()
     sort_option = request.GET.get('sort', 'Relevance')
 
-    # Multiple-select facets: ALWAYS use getlist (no comma-joining!)
-    cats   = request.GET.getlist('active_categories') or []
-    rtypes = request.GET.getlist('active_resource_types') or []
-    subs   = request.GET.getlist('active_subjects') or []
+    # Multiple-select facets: strip out empty values coming from hidden inputs
+    cats   = [c.strip() for c in request.GET.getlist('active_categories') if c.strip()]
+    rtypes = [t.strip() for t in request.GET.getlist('active_resource_types') if t.strip()]
+    subs   = [s.strip() for s in request.GET.getlist('active_subjects') if s.strip()]
+
 
     # cast years defensively
     def _to_int_or_none(v):
