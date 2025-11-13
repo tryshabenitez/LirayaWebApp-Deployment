@@ -442,7 +442,7 @@ def user_search(request):
                     continue
 
                 # For very short tokens, skip fuzzy; use the raw token only
-                if len(t_norm) <= 4:
+                if len(t_norm) <= 7:
                     variants = [t_norm]
                 else:
                     variants = fuzzy_variants(t_norm, n=5)  # original first
