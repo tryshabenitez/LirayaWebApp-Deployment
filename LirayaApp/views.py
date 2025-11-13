@@ -365,31 +365,71 @@ def user_search(request):
         tokens = split_words(q)
         kw_tokens = split_keywords(q)
 
+        def build_token_q(field_name, term):
+            """
+            Build a Q() that is strict for short tokens (<=3 chars):
+            - use word-boundary regex so 'acu' does NOT match 'vacuum'
+            For longer tokens, fall back to icontains.
+            """
+            term = (term or "").strip()
+            if not term:
+                return Q()
+    
+            # short tokens: whole word only
+            if len(term) <= 3:
+                # word boundary; case-insensitive
+                pattern = r'\b' + _re.escape(term) + r'\b'
+                if field_name == 'keywords':
+                    return Q(primary_keyword__iregex=pattern)
+                elif field_name == 'title':
+                    return Q(title__iregex=pattern)
+                elif field_name == 'author':
+                    return Q(author__iregex=pattern)
+                else:  # allFields
+                    return (
+                        Q(title__iregex=pattern) |
+                        Q(author__iregex=pattern) |
+                        Q(primary_keyword__iregex=pattern)
+                    )
+    
+            # longer tokens: normal icontains
+            if field_name == 'keywords':
+                return Q(primary_keyword__icontains=term)
+            elif field_name == 'title':
+                return Q(title__icontains=term)
+            elif field_name == 'author':
+                return Q(author__icontains=term)
+            else:  # allFields
+                return (
+                    Q(title__icontains=term) |
+                    Q(author__icontains=term) |
+                    Q(primary_keyword__icontains=term)
+                )
+
+
+
         def apply_field_filters(qs, field_name, toks):
-            """Apply icontains across (safer) fuzzy variants per token."""
+            """Apply icontains / regex across safer fuzzy variants per token."""
             for t in toks:
-                variants = fuzzy_variants(t, n=5)  # original first
-                # remember extras for "Also searching for"
-                for v in variants[1:]:
-                    if v not in also_terms:
-                        also_terms.append(v)
+                # for very short tokens, skip fuzzy variants completely
+                if len(t) <= 3:
+                    variants = [t.lower()]
+                else:
+                    variants = fuzzy_variants(t, n=5)  # original first
+
+                # remember extras for "Also searching for" only on longer tokens
+                if len(t) > 3:
+                    for v in variants[1:]:
+                        if v not in also_terms:
+                            also_terms.append(v)
 
                 q_or = Q()
                 for v in variants:
-                    if field_name == 'keywords':
-                        q_or |= Q(primary_keyword__icontains=v)
-                    elif field_name == 'title':
-                        q_or |= Q(title__icontains=v)
-                    elif field_name == 'author':
-                        q_or |= Q(author__icontains=v)
-                    else:  # allFields
-                        q_or |= (
-                            Q(title__icontains=v) |
-                            Q(author__icontains=v) |
-                            Q(primary_keyword__icontains=v)
-                        )
+                    q_or |= build_token_q(field_name, v)
+
                 qs = qs.filter(q_or)
             return qs
+
 
         if field == 'author':
             books = apply_field_filters(books, 'author', tokens or kw_tokens)
@@ -431,10 +471,18 @@ def user_search(request):
     if subs:
         q_or = Q()
         for s_term in subs:
-            for v in fuzzy_variants(s_term, n=5):
-                q_or |= Q(primary_keyword__icontains=v)
+            # no fuzzy for very short subjects
+            if len(s_term) <= 3:
+                variants = [s_term.lower()]
+            else:
+                variants = fuzzy_variants(s_term, n=5)
+
+            for v in variants:
+                q_or |= build_token_q('keywords', v)
+
         if q_or:
             books = books.filter(q_or)
+
 
     # ===============================
     #           SORT
