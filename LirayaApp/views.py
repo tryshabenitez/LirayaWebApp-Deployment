@@ -408,54 +408,81 @@ def user_search(request):
 
         def build_token_q(field_name, term):
             """
-            Build a Q() that is strict for short tokens:
-            - For KEYWORDS:
-                * if len(term) < 7: require 1:1 whole-word match (no substring)
+            Build a Q() that enforces the following rules:
+        
+            - KEYWORDS:
+                * if len(term) < 7: require 1:1 whole-word match (iregex)
                 * else:             allow icontains
-            - For other fields:
-                * if len(term) <= 3: word-boundary regex (avoid 'acu' in 'vacuum')
+        
+            - TITLE / AUTHOR:
+                * if len(term) <= 3: whole-word iregex
                 * else:              icontains
+        
+            - ALL FIELDS:
+                * Apply keyword rules to keywords:
+                    - <7 letters = 1:1 whole-word match
+                    - >=7 letters = icontains
+                * Apply normal title/author rules based on length
             """
+        
             term = (term or "").strip()
             if not term:
                 return Q()
         
-            # --- KEYWORDS: strong 1:1 behaviour for short terms ---
+            # ================================
+            #      KEYWORDS (direct search)
+            # ================================
             if field_name == 'keywords':
                 if len(term) < 7:
-                    # whole word only, case-insensitive
+                    # strict whole-word
                     pattern = r'\b' + _re.escape(term) + r'\b'
                     return Q(primary_keyword__iregex=pattern)
                 else:
-                    # longer tokens can use icontains
                     return Q(primary_keyword__icontains=term)
         
-            # --- TITLE / AUTHOR / ALL FIELDS ---
-            # short tokens (<=3 chars): whole word only
-            if len(term) <= 3:
-                pattern = r'\b' + _re.escape(term) + r'\b'
-                if field_name == 'title':
-                    return Q(title__iregex=pattern)
-                elif field_name == 'author':
-                    return Q(author__iregex=pattern)
-                else:  # allFields
-                    return (
-                        Q(title__iregex=pattern) |
-                        Q(author__iregex=pattern) |
-                        Q(primary_keyword__iregex=pattern)
-                    )
-        
-            # longer tokens (>=4 chars): normal icontains elsewhere
+            # ================================
+            #       TITLE / AUTHOR ONLY
+            # ================================
             if field_name == 'title':
-                return Q(title__icontains=term)
-            elif field_name == 'author':
-                return Q(author__icontains=term)
-            else:  # allFields
+                if len(term) <= 3:
+                    pattern = r'\b' + _re.escape(term) + r'\b'
+                    return Q(title__iregex=pattern)
+                else:
+                    return Q(title__icontains=term)
+        
+            if field_name == 'author':
+                if len(term) <= 3:
+                    pattern = r'\b' + _re.escape(term) + r'\b'
+                    return Q(author__iregex=pattern)
+                else:
+                    return Q(author__icontains=term)
+        
+            # ================================
+            #       ALL FIELDS (title, author, keywords)
+            # ================================
+            # --- KEYWORDS part: apply SAME RULES as field="keywords" ---
+            if len(term) < 7:
+                kw_pattern = r'\b' + _re.escape(term) + r'\b'
+                keyword_q = Q(primary_keyword__iregex=kw_pattern)
+            else:
+                keyword_q = Q(primary_keyword__icontains=term)
+        
+            # --- TITLE / AUTHOR part ---
+            if len(term) <= 3:
+                # whole-word for short tokens
+                short_pattern = r'\b' + _re.escape(term) + r'\b'
                 return (
-                    Q(title__icontains=term) |
-                    Q(author__icontains=term) |
-                    Q(primary_keyword__icontains=term)
+                    Q(title__iregex=short_pattern) |
+                    Q(author__iregex=short_pattern) |
+                    keyword_q
                 )
+        
+            # longer terms: substring allowed
+            return (
+                Q(title__icontains=term) |
+                Q(author__icontains=term) |
+                keyword_q
+            )
 
 
     
