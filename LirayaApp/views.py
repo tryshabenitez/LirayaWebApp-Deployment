@@ -59,6 +59,8 @@ from django.contrib.auth import update_session_auth_hash
 from spellchecker import SpellChecker
 from django.views.decorators.csrf import csrf_exempt
 import requests
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django.http import JsonResponse
 from difflib import get_close_matches
 from collections import Counter
@@ -224,26 +226,50 @@ def user_search(request):
     # ===============================
     #        FUZZY (difflib)
     # ===============================
-    def split_words(s):
+    # --- Token helpers: logging vs. search ---
+
+    def split_words_logging(s):
         """
-        Split query string into alphanumeric words only.
-        Removes stopwords and ignores isolated punctuation like '-' or '.'.
+        Original behavior for KeywordLog:
+        - strip punctuation (incl. '-', '–', ',')
+        - log only clean alphanumeric tokens
         """
         raw = (s or '').replace(',', ' ').split()
         out = []
         for w in raw:
             w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
-            if not w or w in {'-', '–', '_'}:
+            if not w or w in {'-', '–', '_', '—'}:
                 continue
             wl = w.lower()
             if wl not in STOPWORDS:
                 out.append(wl)
         return out
 
+    def split_words_search(s):
+        """
+        Search-focused tokenizer:
+        - keeps '-', en/em dash, and comma *inside* tokens
+        - trims leading/trailing commas
+        - avoids splitting 'pre-test' into 'pre' + 'test'
+        """
+        raw = (s or '').split()
+        out = []
+        for w in raw:
+            # keep -, en dash, em dash, comma
+            w = _re.sub(r'[^A-Za-z0-9,\-\u2013\u2014]', '', w)
+            # drop stray leading/trailing commas (e.g., 'color,' -> 'color')
+            w = w.strip(',').strip()
+            if not w or w in {'-', '–', '_', '—'}:
+                continue
+            wl = w.lower()
+            if wl not in STOPWORDS:
+                out.append(w)
+        return out
+
     def split_keywords(s):
         """
-        Split comma-separated keywords into clean alphanumeric tokens.
-        Removes punctuation-only tokens and stopwords.
+        Split comma-separated keywords into tokens for facets/search,
+        preserving '-', en dash, and em dash inside tokens.
         """
         out = []
         for chunk in (s or '').split(','):
@@ -251,13 +277,14 @@ def user_search(request):
             if not chunk:
                 continue
             for w in chunk.split():
-                w = _re.sub(r'[^A-Za-z0-9]', '', w).strip()
-                if not w or w in {'-', '–', '_'}:
+                w = _re.sub(r'[^A-Za-z0-9\-\u2013\u2014]', '', w).strip().strip(',')
+                if not w or w in {'-', '–', '_', '—'}:
                     continue
                 wl = w.lower()
                 if wl not in STOPWORDS:
-                    out.append(wl)
+                    out.append(w)
         return out
+
 
     def build_reference_vocab(row_limit=20000):
         """
@@ -331,7 +358,7 @@ def user_search(request):
     if q and q.strip():
         try:
             corrected_terms = []
-            for token in split_words(q):
+            for token in split_words_logging(q):
                 variants = fuzzy_variants(token, n=1, cutoff=0.85)  # a bit stricter for logging
                 if variants:
                     corrected = variants[0].lower()
@@ -361,28 +388,53 @@ def user_search(request):
     #           SEARCH
     # ===============================
     also_terms = []  # collect fuzzy extras to show in the UI
+    highlight_tokens = []
 
     if q:
-        tokens = split_words(q)
+        tokens = split_words_search(q)
         kw_tokens = split_keywords(q)
+
+        # Normalize/dedupe tokens for highlighting (but keep original case for later use)
+        seen = set()
+        norm_tokens = []
+        for raw in tokens:
+            base = (raw or '').strip().strip(',').lower()
+            if not base or base in STOPWORDS or len(base) < 2:
+                continue
+            if base not in seen:
+                seen.add(base)
+                norm_tokens.append(raw)
+        highlight_tokens = norm_tokens
 
         def build_token_q(field_name, term):
             """
-            Build a Q() that is strict for short tokens (<=3 chars):
-            - use word-boundary regex so 'acu' does NOT match 'vacuum'
-            For longer tokens, fall back to icontains.
+            Build a Q() that is strict for short tokens:
+            - For KEYWORDS:
+                * if len(term) < 7: require 1:1 whole-word match (no substring)
+                * else:             allow icontains
+            - For other fields:
+                * if len(term) <= 3: word-boundary regex (avoid 'acu' in 'vacuum')
+                * else:              icontains
             """
             term = (term or "").strip()
             if not term:
                 return Q()
-    
-            # short tokens: whole word only
-            if len(term) <= 3:
-                # word boundary; case-insensitive
-                pattern = r'\b' + _re.escape(term) + r'\b'
-                if field_name == 'keywords':
+        
+            # --- KEYWORDS: strong 1:1 behaviour for short terms ---
+            if field_name == 'keywords':
+                if len(term) < 7:
+                    # whole word only, case-insensitive
+                    pattern = r'\b' + _re.escape(term) + r'\b'
                     return Q(primary_keyword__iregex=pattern)
-                elif field_name == 'title':
+                else:
+                    # longer tokens can use icontains
+                    return Q(primary_keyword__icontains=term)
+        
+            # --- TITLE / AUTHOR / ALL FIELDS ---
+            # short tokens (<=3 chars): whole word only
+            if len(term) <= 3:
+                pattern = r'\b' + _re.escape(term) + r'\b'
+                if field_name == 'title':
                     return Q(title__iregex=pattern)
                 elif field_name == 'author':
                     return Q(author__iregex=pattern)
@@ -392,11 +444,9 @@ def user_search(request):
                         Q(author__iregex=pattern) |
                         Q(primary_keyword__iregex=pattern)
                     )
-    
-            # longer tokens: normal icontains
-            if field_name == 'keywords':
-                return Q(primary_keyword__icontains=term)
-            elif field_name == 'title':
+        
+            # longer tokens (>=4 chars): normal icontains elsewhere
+            if field_name == 'title':
                 return Q(title__icontains=term)
             elif field_name == 'author':
                 return Q(author__icontains=term)
@@ -406,6 +456,8 @@ def user_search(request):
                     Q(author__icontains=term) |
                     Q(primary_keyword__icontains=term)
                 )
+
+
     
         def is_reasonable_alt(base, alt):
             """
@@ -433,6 +485,77 @@ def user_search(request):
     
             return True
 
+        # ===============================
+        #        HIGHLIGHTING
+        # ===============================
+        def build_highlight_fn(style, tokens):
+            """
+            style:
+              - 'keywords' => BOLD + ALL CAPS for matched tokens
+              - 'title'    => italic for matched tokens
+              - 'author'   => bold for matched tokens
+            We:
+            - match case-insensitively
+            - treat an optional trailing 's' as part of the match (color/colors)
+            - escape non-matched text before injecting HTML
+            """
+            # Build regex for the query tokens
+            patterns = []
+            for raw in tokens or []:
+                base = (raw or '').strip().strip(',').lower()
+                if not base or base in STOPWORDS or len(base) < 2:
+                    continue
+                # simple plural support: color -> color / colors
+                if base.endswith('s'):
+                    patterns.append(_re.escape(base))
+                else:
+                    patterns.append(_re.escape(base) + 's?')
+    
+            if not patterns:
+                return lambda text: text or ''
+    
+            pattern = _re.compile(r'\b(' + '|'.join(patterns) + r')\b', _re.IGNORECASE)
+    
+            def apply(text):
+                if not text:
+                    return ''
+                result = []
+                last = 0
+                s = text
+    
+                for m in pattern.finditer(s):
+                    start, end = m.span()
+                    # non-matched segment
+                    if start > last:
+                        result.append(escape(s[last:start]))
+    
+                    token = m.group(0)
+                    esc_token = escape(token)
+    
+                    if style == 'keywords':
+                        # BOLD + ALL CAPS
+                        repl = f"<strong>{esc_token.upper()}</strong>"
+                    elif style == 'title':
+                        # italic, keep original case
+                        repl = f"<em>{esc_token}</em>"
+                    elif style == 'author':
+                        # bold, keep original case
+                        repl = f"<strong>{esc_token}</strong>"
+                    else:
+                        repl = esc_token
+    
+                    result.append(repl)
+                    last = end
+    
+                # tail segment
+                if last < len(s):
+                    result.append(escape(s[last:]))
+    
+                return mark_safe(''.join(result))
+    
+            return apply
+
+
 
         def apply_field_filters(qs, field_name, toks):
             """Apply fuzzy variants per token + build clean 'Also searching for' list."""
@@ -442,7 +565,7 @@ def user_search(request):
                     continue
 
                 # For very short tokens, skip fuzzy; use the raw token only
-                if len(t_norm) <= 7:
+                if len(t_norm) <= 3:
                     variants = [t_norm]
                 else:
                     variants = fuzzy_variants(t_norm, n=5)  # original first
@@ -568,6 +691,24 @@ def user_search(request):
 
     current_page = books_page.number
     total_pages = paginator.num_pages
+
+    # ===============================
+    #     APPLY HIGHLIGHTING
+    # ===============================
+    kw_highlighter     = build_highlight_fn('keywords', highlight_tokens)
+    title_highlighter  = build_highlight_fn('title',    highlight_tokens)
+    author_highlighter = build_highlight_fn('author',   highlight_tokens)
+
+    for b in books_page:
+        # Keywords: BOLD + ALL CAPS for matched tokens
+        b.highlighted_keywords = kw_highlighter(getattr(b, 'primary_keyword', '') or '')
+
+        # Title: already styled as a title; just italicize matched parts
+        b.highlighted_title = title_highlighter(getattr(b, 'title', '') or '')
+
+        # Author: bold matched parts in the author string
+        b.highlighted_author = author_highlighter(getattr(b, 'author', '') or '')
+
 
     # ===============================
     #           CONTEXT
