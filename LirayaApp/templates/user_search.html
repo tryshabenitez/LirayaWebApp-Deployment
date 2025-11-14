@@ -202,17 +202,35 @@
   {% for book in books %}
     <div class="book-info" data-shelf-category="{{ book.shelf_category }}" data-resource-type="{{ book.book_type }}">
       <div class="book-details">
-        <h2 class="book-title">{{ book.title }}</h2>
-        <p><strong>Author:</strong> {{ book.author }}</p>
+        <h2 class="book-title">
+          {% if book.highlighted_title %}
+            {{ book.highlighted_title|safe }}
+          {% else %}
+            {{ book.title }}
+          {% endif %}
+        </h2>
+        <p>
+          <strong>Author:</strong>
+          {% if book.highlighted_author %}
+            {{ book.highlighted_author|safe }}
+          {% else %}
+            {{ book.author }}
+          {% endif %}
+        </p>
         <p><strong>Published Year:</strong> {{ book.year_of_publication }}</p>
 
         <p><strong>Keywords:</strong></p>
         <div class="keywords-container">
           <span class="keywords" id="keywords-{{ book.book_id }}">
-            {{ book.primary_keyword }}
+            {% if book.highlighted_keywords %}
+              {{ book.highlighted_keywords|safe }}
+            {% else %}
+              {{ book.primary_keyword }}
+            {% endif %}
           </span>
           <button class="kw_see_more" onclick="toggleKeywords({{ book.book_id }}, this)">See More</button>
         </div>
+
 
         <a href="{% url 'user_viewinfo' %}?book_id={{ book.book_id }}{% if qs_no_book %}&{{ qs_no_book }}{% endif %}">
           <button class="view-info-btn">View Information</button>
