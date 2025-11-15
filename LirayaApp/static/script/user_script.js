@@ -1046,20 +1046,38 @@ document.addEventListener('DOMContentLoaded', function () {
   const applyBtn     = document.querySelector('.year-button');    // "Apply Year Filter"
   const refineHdr    = document.querySelector('.refine-search');  // "Refine Search Results"
 
-  // --- Always show overlay on form submits (sidebar & header search)
-  document.querySelectorAll('.sidebar form, form.search-form').forEach(form => {
+  // --- Wire filter confirmation modal once ---
+  wireFilterConfirmModalHandlers();
+
+  // --- Always show overlay on sidebar form submits (sort, etc.) ---
+  document.querySelectorAll('.sidebar form').forEach(form => {
     form.addEventListener('submit', () => {
       showLoadingOverlay();
     }, { capture: true });
   });
-  
-  // --- Specifically show overlay when sidebar sort changes (it auto-submits)
+
+  // --- Header search: confirm if filters are active ---
+  const headerSearchForm = document.querySelector('header form.search-form');
+  if (headerSearchForm) {
+    headerSearchForm.addEventListener('submit', (e) => {
+      // Only intercept when there are active filters in the URL
+      if (hasActiveFiltersForConfirm()) {
+        e.preventDefault();
+        openFilterConfirmModal(headerSearchForm);
+      } else {
+        showLoadingOverlay();
+      }
+    }, { capture: true });
+  }
+
+  // --- Specifically show overlay when sidebar sort changes (it auto-submits) ---
   const sidebarSort = document.getElementById('sidebar-sort');
   if (sidebarSort) {
     sidebarSort.addEventListener('change', () => {
       showLoadingOverlay(); // form will submit via onchange attribute
     });
   }
+
 
 
   bindClickHover(minYearInput);
