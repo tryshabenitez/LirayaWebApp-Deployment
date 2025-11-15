@@ -390,6 +390,13 @@ def user_search(request):
     also_terms = []  # collect fuzzy extras to show in the UI
     highlight_tokens = []
 
+        # Fallback highlighter so blank/ignored queries don't break the view
+    def build_highlight_fn(style, tokens):
+        def _no_highlight(text):
+            return text or ""
+        return _no_highlight
+
+
     if q:
         tokens = split_words_search(q)
         kw_tokens = split_keywords(q)
