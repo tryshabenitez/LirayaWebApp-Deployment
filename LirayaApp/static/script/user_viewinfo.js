@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
       .map(normalizeNAToken)
       .filter(Boolean);
 
-    // Dedupe authors (so multiple N/A collapse to one)
+    // Dedupe authors (so multiple identical entries collapse to one)
     const seen = new Set();
     authorList = authorList.filter(a => {
       const key = a.toLowerCase();
@@ -162,6 +162,13 @@ document.addEventListener('DOMContentLoaded', function () {
       seen.add(key);
       return true;
     });
+
+    // If the remaining "authors" are effectively N/A / NA / NONE / blank, treat as no authors
+    const hasRealAuthors = authorList.some(a => !isNAField(a));
+    if (!hasRealAuthors) {
+      authorList = [];
+    }
+
 
     // Strings for rendering
     const apaAuthorsStr = formatApaAuthorList(authorList);   // APA initials; "N/A" stays "N/A"
