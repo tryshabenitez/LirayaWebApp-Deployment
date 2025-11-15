@@ -247,6 +247,36 @@
   {% endfor %}
 </div>
 
+<!-- Filter confirmation modal -->
+<div id="filter-confirm-modal" style="display:none;">
+  <div class="filter-modal-backdrop"></div>
+  <div class="filter-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="filter-modal-title">
+    <button type="button" class="filter-modal-close" aria-label="Close">&times;</button>
+    <h2 id="filter-modal-title" class="filter-modal-title">
+      You still have filters turned on
+    </h2>
+    <p class="filter-modal-body">
+      You’re about to run a new search while your existing filters are still applied.  
+      How would you like to continue?
+    </p>
+
+    <div class="filter-modal-summary">
+      <strong>Filters used:</strong>
+      <ul id="filter-summary-list"></ul>
+    </div>
+
+    <div class="filter-modal-actions">
+      <button type="button" id="filter-search-with" class="filter-modal-btn primary">
+        Search with filters
+      </button>
+      <button type="button" id="filter-search-without" class="filter-modal-btn">
+        Search without filters
+      </button>
+    </div>
+  </div>
+</div>
+
+  
 <!-- Pagination (JS renders to preserve repeated params cleanly) -->
 <div class="pagination" id="pagination-top"></div>
 
