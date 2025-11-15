@@ -887,6 +887,150 @@ function bindClickHover(el, { className = 'is-click-hover', duration = 900 } = {
   });
 }
 
+// ===== Header search: filter confirmation =====
+let _pendingHeaderSearchForm = null;
+
+function collectActiveFilterSummary() {
+  const params = new URLSearchParams(window.location.search);
+  const summary = [];
+
+  const cats   = params.getAll('active_categories');
+  const rtypes = params.getAll('active_resource_types');
+  const subs   = params.getAll('active_subjects');
+  const minY   = params.get('min_year');
+  const maxY   = params.get('max_year');
+
+  if (cats.length) {
+    summary.push('Shelf Category: ' + cats.join(', '));
+  }
+  if (rtypes.length) {
+    summary.push('Resource Type: ' + rtypes.join(', '));
+  }
+  if (subs.length) {
+    summary.push('Subjects / Keywords: ' + subs.join(', '));
+  }
+
+  const minInt = minY ? parseInt(minY, 10) : null;
+  const maxInt = maxY ? parseInt(maxY, 10) : null;
+  const hasYear =
+    (minInt && !isNaN(minInt) && minInt !== YEAR_MIN) ||
+    (maxInt && !isNaN(maxInt) && maxInt !== YEAR_MAX);
+
+  if (hasYear) {
+    let label = 'Year of Publication: ';
+    if (minY) label += `from ${minY} `;
+    if (maxY) label += (minY ? 'to ' : 'up to ') + maxY;
+    summary.push(label.trim());
+  }
+
+  return summary;
+}
+
+function hasActiveFiltersForConfirm() {
+  return collectActiveFilterSummary().length > 0;
+}
+
+function openFilterConfirmModal(form) {
+  const modal = document.getElementById('filter-confirm-modal');
+  if (!modal) {
+    // Fallback: if modal missing, proceed as normal
+    showLoadingOverlay();
+    form.submit();
+    return;
+  }
+
+  const summaryList = document.getElementById('filter-summary-list');
+  const summary = collectActiveFilterSummary();
+
+  // If for some reason there are no filters, just submit
+  if (!summary.length) {
+    showLoadingOverlay();
+    form.submit();
+    return;
+  }
+
+  _pendingHeaderSearchForm = form;
+  summaryList.innerHTML = '';
+  summary.forEach(text => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    summaryList.appendChild(li);
+  });
+
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFilterConfirmModal() {
+  const modal = document.getElementById('filter-confirm-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  document.body.style.overflow = '';
+}
+
+function wireFilterConfirmModalHandlers() {
+  const modal = document.getElementById('filter-confirm-modal');
+  if (!modal) return;
+
+  const withBtn    = document.getElementById('filter-search-with');
+  const withoutBtn = document.getElementById('filter-search-without');
+  const backdrop   = modal.querySelector('.filter-modal-backdrop');
+  const closeBtn   = modal.querySelector('.filter-modal-close');
+
+  if (withBtn) {
+    withBtn.addEventListener('click', () => {
+      const form = _pendingHeaderSearchForm;
+      _pendingHeaderSearchForm = null;
+      closeFilterConfirmModal();
+      if (!form) return;
+      showLoadingOverlay();
+      form.submit();
+    });
+  }
+
+  if (withoutBtn) {
+    withoutBtn.addEventListener('click', () => {
+      const form = _pendingHeaderSearchForm;
+      _pendingHeaderSearchForm = null;
+      closeFilterConfirmModal();
+      if (!form) return;
+
+      // Build URL without facet filters
+      const fd = new FormData(form);
+      const params = new URLSearchParams(fd);
+      ['active_categories', 'active_resource_types', 'active_subjects', 'min_year', 'max_year', 'page']
+        .forEach(k => params.delete(k));
+
+      const url = form.action + (params.toString() ? '?' + params.toString() : '');
+      showLoadingOverlay();
+      window.location.href = url;
+    });
+  }
+
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      _pendingHeaderSearchForm = null;
+      closeFilterConfirmModal();
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      _pendingHeaderSearchForm = null;
+      closeFilterConfirmModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'block') {
+      _pendingHeaderSearchForm = null;
+      closeFilterConfirmModal();
+    }
+  });
+}
+
+
 document.addEventListener('DOMContentLoaded', function () {
   // --- Pagination + summary ---
   if (paginationDataEl) updatePagination();
