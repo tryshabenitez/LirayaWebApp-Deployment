@@ -83,6 +83,7 @@ import pytz
 import matplotlib
 matplotlib.use('Agg') 
 from dateutil.relativedelta import relativedelta
+from urllib.parse import urlparse
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -3790,21 +3791,29 @@ def librarian_view_details(request, book_id):
                 if 'book_cover' in request.FILES:
                     book_cover = request.FILES['book_cover']
                     try:
-                        # Delete old cover from Cloudinary if exists
+                        # Best-effort: try to delete old cover from Cloudinary if it looks like a Cloudinary URL
                         if book.book_cover:
-                            public_id = book.book_cover.name.split('/')[-1].split('.')[0]
-                            destroy(public_id)
-                
+                            try:
+                                parsed = urlparse(str(book.book_cover))
+                                path = parsed.path or ''
+                                filename = path.rstrip('/').split('/')[-1]
+                                public_id = filename.rsplit('.', 1)[0]
+                                destroy(public_id)
+                            except Exception:
+                                # Ignore deletion errors; continue to upload new cover
+                                pass
+
                         # Upload new cover to Cloudinary
                         cloudinary_response = upload(book_cover)
-                        book.book_cover = cloudinary_response['secure_url']  # Save secure URL
-                
+                        # Prefer secure_url but fall back to url
+                        book.book_cover = cloudinary_response.get('secure_url') or cloudinary_response.get('url') or book.book_cover
+
                     except Exception as e:
                         messages.error(request, f"Error uploading book cover: {e}")
                         return JsonResponse({'success': False, 'message': f"Error uploading book cover: {str(e)}"}, status=500)
                         
             book.save()
-            return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
+            return JsonResponse({'success': True, 'message': 'Book details updated successfully!', 'book_cover': book.book_cover})
 
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
@@ -3817,6 +3826,7 @@ def librarian_view_details(request, book_id):
         'department_categories': department_categories, 
     }
     return render(request, 'librarian_ViewDetails.html', context)
+
 
 
 @csrf_exempt
