@@ -3876,7 +3876,6 @@ def librarian_addbook(request):
         'DEPARTMENT OF ENGINEERING (DOE)',
         'DEPARTMENT OF INDUSTRIAL EDUCATION (DED)',
         'DEPARTMENT OF INDUSTRIAL TECHNOLOGY (DIT)',
-        'OFFICE OF STUDENT AFFAIRS (OSA)'
     ]
 
     # Fetch all categories for LIBRARIAN or restrict for DEPARTMENT
