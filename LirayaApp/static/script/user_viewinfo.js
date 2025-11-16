@@ -951,3 +951,168 @@ document.addEventListener('DOMContentLoaded', initQrCode);
     return list.map(a => restoreNA(a).trim());
   };
 })();
+
+
+// === ADD-ONLY PATCH: restore original title casing for APA citation ===
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    const citeBtn = document.getElementById('cite-btn');
+    const metaEl  = document.getElementById('book-meta');
+    const bodyEl  = document.getElementById('cite-modal-body');
+
+    if (!citeBtn || !metaEl || !bodyEl) return;
+
+    // Run AFTER the existing click handler builds the citations
+    citeBtn.addEventListener('click', function () {
+      // Small async defer so the original openCiteModal finished updating DOM
+      setTimeout(function () {
+        const rawTitle = (metaEl.dataset.title || '').trim();
+        if (!rawTitle) return;
+
+        // First citation block inside the cite modal is the APA block
+        const apaBlock = bodyEl.querySelector('div');
+        if (!apaBlock) return;
+
+        // Replace any <em> in the APA block with the original title text
+        const emEls = apaBlock.querySelectorAll('em');
+        if (!emEls.length) return;
+
+        emEls.forEach(function (el) {
+          el.textContent = rawTitle;
+        });
+      }, 0);
+    });
+  });
+})();
+
+
+// === ADD-ONLY WRAP: clean numeric-only / hyphen-fragment "keywords" in page index ===
+(function () {
+  const baseParsePairs =
+    (typeof window !== 'undefined' && window.parsePairs)
+      ? window.parsePairs
+      : (typeof parsePairs === 'function' ? parsePairs : null);
+
+  if (!baseParsePairs) return;
+
+  function appendPages(target, extra) {
+    const extraTrimmed = String(extra || '').trim();
+    if (!extraTrimmed) return;
+
+    if (!target.pages || target.pages === '—') {
+      target.pages = extraTrimmed;
+      return;
+    }
+    // Conservative: just append; we avoid aggressive deduping
+    target.pages += ', ' + extraTrimmed;
+  }
+
+  // e.g. "349" or "330-349"
+  function isPureNumericOrRange(s) {
+    const v = String(s || '').trim();
+    return /^\d+(?:\s*[-–—]\s*\d+)?$/.test(v);
+  }
+
+  // e.g. "-349" or "- 349"
+  function isHyphenNumeric(s) {
+    const v = String(s || '').trim();
+    return /^-\s*\d+$/.test(v);
+  }
+
+  // e.g. "486-" or "486 -"
+  function isNumericTrailingHyphen(s) {
+    const v = String(s || '').trim();
+    return /^\d+\s*-$/.test(v);
+  }
+
+  // e.g. "-" or "—"
+  function isJustHyphen(s) {
+    const v = String(s || '').trim();
+    return v === '-' || v === '—';
+  }
+
+  function extractLeadingDigits(s) {
+    const v = String(s || '');
+    const m = v.match(/^(\d+)/);
+    return m ? m[1] : '';
+  }
+
+  window.parsePairs = function (text) {
+    const rawPairs = baseParsePairs(text) || [];
+    if (!rawPairs.length) return rawPairs;
+
+    const cleaned = [];
+
+    for (const p of rawPairs) {
+      const kRaw = String(p.keyword || '').trim();
+      const pagesRaw = String(p.pages || '').trim();
+
+      // Nothing before this: if the "keyword" is just numeric noise, drop it
+      if (
+        !cleaned.length &&
+        (isPureNumericOrRange(kRaw) ||
+         isHyphenNumeric(kRaw) ||
+         isNumericTrailingHyphen(kRaw) ||
+         isJustHyphen(kRaw))
+      ) {
+        continue;
+      }
+
+      // Case 1: "349" / "330-349" as a fake standalone row → attach to previous
+      if (cleaned.length && isPureNumericOrRange(kRaw)) {
+        const prev = cleaned[cleaned.length - 1];
+        const composite =
+          pagesRaw && pagesRaw !== '—'
+            ? kRaw + ', ' + pagesRaw
+            : kRaw;
+        appendPages(prev, composite);
+        continue;
+      }
+
+      // Case 2: "-349" row → treat "349" as page(s) for previous keyword
+      if (cleaned.length && isHyphenNumeric(kRaw)) {
+        const prev = cleaned[cleaned.length - 1];
+        const digitPart = kRaw.replace(/^\s*-\s*/, '');
+        const composite =
+          pagesRaw && pagesRaw !== '—'
+            ? digitPart + ', ' + pagesRaw
+            : digitPart;
+        appendPages(prev, composite);
+        continue;
+      }
+
+      // Case 3: "486-" row → treat "486" as page(s) for previous keyword
+      if (cleaned.length && isNumericTrailingHyphen(kRaw)) {
+        const prev = cleaned[cleaned.length - 1];
+        const digitPart = extractLeadingDigits(kRaw);
+        if (digitPart) {
+          const composite =
+            pagesRaw && pagesRaw !== '—'
+              ? digitPart + ', ' + pagesRaw
+              : digitPart;
+          appendPages(prev, composite);
+        } else if (pagesRaw && pagesRaw !== '—') {
+          appendPages(prev, pagesRaw);
+        }
+        continue;
+      }
+
+      // Case 4: bare "-" / "—" row → just fold its pages into previous
+      if (cleaned.length && isJustHyphen(kRaw)) {
+        const prev = cleaned[cleaned.length - 1];
+        if (pagesRaw && pagesRaw !== '—') {
+          appendPages(prev, pagesRaw);
+        }
+        continue;
+      }
+
+      // Normal row → keep as-is
+      cleaned.push({
+        keyword: kRaw,
+        pages: pagesRaw || '—'
+      });
+    }
+
+    return cleaned;
+  };
+})();
