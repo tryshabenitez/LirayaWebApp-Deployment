@@ -496,24 +496,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
       function isPureNumericOrRange(s) {
         const v = String(s || '').trim();
-        // "349" or "330-349" (and dash variants)
-        return /^\d+(?:\s*[-–—]\s*\d+)?$/.test(v);
+        // "349", "330-349", "330–349", optionally with trailing "."
+        return /^\d+(?:\s*[-–—]\s*\d+)?\.?$/.test(v);
       }
 
       function isHyphenNumeric(s) {
         const v = String(s || '').trim();
-        // "-349" / "- 349"
-        return /^-\s*\d+$/.test(v);
+        // "-349", "- 349", "-349.", "- 349."
+        return /^-+\s*\d+\.?$/.test(v);
       }
 
       function isNumericTrailingHyphen(s) {
         const v = String(s || '').trim();
-        // "486-" / "486 -"
-        return /^\d+\s*-$/.test(v);
+        // "486-", "486 -", "486-.", "486 -."
+        return /^\d+\s*-\s*\.?$/.test(v);
       }
 
       function isJustHyphen(s) {
-        const v = String(s || '').trim();
+        // Treat ",-", "-.", ",-." etc. as just hyphen noise
+        const v = String(s || '').trim().replace(/[.,]/g, '');
         return v === '-' || v === '—';
       }
 
@@ -536,7 +537,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const cleaned = [];
 
       for (const p of pairs) {
-        const k = String(p.keyword || '').trim();
+        const kRaw  = p.keyword != null ? String(p.keyword) : '';
+        const k     = kRaw.trim();
         const pages = String(p.pages || '').trim();
 
         // If first row is just numeric/hyphen noise, drop it
@@ -553,18 +555,21 @@ document.addEventListener('DOMContentLoaded', function () {
         // Case 1: "349" / "330-349" row → treat as extra pages for previous keyword
         if (cleaned.length && isPureNumericOrRange(k)) {
           const prev = cleaned[cleaned.length - 1];
+          const base = k.replace(/\.$/, ''); // strip trailing dot
           const composite =
             pages && pages !== '—'
-              ? k + ', ' + pages
-              : k;
+              ? base + ', ' + pages
+              : base;
           appendPages(prev, composite);
           continue;
         }
 
-        // Case 2: "-349" row → treat "349" as pages of previous keyword
+        // Case 2: "-349" / "-349." row → treat "349" as pages of previous keyword
         if (cleaned.length && isHyphenNumeric(k)) {
           const prev = cleaned[cleaned.length - 1];
-          const digitPart = k.replace(/^\s*-\s*/, '');
+          const digitPart = k
+            .replace(/^\s*-+\s*/, '')
+            .replace(/\.$/, '');
           const composite =
             pages && pages !== '—'
               ? digitPart + ', ' + pages
@@ -573,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function () {
           continue;
         }
 
-        // Case 3: "486-" row → treat leading digits as pages of previous keyword
+        // Case 3: "486-" row variants → treat leading digits as pages of previous keyword
         if (cleaned.length && isNumericTrailingHyphen(k)) {
           const prev = cleaned[cleaned.length - 1];
           const digitPart = extractLeadingDigits(k);
@@ -587,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function () {
           continue;
         }
 
-        // Case 4: bare "-" / "—" row → fold its pages into previous row
+        // Case 4: bare hyphen-like ",-" / "-." etc. → fold its pages into previous row
         if (cleaned.length && isJustHyphen(k)) {
           const prev = cleaned[cleaned.length - 1];
           if (pages && pages !== '—') appendPages(prev, pages);
@@ -703,6 +708,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
     built = true;
   }
+
 
 
 
