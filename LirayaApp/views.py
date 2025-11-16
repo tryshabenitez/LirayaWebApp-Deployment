@@ -2703,7 +2703,7 @@ def admin_generate_accountbookrecords(pdf_buffer, date_range, user_info):
                 'account_name': f"{account_obj.first_name} {' ' + account_obj.middle_name if account_obj.middle_name else ''} {account_obj.last_name}",
                 'role': (librarian.role.title() if getattr(librarian, 'role', None) else 'N/A'),
                 'total_books_uploaded': total_books_uploaded,
-                'latest_book_date': latest_book_date or 'Not uploaded today',
+                'latest_book_date': latest_book_date or 'Not uploaded recently',
                 'data_range': display_range,
             })
 
