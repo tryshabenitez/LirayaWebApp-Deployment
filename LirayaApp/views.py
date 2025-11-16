@@ -206,7 +206,6 @@ def user_search(request):
     rtypes = [t.strip() for t in request.GET.getlist('active_resource_types') if t.strip()]
     subs   = [s.strip() for s in request.GET.getlist('active_subjects') if s.strip()]
 
-
     # cast years defensively
     def _to_int_or_none(v):
         try:
@@ -285,7 +284,6 @@ def user_search(request):
                     out.append(w)
         return out
 
-
     def build_reference_vocab(row_limit=20000):
         """
         Build a small in-memory vocabulary from titles and primary_keyword.
@@ -339,6 +337,76 @@ def user_search(request):
         return matches
 
     # ===============================
+    #     HIGHLIGHTING (shared)
+    # ===============================
+    def build_highlight_fn(style, tokens):
+        """
+        style:
+          - 'keywords' => BOLD + ALL CAPS for matched tokens
+          - 'title'    => italic for matched tokens
+          - 'author'   => bold for matched tokens
+        We:
+        - match case-insensitively
+        - treat an optional trailing 's' as part of the match (color/colors)
+        - escape non-matched text before injecting HTML
+        """
+        # Build regex for the query tokens
+        patterns = []
+        for raw in tokens or []:
+            base = (raw or '').strip().strip(',').lower()
+            if not base or base in STOPWORDS or len(base) < 2:
+                continue
+            # simple plural support: color -> color / colors
+            if base.endswith('s'):
+                patterns.append(_re.escape(base))
+            else:
+                patterns.append(_re.escape(base) + 's?')
+
+        if not patterns:
+            return lambda text: text or ''
+
+        pattern = _re.compile(r'\b(' + '|'.join(patterns) + r')\b', _re.IGNORECASE)
+
+        def apply(text):
+            if not text:
+                return ''
+            result = []
+            last = 0
+            s = text
+
+            for m in pattern.finditer(s):
+                start, end = m.span()
+                # non-matched segment
+                if start > last:
+                    result.append(escape(s[last:start]))
+
+                token = m.group(0)
+                esc_token = escape(token)
+
+                if style == 'keywords':
+                    # BOLD + ALL CAPS
+                    repl = f"<strong>{esc_token.upper()}</strong>"
+                elif style == 'title':
+                    # italic, keep original case
+                    repl = f"<em>{esc_token}</em>"
+                elif style == 'author':
+                    # bold, keep original case
+                    repl = f"<strong>{esc_token}</strong>"
+                else:
+                    repl = esc_token
+
+                result.append(repl)
+                last = end
+
+            # tail segment
+            if last < len(s):
+                result.append(escape(s[last:]))
+
+            return mark_safe(''.join(result))
+
+        return apply
+
+    # ===============================
     #           LOGGING (kept)
     # ===============================
     SEP = "\n"
@@ -390,9 +458,6 @@ def user_search(request):
     also_terms = []  # collect fuzzy extras to show in the UI
     highlight_tokens = []
 
-
-
-
     if q:
         tokens = split_words_search(q)
         kw_tokens = split_keywords(q)
@@ -412,15 +477,15 @@ def user_search(request):
         def build_token_q(field_name, term):
             """
             Build a Q() that enforces the following rules:
-    
+
             - KEYWORDS:
                 * if len(term) < 7: require 1:1 whole-word match (iregex)
                 * else:             allow icontains
-    
+
             - TITLE / AUTHOR:
                 * if len(term) <= 3: whole-word iregex
                 * else:              icontains
-    
+
             - ALL FIELDS:
                 * Apply keyword rules to keywords:
                     - <7 letters = 1:1 whole-word match
@@ -430,7 +495,7 @@ def user_search(request):
             term = (term or "").strip()
             if not term:
                 return Q()
-    
+
             # ================================
             #      KEYWORDS (direct search)
             # ================================
@@ -441,7 +506,7 @@ def user_search(request):
                     return Q(primary_keyword__iregex=pattern)
                 else:
                     return Q(primary_keyword__icontains=term)
-    
+
             # ================================
             #       TITLE / AUTHOR ONLY
             # ================================
@@ -451,14 +516,14 @@ def user_search(request):
                     return Q(title__iregex=pattern)
                 else:
                     return Q(title__icontains=term)
-    
+
             if field_name == 'author':
                 if len(term) <= 3:
                     pattern = r'\b' + _re.escape(term) + r'\b'
                     return Q(author__iregex=pattern)
                 else:
                     return Q(author__icontains=term)
-    
+
             # ================================
             #       ALL FIELDS (title, author, keywords)
             # ================================
@@ -468,7 +533,7 @@ def user_search(request):
                 keyword_q = Q(primary_keyword__iregex=kw_pattern)
             else:
                 keyword_q = Q(primary_keyword__icontains=term)
-    
+
             # --- TITLE / AUTHOR part ---
             if len(term) <= 3:
                 # whole-word for short tokens
@@ -478,7 +543,7 @@ def user_search(request):
                     Q(author__iregex=short_pattern) |
                     keyword_q
                 )
-    
+
             # longer terms: substring allowed
             return (
                 Q(title__icontains=term) |
@@ -486,77 +551,6 @@ def user_search(request):
                 keyword_q
             )
 
-        def build_highlight_fn(style, tokens):
-            """
-            style:
-              - 'keywords' => BOLD + ALL CAPS for matched tokens
-              - 'title'    => italic for matched tokens
-              - 'author'   => bold for matched tokens
-    
-            - matches case-insensitively
-            - allows optional trailing 's' (color/colors)
-            - escapes non-matched text, returns safe HTML
-            """
-            patterns = []
-            for raw in tokens or []:
-                base = (raw or '').strip().strip(',').lower()
-                if not base or base in STOPWORDS or len(base) < 2:
-                    continue
-                # allow simple plural: color -> color / colors
-                if base.endswith('s'):
-                    patterns.append(_re.escape(base))
-                else:
-                    patterns.append(_re.escape(base) + 's?')
-    
-            # No patterns => just escape the text, no highlight
-            if not patterns:
-                return lambda text: mark_safe(escape(text or ""))
-    
-            pattern = _re.compile(r'\b(' + '|'.join(patterns) + r')\b', _re.IGNORECASE)
-    
-            def apply(text):
-                if not text:
-                    return ''
-                s = text
-                result = []
-                last = 0
-    
-                for m in pattern.finditer(s):
-                    start, end = m.span()
-    
-                    # non-matched segment
-                    if start > last:
-                        result.append(escape(s[last:start]))
-    
-                    token = m.group(0)
-                    esc_token = escape(token)
-    
-                    if style == 'keywords':
-                        # BOLD + ALL CAPS
-                        repl = f"<strong>{esc_token.upper()}</strong>"
-                    elif style == 'title':
-                        # italic, keep original case
-                        repl = f"<em>{esc_token}</em>"
-                    elif style == 'author':
-                        # bold, keep original case
-                        repl = f"<strong>{esc_token}</strong>"
-                    else:
-                        repl = esc_token
-    
-                    result.append(repl)
-                    last = end
-    
-                # tail segment
-                if last < len(s):
-                    result.append(escape(s[last:]))
-    
-                return mark_safe(''.join(result))
-    
-            return apply
-
-
-
-    
         def is_reasonable_alt(base, alt):
             """
             Decide if 'alt' is worth showing in 'Also searching for'.
@@ -565,95 +559,23 @@ def user_search(request):
             """
             base = (base or "").strip().lower()
             alt  = (alt or "").strip().lower()
-    
+
             if not base or not alt:
                 return False
             if alt == base:
                 return False
             if len(alt) <= 3:
                 return False
-    
+
             # Drop anything with digits, e.g. 'computer13'
             if any(ch.isdigit() for ch in alt):
                 return False
-    
+
             # If the original term is alphabetic, ignore non-alphabetic variants
             if base.isalpha() and not alt.isalpha():
                 return False
-    
+
             return True
-
-        # ===============================
-        #        HIGHLIGHTING
-        # ===============================
-        def build_highlight_fn(style, tokens):
-            """
-            style:
-              - 'keywords' => BOLD + ALL CAPS for matched tokens
-              - 'title'    => italic for matched tokens
-              - 'author'   => bold for matched tokens
-            We:
-            - match case-insensitively
-            - treat an optional trailing 's' as part of the match (color/colors)
-            - escape non-matched text before injecting HTML
-            """
-            # Build regex for the query tokens
-            patterns = []
-            for raw in tokens or []:
-                base = (raw or '').strip().strip(',').lower()
-                if not base or base in STOPWORDS or len(base) < 2:
-                    continue
-                # simple plural support: color -> color / colors
-                if base.endswith('s'):
-                    patterns.append(_re.escape(base))
-                else:
-                    patterns.append(_re.escape(base) + 's?')
-    
-            if not patterns:
-                return lambda text: text or ''
-    
-            pattern = _re.compile(r'\b(' + '|'.join(patterns) + r')\b', _re.IGNORECASE)
-    
-            def apply(text):
-                if not text:
-                    return ''
-                result = []
-                last = 0
-                s = text
-    
-                for m in pattern.finditer(s):
-                    start, end = m.span()
-                    # non-matched segment
-                    if start > last:
-                        result.append(escape(s[last:start]))
-    
-                    token = m.group(0)
-                    esc_token = escape(token)
-    
-                    if style == 'keywords':
-                        # BOLD + ALL CAPS
-                        repl = f"<strong>{esc_token.upper()}</strong>"
-                    elif style == 'title':
-                        # italic, keep original case
-                        repl = f"<em>{esc_token}</em>"
-                    elif style == 'author':
-                        # bold, keep original case
-                        repl = f"<strong>{esc_token}</strong>"
-                    else:
-                        repl = esc_token
-    
-                    result.append(repl)
-                    last = end
-    
-                # tail segment
-                if last < len(s):
-                    result.append(escape(s[last:]))
-    
-                return mark_safe(''.join(result))
-    
-            return apply
-
-
 
         def apply_field_filters(qs, field_name, toks):
             """Apply fuzzy variants per token + build clean 'Also searching for' list."""
@@ -681,8 +603,6 @@ def user_search(request):
 
                 qs = qs.filter(q_or)
             return qs
-
-
 
         if field == 'author':
             books = apply_field_filters(books, 'author', tokens or kw_tokens)
@@ -735,7 +655,6 @@ def user_search(request):
 
         if q_or:
             books = books.filter(q_or)
-
 
     # ===============================
     #           SORT
@@ -806,7 +725,6 @@ def user_search(request):
 
         # Author: bold matched parts in the author string
         b.highlighted_author = author_highlighter(getattr(b, 'author', '') or '')
-
 
     # ===============================
     #           CONTEXT
