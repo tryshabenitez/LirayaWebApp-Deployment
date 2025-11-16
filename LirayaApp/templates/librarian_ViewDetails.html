@@ -291,26 +291,13 @@ setEditMode(false);
 
 
 // Preview the book cover before saving
-function attachCoverInputListener() {
-  const input = document.getElementById('bookCoverInput');
-  if (!input) return;
-  input.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => document.getElementById('coverPreview').src = ev.target.result;
-    reader.readAsDataURL(file);
-  });
-}
-attachCoverInputListener();
-// Also make label click trigger file input reliably
-const coverLabel = document.querySelector('label[for="bookCoverInput"]');
-if (coverLabel) {
-  coverLabel.addEventListener('click', function() {
-    document.getElementById('bookCoverInput').click();
-  });
-}
-
+document.getElementById('bookCoverInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => document.getElementById('coverPreview').src = ev.target.result;
+  reader.readAsDataURL(file);
+});
 
 // Edit button click: switch to edit mode
 document.getElementById('editButton').addEventListener('click', e => { 
@@ -349,11 +336,8 @@ document.getElementById("confirmEdit").addEventListener("click", async function(
   formData.append('publisher', document.getElementById('publisher').value);
   formData.append('shelf_category', document.getElementById('bookShelfCategory').value);
 
-  // Always append the book cover, even if not changed, to avoid stale state
-  const coverInput = document.getElementById('bookCoverInput');
-  if (coverInput.files.length > 0) {
-    formData.append('book_cover', coverInput.files[0]);
-  }
+  const coverFile = document.getElementById('bookCoverInput').files[0];
+  if (coverFile) formData.append('book_cover', coverFile);
 
   const csrftoken = getCookie('csrftoken');
   const bookId = "{{ book.book_id }}";
@@ -367,14 +351,19 @@ document.getElementById("confirmEdit").addEventListener("click", async function(
     const data = await resp.json();
     // Check if the response indicates success
     if (data && data.success) {
-      alert('Book details updated successfully!');
-      window.location.reload(true); // Hard reload to get updated info and cover
+      // If backend returned an updated cover URL, update preview immediately
+      if (data.book_cover) {
+        const cp = document.getElementById('coverPreview');
+        if (cp) cp.src = data.book_cover;
+      }
+      hideEditConfirmationPopup(); // Close the confirmation popup
+      // Reload the page so all fields (and select options) reflect saved values
+      window.location.reload();
     } else {
-      alert('Failed to update the book: ' + (data.message || 'Unknown error'));
+      // If the response does not indicate success, show an error message
       console.error('Failed to update the book:', data.message);
     }
   } catch (err) {
-    alert('Network or fetch error: ' + err);
     console.error('Network or fetch error:', err);
   }
 });
