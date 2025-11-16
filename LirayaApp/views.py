@@ -3922,7 +3922,7 @@ def librarian_addbook(request):
             title = (data.get('bookTitle') or '').strip()
             if not title:
                 return JsonResponse({'exists': False})
-            return JsonResponse({'exists': Books.objects.filter(title__iexact=title).exists()})
+            return JsonResponse({'exists': Books.objects.filter(title__iexact=title, is_archived=False).exists()})
         
         # --- 2) Category name check ---
         if 'checkCategory' in data:
