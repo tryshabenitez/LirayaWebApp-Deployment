@@ -3791,23 +3791,9 @@ def librarian_view_details(request, book_id):
                 if 'book_cover' in request.FILES:
                     book_cover = request.FILES['book_cover']
                     try:
-                        # Best-effort: try to delete old cover from Cloudinary if it looks like a Cloudinary URL
-                        if book.book_cover:
-                            try:
-                                parsed = urlparse(str(book.book_cover))
-                                path = parsed.path or ''
-                                filename = path.rstrip('/').split('/')[-1]
-                                public_id = filename.rsplit('.', 1)[0]
-                                destroy(public_id)
-                            except Exception:
-                                # Ignore deletion errors; continue to upload new cover
-                                pass
-
                         # Upload new cover to Cloudinary
                         cloudinary_response = upload(book_cover)
-                        # Prefer secure_url but fall back to url
-                        book.book_cover = cloudinary_response.get('secure_url') or cloudinary_response.get('url') or book.book_cover
-
+                        book.book_cover = cloudinary_response['secure_url']  # Save secure URL
                     except Exception as e:
                         messages.error(request, f"Error uploading book cover: {e}")
                         return JsonResponse({'success': False, 'message': f"Error uploading book cover: {str(e)}"}, status=500)
