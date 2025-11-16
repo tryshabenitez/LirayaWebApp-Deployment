@@ -273,7 +273,8 @@
                   </div>
                   <div class="admin_records_error" id="customDateError"></div>
                   <div class="admin_records_date_hint">
-                    Date range must be from January 1, 2025 onwards
+                    Date range must be from January 1, 2025 onwards. <br>
+                    <strong>Note:</strong> "From" cannot be today. It must be at least 1 day before "To" (today).
                   </div>
                 </div>
               </div>
@@ -934,17 +935,41 @@
     // Custom date range validation
     const startDate = document.getElementById('startDate');
     const endDate = document.getElementById('endDate');
+
     const minDate = '2025-01-01';
-    const today = new Date().toISOString().split('T')[0];
+    // Always use Philippine Time (UTC+8) for today and yesterday
+    function getTodayPH() {
+      // Get current time in UTC, then add 8 hours for PH time
+      const now = new Date();
+      // Get UTC+8 offset in ms
+      const utc8 = new Date(now.getTime() + (8 - now.getTimezoneOffset() / 60) * 60 * 60 * 1000);
+      // Set to PH date (ignore time)
+      const phYear = utc8.getUTCFullYear();
+      const phMonth = String(utc8.getUTCMonth() + 1).padStart(2, '0');
+      const phDay = String(utc8.getUTCDate()).padStart(2, '0');
+      return `${phYear}-${phMonth}-${phDay}`;
+    }
+    function getYesterdayPH(todayPH) {
+      const d = new Date(todayPH);
+      d.setDate(d.getDate() - 1);
+      const yYear = d.getUTCFullYear();
+      const yMonth = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const yDay = String(d.getUTCDate()).padStart(2, '0');
+      return `${yYear}-${yMonth}-${yDay}`;
+    }
+    const today = getTodayPH();
+    const yesterday = getYesterdayPH(today);
 
     // Set min date for both dates to January 1, 2025
     startDate.min = minDate;
     endDate.min = minDate;
-    // Set max date to today
+    // Set max date to today (PH)
     startDate.max = today;
     endDate.max = today;
-    // Set end date to today by default
+    // Set end date to today by default (PH)
     endDate.value = today;
+    // Set start date to yesterday by default (PH)
+    startDate.value = yesterday;
 
     function validateCustomDateRange() {
       const start = startDate.value ? new Date(startDate.value) : null;
@@ -958,6 +983,10 @@
           error = 'Start date cannot be later than end date';
         } else if (start < minAllowed) {
           error = 'Dates cannot be earlier than January 1, 2025';
+        } else if (start.toISOString().split('T')[0] === end.toISOString().split('T')[0]) {
+          error = 'Start date cannot be the same as end date (today).';
+        } else if (end.toISOString().split('T')[0] === today && start.toISOString().split('T')[0] === today) {
+          error = 'From date cannot be today. Please select at least 1 day before today.';
         }
       }
 
@@ -992,9 +1021,18 @@
     const customRadio = document.querySelector('input[name="period_type"][value="custom"]');
     customRadio.addEventListener('change', function() {
       if (this.checked) {
-        // Clear start date, keep end date as today
-        startDate.value = '';
+        // Set start date to yesterday (PH), end date to today (PH)
         endDate.value = today;
+        startDate.value = yesterday;
+        validateCustomDateRange();
+      }
+    });
+
+    // Also set start date to yesterday and end date to today when modal is opened and custom is selected
+    openBtn.addEventListener('click', function() {
+      if (customRadio.checked) {
+        endDate.value = today;
+        startDate.value = yesterday;
         validateCustomDateRange();
       }
     });
