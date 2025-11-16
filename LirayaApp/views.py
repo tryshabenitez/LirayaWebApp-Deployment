@@ -3419,8 +3419,32 @@ def generate_librarian_upload_chart(window=None, label=None, date_range=None):
             plt.ylabel('Number of Book Uploads')
             plt.xticks(rotation=45)
 
+
             max_y = int(df.max().max()) if not df.empty else 0
-            plt.yticks(range(0, max(1, max_y) + 2))
+
+            # Determine a 'nice' y-tick step for large values or yearly granularity
+            def nice_ytick_step(max_y):
+                if max_y <= 10:
+                    return 1
+                elif max_y <= 50:
+                    return 5
+                elif max_y <= 100:
+                    return 10
+                elif max_y <= 250:
+                    return 20
+                elif max_y <= 500:
+                    return 50
+                elif max_y <= 1000:
+                    return 100
+                else:
+                    # Round up to nearest 500 or 1000 for very large values
+                    return 500 if max_y <= 5000 else 1000
+
+            ytick_step = 1
+            if gran == 'year' or max_y > 50:
+                ytick_step = nice_ytick_step(max_y)
+
+            plt.yticks(range(0, max(1, max_y) + ytick_step, ytick_step))
             plt.legend(loc='upper left')
             plt.grid(True)
 
@@ -3523,6 +3547,7 @@ def generate_librarian_upload_chart(window=None, label=None, date_range=None):
     except Exception as e:
         print(f"Error generating librarian upload chart: {e}")
         return None, None
+
 
 
 
