@@ -351,8 +351,7 @@ document.getElementById("confirmEdit").addEventListener("click", async function(
     const data = await resp.json();
     // Check if the response indicates success
     if (data && data.success) {
-        setEditMode(false);  // Exit edit mode after saving
-        hideEditConfirmationPopup(); // Close the confirmation popup
+        window.location.reload(); 
     } else {
         // If the response does not indicate success, show an error message
         console.error('Failed to update the book:', data.message);
