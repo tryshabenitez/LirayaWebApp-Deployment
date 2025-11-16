@@ -3793,7 +3793,9 @@ def librarian_view_details(request, book_id):
                     try:
                         # Upload new cover to Cloudinary
                         cloudinary_response = upload(book_cover)
-                        book.book_cover = cloudinary_response['secure_url']  # Save secure URL
+                        # Save the secure URL of the uploaded cover to the book record
+                        book.book_cover = cloudinary_response.get('secure_url') or cloudinary_response.get('url') or book.book_cover
+
                     except Exception as e:
                         messages.error(request, f"Error uploading book cover: {e}")
                         return JsonResponse({'success': False, 'message': f"Error uploading book cover: {str(e)}"}, status=500)
