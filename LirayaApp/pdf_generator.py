@@ -660,7 +660,7 @@ def generate_account_bookrecords(pdf_buffer, account_info_data, categorized_book
         fontSize=20,  # Font size for title header
         alignment=1,  # Center alignment
         leading=28,  
-        spaceAfter=15,  # Space after the title
+        spaceAfter=2,  # Space after the title
     )
     
     daterange_header_style = ParagraphStyle(
