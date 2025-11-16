@@ -407,6 +407,86 @@ def user_search(request):
         return apply
 
     # ===============================
+    #   TOKEN → Q BUILDER (shared)
+    # ===============================
+    def build_token_q(field_name, term):
+        """
+        Build a Q() that enforces the following rules:
+
+        - KEYWORDS:
+            * if len(term) < 7: require 1:1 whole-word match (iregex)
+            * else:             allow icontains
+
+        - TITLE / AUTHOR:
+            * if len(term) <= 3: whole-word iregex
+            * else:              icontains
+
+        - ALL FIELDS:
+            * Apply keyword rules to keywords:
+                - <7 letters = 1:1 whole-word match
+                - >=7 letters = icontains
+            * Apply normal title/author rules based on length
+        """
+        term = (term or "").strip()
+        if not term:
+            return Q()
+
+        # ================================
+        #      KEYWORDS (direct search)
+        # ================================
+        if field_name == 'keywords':
+            if len(term) < 7:
+                # strict whole-word
+                pattern = r'\b' + _re.escape(term) + r'\b'
+                return Q(primary_keyword__iregex=pattern)
+            else:
+                return Q(primary_keyword__icontains=term)
+
+        # ================================
+        #       TITLE / AUTHOR ONLY
+        # ================================
+        if field_name == 'title':
+            if len(term) <= 3:
+                pattern = r'\b' + _re.escape(term) + r'\b'
+                return Q(title__iregex=pattern)
+            else:
+                return Q(title__icontains=term)
+
+        if field_name == 'author':
+            if len(term) <= 3:
+                pattern = r'\b' + _re.escape(term) + r'\b'
+                return Q(author__iregex=pattern)
+            else:
+                return Q(author__icontains=term)
+
+        # ================================
+        #       ALL FIELDS (title, author, keywords)
+        # ================================
+        # --- KEYWORDS part: apply SAME RULES as field="keywords" ---
+        if len(term) < 7:
+            kw_pattern = r'\b' + _re.escape(term) + r'\b'
+            keyword_q = Q(primary_keyword__iregex=kw_pattern)
+        else:
+            keyword_q = Q(primary_keyword__icontains=term)
+
+        # --- TITLE / AUTHOR part ---
+        if len(term) <= 3:
+            # whole-word for short tokens
+            short_pattern = r'\b' + _re.escape(term) + r'\b'
+            return (
+                Q(title__iregex=short_pattern) |
+                Q(author__iregex=short_pattern) |
+                keyword_q
+            )
+
+        # longer terms: substring allowed
+        return (
+            Q(title__icontains=term) |
+            Q(author__icontains=term) |
+            keyword_q
+        )
+
+    # ===============================
     #           LOGGING (kept)
     # ===============================
     SEP = "\n"
@@ -473,83 +553,6 @@ def user_search(request):
                 seen.add(base)
                 norm_tokens.append(raw)
         highlight_tokens = norm_tokens
-
-        def build_token_q(field_name, term):
-            """
-            Build a Q() that enforces the following rules:
-
-            - KEYWORDS:
-                * if len(term) < 7: require 1:1 whole-word match (iregex)
-                * else:             allow icontains
-
-            - TITLE / AUTHOR:
-                * if len(term) <= 3: whole-word iregex
-                * else:              icontains
-
-            - ALL FIELDS:
-                * Apply keyword rules to keywords:
-                    - <7 letters = 1:1 whole-word match
-                    - >=7 letters = icontains
-                * Apply normal title/author rules based on length
-            """
-            term = (term or "").strip()
-            if not term:
-                return Q()
-
-            # ================================
-            #      KEYWORDS (direct search)
-            # ================================
-            if field_name == 'keywords':
-                if len(term) < 7:
-                    # strict whole-word
-                    pattern = r'\b' + _re.escape(term) + r'\b'
-                    return Q(primary_keyword__iregex=pattern)
-                else:
-                    return Q(primary_keyword__icontains=term)
-
-            # ================================
-            #       TITLE / AUTHOR ONLY
-            # ================================
-            if field_name == 'title':
-                if len(term) <= 3:
-                    pattern = r'\b' + _re.escape(term) + r'\b'
-                    return Q(title__iregex=pattern)
-                else:
-                    return Q(title__icontains=term)
-
-            if field_name == 'author':
-                if len(term) <= 3:
-                    pattern = r'\b' + _re.escape(term) + r'\b'
-                    return Q(author__iregex=pattern)
-                else:
-                    return Q(author__icontains=term)
-
-            # ================================
-            #       ALL FIELDS (title, author, keywords)
-            # ================================
-            # --- KEYWORDS part: apply SAME RULES as field="keywords" ---
-            if len(term) < 7:
-                kw_pattern = r'\b' + _re.escape(term) + r'\b'
-                keyword_q = Q(primary_keyword__iregex=kw_pattern)
-            else:
-                keyword_q = Q(primary_keyword__icontains=term)
-
-            # --- TITLE / AUTHOR part ---
-            if len(term) <= 3:
-                # whole-word for short tokens
-                short_pattern = r'\b' + _re.escape(term) + r'\b'
-                return (
-                    Q(title__iregex=short_pattern) |
-                    Q(author__iregex=short_pattern) |
-                    keyword_q
-                )
-
-            # longer terms: substring allowed
-            return (
-                Q(title__icontains=term) |
-                Q(author__icontains=term) |
-                keyword_q
-            )
 
         def is_reasonable_alt(base, alt):
             """
@@ -752,6 +755,7 @@ def user_search(request):
     }
 
     return render(request, 'user_search.html', context)
+
 
 
 
