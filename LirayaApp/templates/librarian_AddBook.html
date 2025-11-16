@@ -814,13 +814,15 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
             })
             .then(response => response.json())
             .then(data => {
+                alert(data.message);  // Show success or failure message
+
                 if (data.success) {
-                    alert(data.message);  // Show success message
-                    closeDeleteCategoryModal();  // Close the modal after successful deletion
-                    location.reload();  // Reload the page to reflect the changes
-                } else {
-                    alert(data.message);  // Show failure message
+                    // If successful, close the delete category modal
+                    closeDeleteCategoryModal();
                 }
+
+                // Optionally reload the page to reflect changes (if needed)
+                location.reload();  // This will reload the page to reflect the changes
             })
             .catch(err => {
                 console.error('Error:', err);
@@ -839,7 +841,6 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
         alert('Please select a category to delete.');
     }
 });
-
 
 // Cancel Delete Action (close the modal without confirming)
 document.getElementById('cancelDelete').addEventListener('click', function() {
