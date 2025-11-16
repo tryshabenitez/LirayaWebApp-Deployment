@@ -3897,19 +3897,40 @@ def librarian_addbook(request):
         if 'deleteCategory' in data:
             category_name = data.get('categoryName', '').strip()
             if category_name:
-                # Find books with this category and update the shelf category to None
-                books_with_category = Books.objects.filter(shelf_category=category_name)
+                # Find books with this category excluding archived books
+                books_with_category = Books.objects.filter(shelf_category=category_name, is_archived=False)
 
+                # If there are books using the category that are not archived, show the message
                 if books_with_category.exists():
                     # Remove the category from the books (set shelf_category to None)
                     books_with_category.update(shelf_category="Uncategorized")
 
-                    # Optionally, you can remove the category from the dropdown list as well
-                    # If you want to delete the category from the system entirely, you could do that here too
+                    # Return a message about books that still use the category
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'This category exists in some active books. The category has been removed, and the books are now uncategorized.'
+                    })
 
-                    return JsonResponse({'success': True, 'message': 'Category removed from books successfully!'})
+                # If no active books are found, check if there are archived books with this category
+                books_with_archived_category = Books.objects.filter(shelf_category=category_name, is_archived=True)
 
-                return JsonResponse({'success': False, 'message': 'No books found with the specified category.'})
+                if books_with_archived_category.exists():
+                    # If archived books are using the category, do not show the message
+                    # Just remove the category and mark books as Uncategorized
+                    books_with_archived_category.update(shelf_category="Uncategorized")
+
+                    # Category deletion logic (if needed)
+                    # Optionally delete the category from the system here
+
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Category deleted successfully, and books are now uncategorized.'
+                    })
+
+                # If no books (active or archived) are found with this category, proceed to delete
+                return JsonResponse({'success': True, 'message': 'Category deleted successfully!'})
+
+            return JsonResponse({'success': False, 'message': 'No books found with the specified category.'})
 
 
     # Handle AJAX request for title check / OCR
