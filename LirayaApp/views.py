@@ -83,7 +83,7 @@ import pytz
 import matplotlib
 matplotlib.use('Agg') 
 from dateutil.relativedelta import relativedelta
-from urllib.parse import urlparse
+
 
 nlp = spacy.load('en_core_web_sm')
 
