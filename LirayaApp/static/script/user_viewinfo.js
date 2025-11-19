@@ -299,6 +299,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
   let built = false;
 
+  const searchInput = document.getElementById('pages-search');
+
+  function filterPagesTable(term) {
+    const tbody = document.querySelector('#pages-table tbody');
+    if (!tbody) return;
+
+    const q = (term || '').trim().toLowerCase();
+    const rows = tbody.querySelectorAll('tr');
+
+    if (!q) {
+      rows.forEach(r => { r.style.display = ''; });
+      return;
+    }
+
+    rows.forEach(r => {
+      const cell = r.cells[0]; // keyword column
+      if (!cell) return;
+      const text = (cell.textContent || '').toLowerCase();
+      r.style.display = text.includes(q) ? '' : 'none';
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function (e) {
+      filterPagesTable(e.target.value);
+    });
+  }
+
+
   function normalizeText(text) {
     if (!text) return '';
     let s = text;
@@ -722,6 +751,9 @@ document.addEventListener('DOMContentLoaded', function () {
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     if (btn) btn.textContent = 'Hide Pages';
+
+    // ensure filter applies to freshly opened table
+    if (searchInput) filterPagesTable(searchInput.value);
   }
 
   function closeModal() {
@@ -732,7 +764,14 @@ document.addEventListener('DOMContentLoaded', function () {
     modal.style.display = 'none';
     document.body.style.overflow = '';
     if (btn) btn.textContent = 'Show Pages';
+
+    // optional: clear search when closing
+    if (searchInput) {
+      searchInput.value = '';
+      filterPagesTable('');
+    }
   }
+
 
   btn.addEventListener('click', function () {
     const isOpen = modal.style.display !== 'none' && modal.style.display !== '';
