@@ -1104,3 +1104,46 @@ document.addEventListener('DOMContentLoaded', initQrCode);
     return list.map(a => restoreNA(a).trim());
   };
 })();
+
+
+// --- BFCache / Back navigation cleanup: hide any full-screen loading gates ---
+(function () {
+  function clearOverlay(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'none';
+  }
+
+  function clearFullScreenGates() {
+    // Known gate/loader ids – harmless if they don't exist
+    clearOverlay('mobile-gate');
+    clearOverlay('global-loading-overlay');
+
+    if (document.body) {
+      document.body.style.overflow = '';
+    }
+    if (document.documentElement) {
+      document.documentElement.style.overflow = '';
+    }
+  }
+
+  window.addEventListener('pageshow', function (evt) {
+    // Trigger only on BFCache / back-forward navigations
+    var navType = '';
+    try {
+      if (performance && performance.getEntriesByType) {
+        var nav = performance.getEntriesByType('navigation')[0];
+        navType = nav && nav.type;
+      }
+    } catch (e) {
+      navType = '';
+    }
+
+    var isBFCache = (evt && evt.persisted) || navType === 'back_forward';
+    if (!isBFCache) return;
+
+    clearFullScreenGates();
+  });
+})();
+
+
