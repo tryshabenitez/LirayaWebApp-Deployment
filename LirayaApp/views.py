@@ -200,7 +200,7 @@ def user_search(request):
     # ------- Read query params -------
     q = (request.GET.get('q') or "").strip()
     field = (request.GET.get('field') or "allFields").strip()
-    sort_option = request.GET.get('sort', 'Relevance')
+    sort_option = request.GET.get('sort', 'Newest to Oldest')
 
     # Multiple-select facets: strip out empty values coming from hidden inputs
     cats   = [c.strip() for c in request.GET.getlist('active_categories') if c.strip()]
