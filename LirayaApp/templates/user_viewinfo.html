@@ -306,6 +306,60 @@
   </div>
 </div>
 
+<!-- Filter confirmation modal: reused on viewinfo + search results -->
+<div id="filter-confirm-modal"
+     style="position:fixed; inset:0; display:none; z-index:9998;">
+  <!-- Backdrop -->
+  <div class="filter-modal-backdrop"
+       style="position:absolute; inset:0; background:rgba(0,0,0,0.45);">
+  </div>
+
+  <!-- Dialog -->
+  <div style="
+       position:relative;
+       max-width:520px;
+       margin:80px auto;
+       background:#fff;
+       border-radius:10px;
+       box-shadow:0 12px 36px rgba(0,0,0,0.35);
+       padding:16px 18px;
+       z-index:1;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <div style="font-weight:600; font-size:16px;">
+        You still have filters applied
+      </div>
+      <button type="button"
+              class="filter-modal-close"
+              aria-label="Close"
+              style="border:none; background:transparent; font-size:20px; line-height:1; cursor:pointer;">
+        ×
+      </button>
+    </div>
+
+    <div style="margin-top:10px; font-size:14px; color:#333;">
+      <p style="margin:0 0 6px;">
+        Your new search will reuse these filters:
+      </p>
+      <ul id="filter-summary-list"
+          style="margin:0 0 10px 18px; padding:0; font-size:13px; list-style:disc;">
+        <!-- filled by JS (collectActiveFilterSummary) -->
+      </ul>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px; font-size:14px;">
+      <button id="filter-search-without" type="button"
+              style="padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#f5f5f5; cursor:pointer;">
+        Search without filters
+      </button>
+      <button id="filter-search-with" type="button"
+              style="padding:6px 12px; border-radius:6px; border:none; background:#6d2932; color:#fff; cursor:pointer;">
+        Search with filters
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 /**
  * Stable desktop-view emulation for mobile
