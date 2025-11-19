@@ -206,17 +206,29 @@
             background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
   <div style="background:#fff; width:min(92vw, 900px); max-height:85vh; overflow:auto;
               border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,0.35); padding:12px;">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-      <strong>Pages Index</strong>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+      <!-- renamed -->
+      <strong>Show Pages</strong>
       <button id="close-pages-modal" class="action-btn" style="padding:6px 10px;">Close</button>
     </div>
+
+    <!-- NEW: search bar inside modal -->
+    <div style="margin:4px 0 10px;">
+      <input id="pages-search"
+             type="text"
+             placeholder="Filter by keyword…"
+             style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid #ccc; font-size:13px;">
+    </div>
+
     <div id="pages-modal-body"></div>
+
     <!-- Accuracy notice for Show Pages -->
     <div style="margin-top:12px; font-size:12px; color:#444; text-align:center;">
       <em>Note: "Show Pages" is not 100% accurate due to limitations on text formatting.</em>
     </div>
   </div>
 </div>
+
 
 <!-- Citations Modal -->
 <div id="cite-modal" aria-hidden="true"
