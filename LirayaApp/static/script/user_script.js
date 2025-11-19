@@ -1337,12 +1337,6 @@ function isOverlayVisible() {
       filterModal.style.display = 'none';
     }
 
-    // 4) Any "no results" overlay that might have been up
-    const noRes = document.getElementById('no-results-overlay');
-    if (noRes) {
-      noRes.style.display = 'none';
-    }
-
     // 5) Make sure scrolling is re-enabled
     if (document.body) document.body.style.overflow = '';
     if (document.documentElement) document.documentElement.style.overflow = '';
