@@ -25,12 +25,14 @@
 
   <form method="get" action="{% url 'user_search' %}">
     <select id="sidebar-sort" name="sort" onchange="this.form.submit()">
-      <option value="Relevance" {% if request.GET.sort == 'Relevance' %}selected{% endif %}>Relevance</option>
+      <option value="Newest to Oldest"
+              {% if request.GET.sort|default:sort_option == 'Newest to Oldest' %}selected{% endif %}>
+        Newest to Oldest
+      </option>
       <option value="Title" {% if request.GET.sort == 'Title' %}selected{% endif %}>Alphabetical</option>
       <option value="Author" {% if request.GET.sort == 'Author' %}selected{% endif %}>Author</option>
-      <option value="Newest to Oldest" {% if request.GET.sort == 'Newest to Oldest' %}selected{% endif %}>Newest to Oldest</option>
-      <option value="Oldest to Newest" {% if request.GET.sort == 'Oldest to Newest' %}selected{% endif %}>Oldest to Newest</option>
     </select>
+
 
     <!-- Preserve current search and filters -->
     <input type="hidden" name="q" value="{{ request.GET.q }}">
