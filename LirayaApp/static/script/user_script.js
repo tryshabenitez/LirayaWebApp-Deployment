@@ -2,6 +2,8 @@
 // Corrected JS: Pagination + Filters + Typeahead + Year dropdown
 // ------------------------------
 
+let _suppressFilterConfirmOnce = false;
+
 // ===== Year config & helpers =====
 const YEAR_MIN = 1900;
 const YEAR_MAX = new Date().getFullYear();
@@ -1060,7 +1062,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const headerSearchForm = document.querySelector('header form.search-form');
   if (headerSearchForm) {
     headerSearchForm.addEventListener('submit', (e) => {
-      // Only intercept when there are active filters in the URL
+      // If a typeahead suggestion triggered this submit, skip the filter warning once
+      if (_suppressFilterConfirmOnce) {
+        _suppressFilterConfirmOnce = false;
+        showLoadingOverlay();
+        return; // let the form submit normally, no modal
+      }
+  
+      // Normal path: only intercept when there are active filters in the URL
       if (hasActiveFiltersForConfirm()) {
         e.preventDefault();
         openFilterConfirmModal(headerSearchForm);
@@ -1069,6 +1078,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }, { capture: true });
   }
+
 
   // --- Specifically show overlay when sidebar sort changes (it auto-submits) ---
   const sidebarSort = document.getElementById('sidebar-sort');
@@ -1258,8 +1268,16 @@ function initTypeaheadForForm({ form, input, fieldSelect, wrap, dropdown, sugges
   function choose(item) {
     input.value = item.text;
     hide();
-    form.submit(); // auto-submit on choose
+  
+    // If this is the header search form, bypass the “filters still active” modal once
+    if (form.matches('header form.search-form')) {
+      _suppressFilterConfirmOnce = true;
+    }
+  
+    showLoadingOverlay();
+    form.submit();
   }
+
 
   function hide() {
     dropdown.classList.remove('visible');
