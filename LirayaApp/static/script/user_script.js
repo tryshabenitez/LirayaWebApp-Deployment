@@ -1293,3 +1293,45 @@ function isOverlayVisible() {
   return !!(el && el.style.display !== 'none');
 }
 
+
+
+// --- BFCache / Back-navigation overlay cleanup ---
+(function () {
+  function clearOverlaysOnReturn() {
+    // 1) Main loading overlay
+    try {
+      hideLoadingOverlay(); // uses your existing helper
+    } catch (e) {
+      // no-op if not defined for some reason
+      const el = document.getElementById('liraya-loading');
+      if (el) el.style.display = 'none';
+    }
+
+    // 2) Mobile gate (if it was open when user left)
+    const mg = document.getElementById('mobile-gate');
+    if (mg) {
+      mg.style.display = 'none';
+    }
+
+    // 3) Filter confirmation modal
+    const filterModal = document.getElementById('filter-confirm-modal');
+    if (filterModal) {
+      filterModal.style.display = 'none';
+    }
+
+    // 4) Any "no results" overlay that might have been up
+    const noRes = document.getElementById('no-results-overlay');
+    if (noRes) {
+      noRes.style.display = 'none';
+    }
+
+    // 5) Make sure scrolling is re-enabled
+    if (document.body) document.body.style.overflow = '';
+    if (document.documentElement) document.documentElement.style.overflow = '';
+  }
+
+  window.addEventListener('pageshow', function () {
+    // Regardless of BFCache or fresh load, on return we want a clean canvas
+    clearOverlaysOnReturn();
+  });
+})();
