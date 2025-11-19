@@ -299,19 +299,7 @@
 
 <script src="{% static 'script/user_script.js' %}"></script>
 
-<script>
-(function () {
-  var overlay = document.getElementById('no-results-overlay');
-  var closeBtn = document.getElementById('no-results-close');
-  if (!overlay || !closeBtn) return;
 
-  closeBtn.addEventListener('click', function () {
-    overlay.style.display = 'none';
-    if (document.body) document.body.style.overflow = '';
-    if (document.documentElement) document.documentElement.style.overflow = '';
-  });
-})();
-</script>
 
 
 <script>
@@ -484,6 +472,7 @@ function openAlsoSearchAll(e){
 })();
 </script>
 
+  
 
 {% if books.paginator.count == 0 %}
 <!-- No Results Overlay (doesn't cover header) -->
@@ -509,5 +498,60 @@ function openAlsoSearchAll(e){
 </div>
 {% endif %}
 
+<script>
+// --- BFCache / Back navigation cleanup: hide any full-screen loading gates ---
+(function () {
+  function clearOverlay(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = 'none';
+  }
+
+  function clearFullScreenGates() {
+    // Known gate/loader ids – safe if they don't exist
+    clearOverlay('mobile-gate');
+    clearOverlay('global-loading-overlay');
+
+    if (document.body) {
+      document.body.style.overflow = '';
+    }
+    if (document.documentElement) {
+      document.documentElement.style.overflow = '';
+    }
+  }
+
+  // 1) BFCache / history restores
+  window.addEventListener('pageshow', function (evt) {
+    // If revived from bfcache, evt.persisted is true in modern browsers
+    if (evt && evt.persisted) {
+      clearFullScreenGates();
+    }
+  });
+
+  // 2) Back/forward via history API (covers cases where persisted is false)
+  window.addEventListener('popstate', function () {
+    clearFullScreenGates();
+  });
+})();
+</script>
+
+<script>
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    var overlay = document.getElementById('no-results-overlay');
+    var closeBtn = document.getElementById('no-results-close');
+    if (!overlay || !closeBtn) return;
+
+    closeBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      overlay.style.display = 'none';
+      if (document.body) document.body.style.overflow = '';
+      if (document.documentElement) document.documentElement.style.overflow = '';
+    });
+  });
+})();
+</script>
+  
+  
 </body>
 </html>
