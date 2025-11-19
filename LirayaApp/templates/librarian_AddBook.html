@@ -372,7 +372,7 @@
                     <input type="file" id="pageUpload" accept="image/*" style="display: none;">
                     <button type="button" id="uploadButton" class="scan-button" 
                             data-intro="Step 10.5: Or upload an image from your device." 
-                            data-step="11.5"
+                            data-step="12"
                             data-tooltip="Upload">
                             Upload
                     </button>
@@ -381,7 +381,7 @@
                 <div class="scan-actions">
                     <button type="button" id="cropButton" class="scan-button" 
                         data-intro="Step 11: Once captured, crop the desired part to scan." 
-                        data-step="12"
+                        data-step="13"
                         data-tooltip="Crop">
                         <img src="{% static 'images/crop.png' %}" alt="Crop" class="btn-img">
                     </button>
@@ -390,7 +390,7 @@
                 <div class="scan-actions">
                     <button type="button" id="scanButton" class="scan-button" 
                         data-intro="Step 12: After cropping you can now scan." 
-                        data-step="13"
+                        data-step="14"
                         data-tooltip="Scan" disabled>
                         <img src="{% static 'images/scan.png' %}" alt="Scan" class="btn-img">
                     </button>
@@ -406,7 +406,7 @@
                 <div class="scan-actions">
                     <button type="button" id="retryButton" class="scan-button"
                         data-intro="Step 13: If you are not satisfied with the current capture, click Retry to take it again."
-                        data-step="14">
+                        data-step="15">
                         Retry
                     </button>
                 </div>
@@ -414,7 +414,7 @@
                 <div class="scan-actions">
                     <button type="button" id="resetButton" class="scan-button"
                         data-intro="Step 14: Use Reset if you want to clear everything and start scanning again from scratch."
-                        data-step="15">
+                        data-step="16">
                         Reset
                     </button>
                 </div>
@@ -431,13 +431,13 @@
                 spellcheck="false"
                 placeholder="Scanned content will appear here..."
                 data-intro="Step 15: The scanned text will appear here. Review and edit if needed."
-                data-step="16"></textarea>
+                data-step="17"></textarea>
         </div>
 
         <div style="text-align: right; margin-bottom: 15px;">
             <button type="button" id="lockButton" class="scan-button"
                 data-intro="Step 16: When satisfied, click Lock to confirm the scanned content. An alert will ask for confirmation. Once locked, you cannot edit it."
-                data-step="17"
+                data-step="18"
                 data-tooltip="Lock">
                 <img src="{% static 'images/lockpage.png' %}" alt="Lock" class="btn-img">
             </button>
@@ -449,14 +449,14 @@
             <label for="bookKeyword">Keyword</label>
             <textarea class="form-control" id="bookKeyword" name="bookKeyword" rows="5" required readonly
                 data-intro="Step 17: After locking, click Generate Keywords to automatically extract keywords from the scanned content."
-                data-step="18"></textarea>
+                data-step="19"></textarea>
         </div>
 
         <div class="scan-actions-section">
             <div class="scan-actions">
                 <button type="button" id="generateKeywordsButton" class="scan-button" disabled
                     data-intro="Step 18: Once locked, click here to generate keywords from the scanned content."
-                    data-step="19">
+                    data-step="20">
                     Generate Keywords
                 </button>
             </div>
@@ -466,7 +466,7 @@
 
     <button type="submit" id="addBookButton" class="add-book-button"
         data-intro="Step 19: Finally, click Add Book to save all details and finish the process."
-        data-step="20">
+        data-step="21">
         Add Book
     </button>
 
