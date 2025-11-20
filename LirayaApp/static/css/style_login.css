@@ -166,7 +166,7 @@ body, html {
   cursor: pointer;
 }
 
-/* Hide built-in Chrome password eye icon */
+/* Hide built-in Chrome password eye */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear,
 input[type="password"]::-webkit-credentials-auto-fill-button,
