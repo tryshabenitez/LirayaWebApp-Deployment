@@ -853,10 +853,10 @@ document.addEventListener('DOMContentLoaded', function(){
     }catch(err){ /* ignore */ }
 
     let prettyAction = 'perform this action';
-    if (action === 'deactivate') prettyAction = 'deactivate this account';
-    if (action === 'reactivate' || action === 'activate' || action === 'new') prettyAction = 'reactivate this account';
+    if (action === 'deactivate') prettyAction = 'deactivate the account';
+    if (action === 'reactivate' || action === 'activate' || action === 'new') prettyAction = 'reactivate the account';
 
-    const message = name ? `Are you sure you want to ${prettyAction} for ${name}?` : `Are you sure you want to ${prettyAction}?`;
+    const message = name ? `Are you sure you want to ${prettyAction} of ${name}?` : `Are you sure you want to ${prettyAction}?`;
 
     openConfirm(message, href, action);
   });
