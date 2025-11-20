@@ -133,28 +133,32 @@
                             {% if account.account_status == 'NEW' %}
                                 {# If current is NEW and it used to be NEW → only Deactivate #}
                                 {% if account.previous_status == 'NEW' %}
-                                    <button class="action_button deactivate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Deactivate
+                                    <button class="action_button deactivate confirm-action"
+                                        data-action="deactivate"
+                                        data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                      Deactivate
                                     </button>
                                 {% else %}
                                     {# Fallback to your old behavior if previous_status isn't NEW #}
-                                    <button class="action_button activate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Reactivate
+                                    <button class="action_button activate confirm-action"
+                                        data-action="reactivate"
+                                        data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                      Reactivate
                                     </button>
-                                    <button class="action_button deactivate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Deactivate
+                                    <button class="action_button deactivate confirm-action"
+                                        data-action="deactivate"
+                                        data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                      Deactivate
                                     </button>
                                 {% endif %}
 
                             {% elif account.account_status == 'ACTIVE' %}
                                 {# If current is ACTIVE and it used to be ACTIVE → only Deactivate #}
                                 {% if account.previous_status == 'ACTIVE' %}
-                                    <button class="action_button deactivate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Deactivate
+                                    <button class="action_button deactivate confirm-action"
+                                        data-action="deactivate"
+                                        data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                      Deactivate
                                     </button>
                                 {% else %}
                                     {# Fallback: your original ACTIVE behavior (also Deactivate only) #}
@@ -168,21 +172,24 @@
                                 {# If DEACTIVATED, show based on what it was before #}
                                 {% if account.previous_status == 'NEW' %}
                                     {# From NEW → only Set as New #}
-                                    <button class="action_button activate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=new&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Reactivate
+                                    <button class="action_button activate confirm-action"
+                                        data-action="reactivate"
+                                        data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=new&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                      Reactivate
                                     </button>
                                 {% elif account.previous_status == 'ACTIVE' %}
                                     {# From ACTIVE → only Activate #}
-                                    <button class="action_button activate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Reactivate
+                                    <button class="action_button activate confirm-action"
+                                        data-action="reactivate"
+                                        data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                      Reactivate
                                     </button>
                                 {% else %}
                                     {# Legacy fallback if previous_status is blank/other #}
-                                    <button class="action_button activate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Reactivate
+                                    <button class="action_button activate confirm-action"
+                                        data-action="reactivate"
+                                        data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=activate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                      Reactivate
                                     </button>
                                 {% endif %}
                             {% endif %}
@@ -748,7 +755,128 @@
 
 
 </div>
+<!-- Confirm Action Modal -->
+<div id="confirmActionModal" class="modal-overlay" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmActionTitle">
+    <div class="modal-header">
+      <h3 id="confirmActionTitle">Confirm action</h3>
+      <button type="button" class="modal-close" id="confirmClose" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage">Are you sure you want to perform this action?</p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="confirmCancel" class="admin_button">Cancel</button>
+      <button type="button" id="confirmProceed" class="admin_button">Yes, proceed</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Ensure admin_button can display activate (green) variant to match action_button.activate */
+  .admin_button.activate {
+    background-color: #1c7a34; /* dark green */
+    color: white;
+    border: 2px solid #1c7a34;
+  }
+  .admin_button.activate:hover { background-color: #28a745; }
+  /* Ensure admin_button.deactivate is styled red like action_button.deactivate */
+  .admin_button.deactivate {
+    background-color: #b02a37; /* dark red */
+    color: white;
+    border: 2px solid #b02a37;
+  }
+  .admin_button.deactivate:hover { background-color: #dc3545; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const modal = document.getElementById('confirmActionModal');
+  const msgEl = document.getElementById('confirmMessage');
+  const closeBtn = document.getElementById('confirmClose');
+  const cancelBtn = document.getElementById('confirmCancel');
+  const proceedBtn = document.getElementById('confirmProceed');
+
+  let pendingHref = null;
+  let pendingAction = null;
+
+    function openConfirm(message, href, action){
+    msgEl.textContent = message;
+    pendingHref = href;
+    pendingAction = action;
+
+    // Update proceed button text and classes based on action
+    proceedBtn.textContent = (action === 'deactivate') ? 'Deactivate' : (action === 'reactivate' || action === 'activate' || action === 'new') ? 'Reactivate' : 'Proceed';
+
+    // Reset classes
+    proceedBtn.className = '';
+    // Use the site's larger `admin_button` size for modal buttons so Cancel and Proceed match
+    if (action === 'deactivate') {
+      proceedBtn.classList.add('admin_button','deactivate');
+    } else if (action === 'reactivate' || action === 'activate' || action === 'new') {
+      proceedBtn.classList.add('admin_button','activate');
+    } else {
+      proceedBtn.classList.add('admin_button');
+    }
+
+    modal.hidden = false;
+  }
+
+  function closeConfirm(){
+    modal.hidden = true;
+    pendingHref = null;
+    // Re-enable proceed button in case it was disabled
+    try{ proceedBtn.disabled = false; }catch(e){}
+  }
+
+  // Delegate clicks from any element with .confirm-action
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('.confirm-action');
+    if (!btn) return;
+
+    // Prevent default navigation
+    e.preventDefault();
+    e.stopPropagation();
+
+    const href = btn.getAttribute('data-href');
+    const action = (btn.getAttribute('data-action')||'').toLowerCase();
+
+    // Try to obtain the account name from the same row (second cell)
+    let name = null;
+    try{
+      const row = btn.closest('tr');
+      if (row) {
+        const tds = row.querySelectorAll('td');
+        if (tds && tds.length >= 2) name = tds[1].textContent.trim();
+      }
+    }catch(err){ /* ignore */ }
+
+    let prettyAction = 'perform this action';
+    if (action === 'deactivate') prettyAction = 'deactivate this account';
+    if (action === 'reactivate' || action === 'activate' || action === 'new') prettyAction = 'reactivate this account';
+
+    const message = name ? `Are you sure you want to ${prettyAction} for ${name}?` : `Are you sure you want to ${prettyAction}?`;
+
+    openConfirm(message, href, action);
+  });
+
+  // Close handlers
+  closeBtn.addEventListener('click', closeConfirm);
+  cancelBtn.addEventListener('click', closeConfirm);
+  modal.addEventListener('click', function(e){ if (e.target === modal) closeConfirm(); });
+
+  // Proceed
+  proceedBtn.addEventListener('click', function(){
+    if (!pendingHref) { closeConfirm(); return; }
+    // navigate
+    // small UX: disable modal to prevent double-click
+    proceedBtn.disabled = true;
+    window.location.href = pendingHref;
+  });
+
+  // Escape key
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeConfirm(); });
+
+});
+</script>
 {% endblock %}
-
-
-    
