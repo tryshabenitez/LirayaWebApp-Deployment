@@ -3737,14 +3737,16 @@ def librarian_view_details(request, book_id):
         'DEPARTMENT OF ENGINEERING (DOE)',
         'DEPARTMENT OF INDUSTRIAL EDUCATION (DED)',
         'DEPARTMENT OF INDUSTRIAL TECHNOLOGY (DIT)',
-        'OFFICE OF STUDENT AFFAIRS (OSA)'
     ]
-
+    
     # Fetch categories for the librarian (excluding department categories)
     if user_info['role'] == 'DEPARTMENT':
         categories = department_categories  # Use predefined categories for DEPARTMENT users
     else:
         categories = Books.objects.exclude(shelf_category__in=department_categories).values('shelf_category').distinct()  # Get dynamic categories for LIBRARIAN
+    
+    # Fetch all distinct publishers for the librarian
+    publishers = Books.objects.values('publisher').distinct()
 
 
     # Handle archiving action (toggle the book's archived status)
@@ -3763,7 +3765,7 @@ def librarian_view_details(request, book_id):
         try:
             ctype = (request.headers.get('Content-Type') or '').lower()
 
-            # Allowed text fields for update
+            # Allowed text fields for update (include book type, scanned fields, and primary keyword)
             allowed_fields = [
                 'title',
                 'author',
@@ -3771,6 +3773,10 @@ def librarian_view_details(request, book_id):
                 'year_of_publication',
                 'publisher',
                 'shelf_category',
+                'book_type',
+                'scanned_type',
+                'scanned_content',
+                'primary_keyword',
             ]
 
             # Update book details based on the request body
@@ -3780,6 +3786,25 @@ def librarian_view_details(request, book_id):
                 for field in allowed_fields:
                     if field in data:
                         setattr(book, field, data[field])
+                
+                 # Title extraction from cropped cover (if title_image_data exists in data)
+                    # Document text extraction (image page OCR) - mirror librarian_addbook behavior
+                if 'image_data' in data:
+                    try:
+                        data_uri = data.get('image_data')
+                        scanned_type = data.get('scanned_type', "TOC")
+                        if not data_uri:
+                            return JsonResponse({'error': 'No image data received'}, status=400)
+
+                        # Process with Google Cloud Vision OCR (or configured OCR helper)
+                        extracted_text = ocr_extract_text(data_uri, scanned_type)
+
+                        return JsonResponse({
+                            'extracted_text': extracted_text,
+                        })
+                    except Exception as e:
+                        print(f"Error during document text detection: {str(e)}")
+                        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
 
             else:
                 # If it's form data
@@ -3815,9 +3840,11 @@ def librarian_view_details(request, book_id):
         'book': book,
         'user_info': user_info,
         'categories': categories,
+        'publishers': publishers, 
         'department_categories': department_categories, 
     }
     return render(request, 'librarian_ViewDetails.html', context)
+
 
 
 
