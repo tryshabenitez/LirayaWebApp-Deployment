@@ -161,11 +161,12 @@
                                       Deactivate
                                     </button>
                                 {% else %}
-                                    {# Fallback: your original ACTIVE behavior (also Deactivate only) #}
-                                    <button class="action_button deactivate"
-                                            onclick="window.location.href='{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}'">
-                                        Deactivate
-                                    </button>
+                                  {# Fallback: your original ACTIVE behavior (also Deactivate only) #}
+                                  <button class="action_button deactivate confirm-action"
+                                      data-action="deactivate"
+                                      data-href="{% url 'admin_manageaccount' %}?account_id={{ account.account_id }}&action=deactivate&search={{ search_query }}&role={{ role_filter }}&status={{ status_filter }}&sort={{ request.GET.sort|default:'all' }}&page={{ accounts.number }}">
+                                    Deactivate
+                                  </button>
                                 {% endif %}
 
                             {% elif account.account_status == 'DEACTIVATED' %}
@@ -880,3 +881,6 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 {% endblock %}
+
+
+    
