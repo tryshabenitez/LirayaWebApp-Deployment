@@ -26,8 +26,8 @@
 <div class="container-fluid">
   <!-- Left Panel -->
   <div class="left-panel">
-    <a href="{% url 'user_homepage' %}">
-      <img src="{% static 'images/liraya.png' %}" alt="LIRAYA Logo">
+    <a href="{% url 'user_homepage' %}" class="logo-tooltip" data-text="Back to Searching">
+      <img src="{% static 'images/usericon.png' %}" alt="LIRAYA Logo">
     </a>
   </div>
 
@@ -35,7 +35,7 @@
   <div class="right-panel">
     <div class="text-center mb-3">
       <img src="{% static 'images/profile.png' %}" alt="Profile Icon" class="profile-icon mb-2">
-      <h3 class="fw-bold mt-2">LIBRARY MANAGEMENT PORTAL</h3>
+      <h3 class="fw-bold mt-2">LIRAYA MANAGEMENT PORTAL</h3>
     </div>
 
     <!-- Show error message if it exists -->
