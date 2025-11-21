@@ -289,7 +289,6 @@
 {% block script %}
 <script>
 
-
 document.addEventListener("DOMContentLoaded", function () {
     // Get the Year of Publication select element
     let select = document.getElementById("yearOfPublication");
@@ -463,20 +462,365 @@ document.getElementById('editButton').addEventListener('click', function () {
 });
 
 
-// Handle the book cover input change (when user selects a file)
-document.getElementById('bookCoverInput').addEventListener('change', function () {
-    const file = this.files[0];
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-        const coverPreview = document.getElementById('coverPreview');
-        coverPreview.src = e.target.result; // Set the preview image to the selected file
-    };
-
-    if (file) {
-        reader.readAsDataURL(file); // Read the file as a data URL
-    }
+// When clicking on the "Take Picture" label, open the camera modal
+document.querySelector('label[for="takeCoverPhoto"]').addEventListener('click', function() {
+    // Show the camera modal
+    document.getElementById('coverCamModal').style.display = 'flex';
+    startCamera();  // Start the camera when the modal is displayed
 });
+
+
+function stopCoverStream() {
+    if (_coverStream) {
+        const tracks = _coverStream.getTracks();
+        tracks.forEach(track => track.stop());
+        _coverStream = null;
+    }
+}
+
+// Auto-crop helper to center image into portrait canvas
+function autoCropToPortrait(fileOrBlob, callback) {
+    const img = new Image();
+    img.onload = function () {
+        const canvas = document.createElement("canvas");
+        const targetWidth = 1400;   // 2:3 ratio
+        const targetHeight = 1800;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff"; 
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+        // ✅ Use Math.min to prevent over-zoom
+        const scale = Math.min(
+            targetWidth / img.width,
+            targetHeight / img.height
+        );
+
+        const x = (targetWidth / 2) - (img.width / 2) * scale;
+        const y = (targetHeight / 2) - (img.height / 2) * scale;
+
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+        canvas.toBlob(function (blob) {
+            callback(blob);
+        }, "image/jpeg", 0.9);
+    };
+    img.src = URL.createObjectURL(fileOrBlob);
+}
+
+// Fallback preview from mobile camera input (if present)
+if (document.getElementById('bookCoverCamera')) {
+    document.getElementById('bookCoverCamera').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        const uploadInput = document.getElementById('bookCoverInput');
+        if (uploadInput) { uploadInput.value = ''; }
+
+        if (file && file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+            autoCropToPortrait(file, function(croppedBlob) {
+                const previewImage = document.getElementById('coverPreview');
+                previewImage.src = URL.createObjectURL(croppedBlob);
+                previewImage.style.display = 'block';
+            });
+        } else {
+            alert('Please take/select a valid image file (PNG, JPEG, or JPG).');
+            event.target.value = '';
+        }
+    });
+}
+
+// Extract button handler for the title crop modal
+document.getElementById('extractTitleBtn').addEventListener('click', function() {
+  if (!window.titleCropper) return;
+
+  // Show scanning loader if present
+  const loader = document.getElementById('loader');
+  if (loader) loader.style.display = 'flex';
+
+  const canvas = window.titleCropper.getCroppedCanvas({ width: 400, height: 200 });
+  const croppedDataUrl = canvas.toDataURL('image/png');
+
+  // Send cropped image to backend OCR (reusing AddBook endpoint)
+  fetch('{% url "librarian_addbook" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': getCookie('csrftoken') || (document.querySelector('[name=csrfmiddlewaretoken]') && document.querySelector('[name=csrfmiddlewaretoken]').value) || ''
+    },
+    body: JSON.stringify({ 'title_image_data': croppedDataUrl })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (loader) loader.style.display = 'none';
+    if (data.book_title) {
+      document.getElementById('bookTitle').value = data.book_title;
+    } else {
+      alert('No title detected.');
+    }
+    document.getElementById('titleCropModal').style.display = 'none';
+    if (window.titleCropper) { window.titleCropper.destroy(); window.titleCropper = null; }
+  })
+  .catch(err => {
+    if (loader) loader.style.display = 'none';
+    console.error(err);
+    alert('Error extracting title.');
+    document.getElementById('titleCropModal').style.display = 'none';
+    if (window.titleCropper) { window.titleCropper.destroy(); window.titleCropper = null; }
+  });
+});
+
+// Cancel button for crop modal
+document.getElementById('cancelCropBtn').addEventListener('click', function() {
+  document.getElementById('titleCropModal').style.display = 'none';
+  if (window.titleCropper) window.titleCropper.destroy();
+});
+
+// Convert preview dataURL into File (used when no actual file was attached)
+function dataURLtoFile(dataUrl, filename) {
+  const parts = dataUrl.split(',');
+  if (parts.length < 2) return null;
+  const mime = (parts[0].match(/data:(.*?);/) || [,'image/jpeg'])[1];
+  const bin  = atob(parts[1]);
+  const u8   = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new File([u8], filename, { type: mime });
+}
+
+// Extract book title via OCR (Promise-based) - reuses AddBook endpoint
+function extractBookTitle(imageData) {
+  return new Promise((resolve, reject) => {
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = 'flex';
+
+    fetch('{% url "librarian_addbook" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken') || (document.querySelector('[name=csrfmiddlewaretoken]') && document.querySelector('[name=csrfmiddlewaretoken]').value) || '',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ 'title_image_data': imageData })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (loader) loader.style.display = 'none';
+      if (data && data.book_title) {
+        // Optionally clean the OCR output if cleaner exists
+        let title = data.book_title;
+        try { if (typeof cleanUniversalOCR === 'function') title = cleanUniversalOCR(title, 'TOC'); } catch (e) { /* ignore */ }
+        document.getElementById('bookTitle').value = title;
+        resolve(data.book_title);
+      } else {
+        reject(new Error('Failed to extract book title.'));
+      }
+    })
+    .catch(error => {
+      if (loader) loader.style.display = 'none';
+      reject(error);
+    });
+  });
+}
+
+
+// When selecting a file from the upload input, show the upload modal and init Cropper
+document.getElementById('bookCoverInput').addEventListener('change', function(event) {
+  const file = event.target.files[0]; // Get the selected file
+  if (!file || !/^image\/(png|jpe?g)$/.test(file.type)) {
+    alert('Please select a valid image (PNG, JPEG, JPG).');
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const imgData = e.target.result;
+    // show full cover in left preview
+    const previewImage = document.getElementById('coverPreview');
+    if (previewImage) {
+      previewImage.src = imgData;
+      previewImage.style.display = 'block';
+    }
+
+    // open crop modal for title crop
+    const modal = document.getElementById('titleCropModal');
+    const cropImage = document.getElementById('titleCropImage');
+    cropImage.src = imgData;
+
+    // wait until the thumbnail finishes loading before creating Cropper
+    cropImage.onload = function () {
+      if (window.titleCropper) window.titleCropper.destroy();
+      window.titleCropper = new Cropper(cropImage, {
+      aspectRatio: NaN,
+      viewMode: 1,
+      autoCropArea: 0.7
+      });
+      modal.style.display = 'flex';
+    };
+  };
+  reader.readAsDataURL(file);
+  // reset input so same file can be selected again if needed
+  event.target.value = '';
+});
+
+// Hide the camera modal if "Cancel" is clicked
+document.getElementById('coverCamCancel').addEventListener('click', function () {
+  // Reset modal state (mirrors AddBook behavior)
+  const modal = document.getElementById('coverCamModal');
+  const video = document.getElementById('coverCamPreview');
+  const modalBody = modal.querySelector('.modal-body');
+  const zoomButton = document.getElementById('cropBookCoverButton');
+  const captureButton = document.getElementById('coverCamSnap');
+
+  if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+  if (coverCapturedImageModal) {
+    try { modalBody.removeChild(coverCapturedImageModal); } catch (e) { /* ignore */ }
+    coverCapturedImageModal = null;
+  }
+  video.style.display = 'block';
+  coverImageShowing = false;
+  if (zoomButton) zoomButton.style.display = 'none';
+  if (captureButton) captureButton.style.display = 'block';
+
+  // Stop camera and close modal
+  stopCoverStream();
+  modal.style.display = 'none';
+});
+
+// (title crop cancel handling moved lower; advanced handler will destroy cropper)
+
+// Logic to capture the image from the camera and show it in the modal
+document.getElementById('coverCamSnap').addEventListener('click', function () {
+  const video = document.getElementById('coverCamPreview');
+  const modal = document.getElementById('coverCamModal');
+  const loader = document.getElementById('loader');
+  const modalBody = modal.querySelector('.modal-body');
+  const captureButton = document.getElementById('coverCamSnap');
+  const zoomButton = document.getElementById('cropBookCoverButton');
+
+  // If image is showing, return to video mode
+  if (coverImageShowing) {
+    if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+    if (coverCapturedImageModal) {
+      modalBody.removeChild(coverCapturedImageModal);
+      coverCapturedImageModal = null;
+    }
+    video.style.display = 'block';
+    coverImageShowing = false;
+    zoomButton.style.display = 'none';
+    if (captureButton) captureButton.style.display = 'block';
+    return;
+  }
+
+  // Otherwise, capture image from video
+  if (!video.srcObject || video.srcObject.active === false) {
+    alert("No camera feed detected. Please open the camera first.");
+    return;
+  }
+    
+  const canvas = document.createElement('canvas');
+  const w = video.videoWidth || 1280;
+  const h = video.videoHeight || 720;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+  const imgData = canvas.toDataURL('image/png');
+
+  // Display captured image in the coverPreview container (for saving)
+  const coverPreview = document.getElementById('coverPreview');
+  if (coverPreview) { coverPreview.src = imgData; coverPreview.style.display = 'block'; }
+
+  // Create or update the modal image
+  if (coverCapturedImageModal) {
+    if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+    modalBody.removeChild(coverCapturedImageModal);
+  }
+  coverCapturedImageModal = document.createElement('img');
+  coverCapturedImageModal.src = imgData;
+  coverCapturedImageModal.style.width = '100%';
+  coverCapturedImageModal.style.height = 'auto';
+  coverCapturedImageModal.style.display = 'block';
+  coverCapturedImageModal.style.background = '#000';
+  coverCapturedImageModal.style.objectFit = 'contain';
+  modalBody.appendChild(coverCapturedImageModal);
+
+  // Hide video
+  video.style.display = 'none';
+  coverImageShowing = true;
+  zoomButton.style.display = 'block'; // Show extract title button
+
+  // hide the capture button since image is shown
+  if (captureButton) captureButton.style.display = 'none';
+
+  // Initialize Cropper.js
+  coverCropper = new Cropper(coverCapturedImageModal, {
+    aspectRatio: NaN,
+    viewMode: 1,
+    autoCropArea: 1,
+    zoomable: true,
+    cropBoxResizable: true,
+    cropBoxMovable: true
+  });
+
+  // Hide the "Capture" button and show the "Extract Title" button after capture
+  captureButton.style.display = 'none'; // Hide capture button
+  zoomButton.style.display = 'block';   // Show extract title button
+});
+
+// Extract Title (Crop & OCR) handler (uses backend OCR like AddBook)
+document.getElementById('cropBookCoverButton').onclick = function () {
+  const modal = document.getElementById('coverCamModal');
+  const modalBody = modal.querySelector('.modal-body');
+  const video = document.getElementById('coverCamPreview');
+
+  if (!coverImageShowing || !coverCropper || !coverCapturedImageModal) {
+    alert('No image to extract title from.');
+    return;
+  }
+
+  // Get the cropped image data
+  const croppedCanvas = coverCropper.getCroppedCanvas();
+  const croppedImgData = croppedCanvas.toDataURL('image/png');
+
+  // Extract the title using OCR and wait for the extraction to finish before closing the modal
+  extractBookTitle(croppedImgData).then(() => {
+    // After extraction, return to video mode (remove image, show video)
+    if (coverCropper) { coverCropper.destroy(); coverCropper = null; }
+    if (coverCapturedImageModal) {
+      modalBody.removeChild(coverCapturedImageModal);
+      coverCapturedImageModal = null;
+    }
+    video.style.display = 'block';
+    coverImageShowing = false;
+    document.getElementById('cropBookCoverButton').style.display = 'none'; // Hide the extract title button
+    modal.style.display = 'none'; // Close the modal after extraction is complete
+  }).catch((error) => {
+    console.error(error);
+    alert('Error during title extraction');
+    // Ensure modal is also closed if there is an error
+    modal.style.display = 'none';
+  });
+};
+
+// Function to start the camera (implement this based on your app's requirements)
+function startCamera() {
+    const videoElement = document.getElementById('coverCamPreview');
+
+    // Request camera access
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+            videoElement.srcObject = stream;
+        })
+        .catch(function(error) {
+            console.error('Camera access error: ', error);
+        });
+}
+
+
 // Logic to manage the camera preview, capture, crop, upload, scan and retry actions
 const cameraPreview = document.getElementById("cameraPreview");
 let cropper = null;
@@ -1076,7 +1420,14 @@ document.getElementById("confirmEdit").addEventListener("click", async function(
   formData.append('title', document.getElementById('bookTitle').value);
   formData.append('author', document.getElementById('bookAuthor').value);
   formData.append('co_author', document.getElementById('bookCoAuthor').value);
-  formData.append('year_of_publication', document.getElementById('yearOfPublication').value);
+  // Only append year_of_publication when it's a valid 4-digit year; omit otherwise
+  const yearEl = document.getElementById('yearOfPublication');
+  const yearVal = yearEl ? String(yearEl.value).trim() : '';
+  if (/^\d{4}$/.test(yearVal)) {
+    formData.append('year_of_publication', yearVal);
+  } else {
+    console.log('DEBUG: Omit invalid/empty year_of_publication value:', yearVal);
+  }
   formData.append('publisher', document.getElementById('publisher').value);
   formData.append('shelf_category', document.getElementById('bookShelfCategory').value);
 
@@ -1091,7 +1442,26 @@ document.getElementById("confirmEdit").addEventListener("click", async function(
   if (keywordEl) formData.append('primary_keyword', keywordEl.value);
 
   const coverFile = document.getElementById('bookCoverInput').files[0];
-  if (coverFile) formData.append('book_cover', coverFile);
+  if (coverFile) {
+    formData.append('book_cover', coverFile);
+    console.log('DEBUG: appending cover file from input', { name: coverFile.name, size: coverFile.size, type: coverFile.type });
+  } else {
+    // If no file chosen but a data-URL was captured/previewed, convert it to a File and append
+    try {
+      const preview = document.getElementById('coverPreview');
+      if (preview && preview.src && preview.src.startsWith('data:')) {
+        const generated = dataURLtoFile(preview.src, 'cover.png');
+        if (generated) {
+          formData.append('book_cover', generated);
+          console.log('DEBUG: appending cover file converted from dataURL', { name: generated.name, size: generated.size, type: generated.type });
+        } else {
+          console.log('DEBUG: dataURLtoFile returned null — no cover appended');
+        }
+      } else {
+        console.log('DEBUG: no cover file selected and preview not a data URL');
+      }
+    } catch (e) { console.error('DEBUG: error converting preview to file', e); }
+  }
 
   const csrftoken = getCookie('csrftoken');
   const bookId = "{{ book.book_id }}";
