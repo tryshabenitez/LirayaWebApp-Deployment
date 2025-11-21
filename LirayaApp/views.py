@@ -3787,8 +3787,24 @@ def librarian_view_details(request, book_id):
                     if field in data:
                         setattr(book, field, data[field])
                 
-                 # Title extraction from cropped cover (if title_image_data exists in data)
-                    # Document text extraction (image page OCR) - mirror librarian_addbook behavior
+                
+                # --- 2) Title extraction from cropped cover ---
+                if 'title_image_data' in data:
+                    try:
+                        img_data = data.get('title_image_data')
+                        img_data = img_data.split(',')[1]              # strip data URI prefix
+                        img_data = base64.b64decode(img_data)         # convert to binary
+                        
+                        # Process the image data directly
+                        predicted_title = predict_title_with_google_vision(img_data)
+                        
+                        return JsonResponse({'book_title': predicted_title})
+                    except Exception as e:
+                        print(f"Error processing title: {str(e)}")
+                        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+
+                 
+                # Document text extraction (image page OCR) - mirror librarian_addbook behavior
                 if 'image_data' in data:
                     try:
                         data_uri = data.get('image_data')
