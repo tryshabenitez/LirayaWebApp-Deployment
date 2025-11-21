@@ -50,12 +50,12 @@
 
   
     <!-- Cover file input (only visible on Edit) -->
-    <div class="form-row" id="coverInputRow" style="display:none; margin-top:12px;">
-      <div class="or-separator centered-text">Change Cover</div>
+    <div class="form-row" id="coverInputRow" style="display:none; margin-top:12px; text-align: center;">
+      <div class="or-separator centered-text" style="margin-left: auto; margin-right: auto; width: fit-content;">Change Cover</div>
       <input type="file" id="bookCoverInput" accept="image/*" style="display:none;">
-      <label for="bookCoverInput" class="upload-button">Upload Book Cover</label>
-      <div class="or-separator centered-text">OR</div>
-      <label for="takeCoverPhoto" class="upload-button">Take Picture</label>
+      <label for="bookCoverInput" class="upload-button" style="margin-left: auto; margin-right: auto; margin-top: 5px; display: inline-block;">Upload Book Cover</label>
+      <div class="or-separator centered-text" style="margin-left: auto; margin-right: auto; width: fit-content;">OR</div>
+      <label for="takeCoverPhoto" class="upload-button" style="margin-left: auto; margin-right: auto; margin-top: 5px; display: inline-block;">Take Picture</label>
     </div>
 
     <!-- Simple Camera Modal for Taking Book Cover Picture -->
@@ -123,18 +123,18 @@
         <!-- Publisher Section (Editable) -->
         <div class="form-row">
           <label for="publisher">Publisher</label>
-          <div class="input-group">
+          <div class="input-group" style="display: flex; align-items: center;">
             <!-- Publisher input field (editable by default when in edit mode) -->
             <input type="text" id="publisher" class="form-control" name="publisher" value="{{ book.publisher }}" readonly 
-                  placeholder="Enter Publisher or select from list" required>
+                  placeholder="Enter Publisher or select from list" required style="flex-grow: 1; width: auto;">
             
             <!-- Button to show dropdown for selecting from existing publishers -->
-            <button type="button" class="btn btn-outline-secondary add-publisher">▼</button>
+            <button type="button" class="btn btn-outline-secondary add-publisher" style="margin-left: 5px;">▼</button>
           </div>
           
           <!-- Dropdown for selecting an existing publisher -->
-          <div id="publisherDropdown" style="display:none; margin-top: 10px;">
-            <select class="form-control" id="publisherSelect" name="publisherSelect">
+          <div id="publisherDropdown" style="display:none; margin-top: 10px; width: 100%;">
+            <select class="input-group" id="publisherSelect" name="publisherSelect" style="width: 100%;">
               <option value="" selected disabled>Select Publisher</option>
               {% for publisher in publishers %}
                 <option value="{{ publisher.publisher }}" {% if publisher.publisher == book.publisher %}selected{% endif %}>{{ publisher.publisher }}</option>
@@ -207,23 +207,26 @@
 
             <!-- Scan Actions -->
             <div class="scan-actions-section">
-              <button type="button" id="captureButton" class="scan-button">Capture</button>
-              <button type="button" id="cropButton" class="scan-button">Crop</button>
+              <div style="display: flex; gap: 5px;">
+                <button type="button" id="captureButton" class="scan-button">Capture</button>
+                <button type="button" id="cropButton" class="scan-button">Crop</button>
 
-              <!-- Upload TEMPORARY Button (hidden file input + visible button) -->
-              <div class="scan-actions">
-                <input type="file" id="pageUpload" accept="image/*" style="display: none;">
-                <button type="button" id="uploadButton" class="scan-button">Upload</button>
+                <!-- Upload TEMPORARY Button (hidden file input + visible button) -->
+                <div class="scan-actions">
+                  <input type="file" id="pageUpload" accept="image/*" style="display: none;">
+                  <button type="button" id="uploadButton" class="scan-button">Upload</button>
+                </div>
+
+                <button type="button" id="scanButton" class="scan-button" disabled>Scan</button>
+
+                <div class="scan-actions">
+                  <button type="button" id="captureNextButton" class="scan-button" disabled style="display:none;">Scan Next Page</button>
+                </div>
+
+                <button type="button" id="retryButton" class="scan-button">Retry</button>
+                <button type="button" id="resetButton" class="scan-button">Reset</button>
+
               </div>
-
-              <button type="button" id="scanButton" class="scan-button" disabled>Scan</button>
-
-              <div class="scan-actions">
-                <button type="button" id="captureNextButton" class="scan-button" disabled style="display:none;">Scan Next Page</button>
-              </div>
-
-              <button type="button" id="retryButton" class="scan-button">Retry</button>
-              <button type="button" id="resetButton" class="scan-button">Reset</button>
             </div>
         </div>
 
