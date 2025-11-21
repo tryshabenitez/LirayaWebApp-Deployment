@@ -1062,20 +1062,146 @@ def admin_bookdetails(request):
     book_id = request.GET.get('book_id')  # Get the book_id from URL
     account_id = request.session.get('account_id') 
     user_info = get_user_info(account_id)
+    
+    # If account_id doesn't exist, redirect to the login page
+    if not account_id:
+        return redirect('login')
+
     try:
         # Fetch the specific book details from the database
         book = Books.objects.get(book_id=book_id, is_archived=False)
-        
-        
-        context = {
-            'book': book,  # Pass the book details to the template
-            'user_info': user_info,
-        }
-        return render(request, 'admin_bookdetails.html', context)
-
     except Books.DoesNotExist:
         messages.error(request, "Book not found.")
-        return redirect('admin_homepage')  # Redirect to admin homepage if the book does not exist
+        return redirect('admin_homepage')
+    
+    # Define fixed categories for 'DEPARTMENT' role
+    department_categories = [
+        'DEPARTMENT OF ENGINEERING (DOE)',
+        'DEPARTMENT OF INDUSTRIAL EDUCATION (DED)',
+        'DEPARTMENT OF INDUSTRIAL TECHNOLOGY (DIT)',
+    ]
+    
+    # Fetch categories for the librarian (excluding department categories)
+    if user_info['role'] == 'DEPARTMENT':
+        categories = department_categories  # Use predefined categories for DEPARTMENT users
+    else:
+        categories = Books.objects.exclude(shelf_category__in=department_categories).values('shelf_category').distinct()  # Get dynamic categories for LIBRARIAN
+    
+    # Fetch all distinct publishers for the librarian
+    publishers = Books.objects.values('publisher').distinct()
+
+
+    # Handle archiving action (toggle the book's archived status)
+    if 'archive' in request.GET:  
+        book.is_archived = not book.is_archived  # Toggle the archived status
+        book.save()
+
+         # Use Django's messages framework to add a success message
+        messages.success(request, 'Book successfully deleted!')
+
+        # Return a JSON response indicating success
+        return JsonResponse({'success': True})
+
+    # --- Update book details ---
+    if request.method == 'POST':
+        try:
+            ctype = (request.headers.get('Content-Type') or '').lower()
+
+            # Allowed text fields for update (include book type, scanned fields, and primary keyword)
+            allowed_fields = [
+                'title',
+                'author',
+                'co_author',
+                'year_of_publication',
+                'publisher',
+                'shelf_category',
+                'book_type',
+                'scanned_type',
+                'scanned_content',
+                'primary_keyword',
+            ]
+
+            # Update book details based on the request body
+            if ctype.startswith('application/json'):
+                # If it's JSON data
+                data = json.loads(request.body.decode('utf-8'))
+                for field in allowed_fields:
+                    if field in data:
+                        setattr(book, field, data[field])
+                
+                
+                # --- 2) Title extraction from cropped cover ---
+                if 'title_image_data' in data:
+                    try:
+                        img_data = data.get('title_image_data')
+                        img_data = img_data.split(',')[1]              # strip data URI prefix
+                        img_data = base64.b64decode(img_data)         # convert to binary
+                        
+                        # Process the image data directly
+                        predicted_title = predict_title_with_google_vision(img_data)
+                        
+                        return JsonResponse({'book_title': predicted_title})
+                    except Exception as e:
+                        print(f"Error processing title: {str(e)}")
+                        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+
+                 
+                # Document text extraction (image page OCR) - mirror librarian_addbook behavior
+                if 'image_data' in data:
+                    try:
+                        data_uri = data.get('image_data')
+                        scanned_type = data.get('scanned_type', "TOC")
+                        if not data_uri:
+                            return JsonResponse({'error': 'No image data received'}, status=400)
+
+                        # Process with Google Cloud Vision OCR (or configured OCR helper)
+                        extracted_text = ocr_extract_text(data_uri, scanned_type)
+
+                        return JsonResponse({
+                            'extracted_text': extracted_text,
+                        })
+                    except Exception as e:
+                        print(f"Error during document text detection: {str(e)}")
+                        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+
+            else:
+                # If it's form data
+                for field in allowed_fields:
+                    if field in request.POST:
+                        setattr(book, field, request.POST.get(field))
+
+                # Handle book cover upload to Cloudinary
+                if 'book_cover' in request.FILES:
+                    book_cover = request.FILES['book_cover']
+                    try:
+                        # Delete old cover from Cloudinary if exists
+                        if book.book_cover:
+                            public_id = book.book_cover.name.split('/')[-1].split('.')[0]
+                            destroy(public_id)
+                
+                        # Upload new cover to Cloudinary
+                        cloudinary_response = upload(book_cover)
+                        book.book_cover = cloudinary_response['secure_url']  # Save secure URL
+                
+                    except Exception as e:
+                        messages.error(request, f"Error uploading book cover: {e}")
+                        return JsonResponse({'success': False, 'message': f"Error uploading book cover: {str(e)}"}, status=500)
+                        
+            book.save()
+            return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+
+    # Render the view details page with the book and categories data
+    context = {
+        'book': book,
+        'user_info': user_info,
+        'categories': categories,
+        'publishers': publishers, 
+        'department_categories': department_categories, 
+    }
+    return render(request, 'admin_bookdetails.html', context)
 
 
 @login_checker
