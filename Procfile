@@ -1,2 +1,2 @@
-release: python manage.py migrate && python manage.py collectstatic --noinput && python -m spacy download en_core_web_sm
+release: python manage.py migrate && python manage.py collectstatic --noinput 
 web: gunicorn LirayaWeb.wsgi --workers=2 --threads=2 --timeout=300 --log-file -
