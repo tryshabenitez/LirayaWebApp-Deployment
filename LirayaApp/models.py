@@ -29,7 +29,7 @@ class AccountInformation(models.Model):
     gender = models.CharField(max_length=10)
     contact_num = models.CharField(max_length=20)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
-    house_no = models.CharField(max_length=20)
+    house_no = models.CharField(max_length=100)
     street_village = models.CharField(max_length=100)
     barangay = models.CharField(max_length=100)
     city_municipality = models.CharField(max_length=100)
