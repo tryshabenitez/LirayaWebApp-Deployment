@@ -57,12 +57,12 @@
 
   
     <!-- Cover file input (only visible on Edit) -->
-    <div class="form-row" id="coverInputRow" style="display:none; margin-top:12px;">
-      <div class="or-separator centered-text">Change Cover</div>
+    <div class="form-row" id="coverInputRow" style="display:none; margin-top:12px; text-align: center;">
+      <div class="or-separator centered-text" style="margin-left: auto; margin-right: auto; width: fit-content;">Change Cover</div>
       <input type="file" id="bookCoverInput" accept="image/*" style="display:none;">
-      <label for="bookCoverInput" class="upload-button">Upload Book Cover</label>
-      <div class="or-separator centered-text">OR</div>
-      <label for="takeCoverPhoto" class="upload-button">Take Picture</label>
+      <label for="bookCoverInput" class="upload-button" style="margin-left: auto; margin-right: auto; margin-top: 5px; display: inline-block;">Upload Book Cover</label>
+      <div class="or-separator centered-text" style="margin-left: auto; margin-right: auto; width: fit-content;">OR</div>
+      <label for="takeCoverPhoto" class="upload-button" style="margin-left: auto; margin-right: auto; margin-top: 5px; display: inline-block;">Take Picture</label>
     </div>
 
     <!-- Simple Camera Modal for Taking Book Cover Picture -->
@@ -105,6 +105,7 @@
         <div class="form-row">
             <label for="bookTitle">Title</label>
             <input type="text" class="form-control" id="bookTitle" value="{{ book.title }}" readonly>
+            <div id="bookTitleResult" style="display:none; color:red; margin-top:4px;"></div>
         </div>
 
         <!-- Editable -->
@@ -130,18 +131,18 @@
         <!-- Publisher Section (Editable) -->
         <div class="form-row">
           <label for="publisher">Publisher</label>
-          <div class="input-group">
+          <div class="input-group" style="display: flex; align-items: center;">
             <!-- Publisher input field (editable by default when in edit mode) -->
             <input type="text" id="publisher" class="form-control" name="publisher" value="{{ book.publisher }}" readonly 
-                  placeholder="Enter Publisher or select from list" required>
+                  placeholder="Enter Publisher or select from list" required style="flex-grow: 1; width: auto;">
             
             <!-- Button to show dropdown for selecting from existing publishers -->
-            <button type="button" class="btn btn-outline-secondary add-publisher">▼</button>
+            <button type="button" class="btn btn-outline-secondary add-publisher" style="margin-left: 5px;" disabled>▼</button>
           </div>
           
           <!-- Dropdown for selecting an existing publisher -->
-          <div id="publisherDropdown" style="display:none; margin-top: 10px;">
-            <select class="form-control" id="publisherSelect" name="publisherSelect">
+          <div id="publisherDropdown" style="display:none; margin-top: 10px; width: 100%;">
+            <select class="input-group" id="publisherSelect" name="publisherSelect" style="width: 100%;">
               <option value="" selected disabled>Select Publisher</option>
               {% for publisher in publishers %}
                 <option value="{{ publisher.publisher }}" {% if publisher.publisher == book.publisher %}selected{% endif %}>{{ publisher.publisher }}</option>
@@ -214,23 +215,33 @@
 
             <!-- Scan Actions -->
             <div class="scan-actions-section">
-              <button type="button" id="captureButton" class="scan-button">Capture</button>
-              <button type="button" id="cropButton" class="scan-button">Crop</button>
+              <div style="display: flex; gap: 5px;">
+                <button type="button" id="captureButton" class="scan-button">
+                  <img src="{% static 'images/capture.png' %}" alt="Capture" class="btn-img">
+                </button>
 
-              <!-- Upload TEMPORARY Button (hidden file input + visible button) -->
-              <div class="scan-actions">
-                <input type="file" id="pageUpload" accept="image/*" style="display: none;">
-                <button type="button" id="uploadButton" class="scan-button">Upload</button>
+                <!-- Upload TEMPORARY Button (hidden file input + visible button) -->
+                <div class="scan-actions">
+                  <input type="file" id="pageUpload" accept="image/*" style="display: none;">
+                  <button type="button" id="uploadButton" class="scan-button">Upload</button>
+                </div>
+                
+                <button type="button" id="cropButton" class="scan-button">
+                  <img src="{% static 'images/crop.png' %}" alt="Crop" class="btn-img">
+                </button>
+
+                <button type="button" id="scanButton" class="scan-button" disabled>
+                  <img src="{% static 'images/scan.png' %}" alt="Scan" class="btn-img">
+                </button>
+
+                <div class="scan-actions">
+                  <button type="button" id="captureNextButton" class="scan-button" disabled style="display:none;">Scan Next Page</button>
+                </div>
+
+                <button type="button" id="retryButton" class="scan-button">Retry</button>
+                <button type="button" id="resetButton" class="scan-button">Reset</button>
+
               </div>
-
-              <button type="button" id="scanButton" class="scan-button" disabled>Scan</button>
-
-              <div class="scan-actions">
-                <button type="button" id="captureNextButton" class="scan-button" disabled style="display:none;">Scan Next Page</button>
-              </div>
-
-              <button type="button" id="retryButton" class="scan-button">Retry</button>
-              <button type="button" id="resetButton" class="scan-button">Reset</button>
             </div>
         </div>
 
@@ -332,6 +343,76 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+// AFTER-TYPING duplicate-title check (case-insensitive) for Admin Book Details
+(function () {
+  const titleInput = document.getElementById('bookTitle');
+  const resultEl   = document.getElementById('bookTitleResult');
+  const submitBtn  = document.getElementById('saveButton');
+
+  if (!titleInput) return; // no title field found
+
+  let debounceId;
+  let alertShownFor = '';
+
+  const normalize = s => (s || '').trim().replace(/\s+/g, ' ');
+
+  function getCookieLocal(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+  }
+
+  function checkNow() {
+    const title = normalize(titleInput.value);
+    if (!title) {
+      if (resultEl) resultEl.style.display = 'none';
+      if (submitBtn) submitBtn.disabled = false;
+      alertShownFor = '';
+      return;
+    }
+
+    const bookId = "{{ book.book_id }}";
+    fetch(`/adminbookdetails/?book_id=${bookId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') && document.querySelector('[name=csrfmiddlewaretoken]').value) || getCookieLocal('csrftoken') || ''
+      },
+      body: JSON.stringify({ bookTitle: title, checkTitle: true })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.exists) {
+        if (resultEl) {
+          resultEl.style.display = 'block';
+          resultEl.textContent = 'A book with this title already exists.';
+        }
+        if (submitBtn) submitBtn.disabled = true;
+
+        if (alertShownFor !== title) {
+          alertShownFor = title;
+          try { alert('A book with this title already exists!'); } catch (e) {}
+        }
+      } else {
+        if (resultEl) resultEl.style.display = 'none';
+        if (submitBtn) submitBtn.disabled = false;
+        alertShownFor = '';
+      }
+    }).catch(err => {
+      // ignore errors silently
+      console.error('Title check error', err);
+    });
+  }
+
+  function scheduleCheck() {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(checkNow, 600);
+  }
+
+  titleInput.addEventListener('input', scheduleCheck);
+})();
+
 // Ensure setEditMode is defined so save flow can call it without errors
 function setEditMode(isEditing) {
   try {
@@ -380,6 +461,9 @@ function setEditMode(isEditing) {
     // Show/hide lock button in edit mode
     const lockBtn = document.getElementById('lockButton');
     if (lockBtn) lockBtn.style.display = isEditing ? 'inline-block' : 'none';
+    // Enable/disable the publisher dropdown button when editing
+    const addPublisherBtn = document.querySelector('.add-publisher');
+    if (addPublisherBtn) addPublisherBtn.disabled = !isEditing;
   } catch (e) {
     console.error('setEditMode error', e);
   }
@@ -392,32 +476,37 @@ function updateScannedTypeOptions() {
   if (!bookTypeEl || !scannedTypeEl) return;
 
   const bookType = String(bookTypeEl.value || '').trim();
-  // Clear existing options
-  scannedTypeEl.innerHTML = '';
+  // Preserve previous selection if possible, otherwise prefer server value, otherwise default
+  const prevVal = scannedTypeEl.value;
+  let serverVal = null;
+  try { serverVal = "{{ book.scanned_type }}"; } catch (e) { serverVal = null; }
 
+  // Build new options
+  scannedTypeEl.innerHTML = '';
+  let opts = [];
   if (bookType.toLowerCase() === 'thesis') {
-    const opt = document.createElement('option');
-    opt.value = 'Abstract';
-    opt.text = 'Abstract';
-    scannedTypeEl.appendChild(opt);
+    opts = [{ value: 'Abstract', text: 'Abstract' }];
   } else {
-    // Default to Academic: TOC and Index
-    const opt1 = document.createElement('option');
-    opt1.value = 'TOC';
-    opt1.text = 'Table of Contents';
-    scannedTypeEl.appendChild(opt1);
-    const opt2 = document.createElement('option');
-    opt2.value = 'Index';
-    opt2.text = 'Index';
-    scannedTypeEl.appendChild(opt2);
+    opts = [
+      { value: 'TOC', text: 'Table of Contents' },
+      { value: 'Index', text: 'Index' }
+    ];
   }
 
-  // Try to pre-select the server-provided value if it matches
-  try {
-    const serverVal = "{{ book.scanned_type }}";
-    if (serverVal) scannedTypeEl.value = serverVal;
-  } catch (e) {
-    // ignore template substitution errors
+  opts.forEach(o => {
+    const el = document.createElement('option');
+    el.value = o.value;
+    el.text = o.text;
+    scannedTypeEl.appendChild(el);
+  });
+
+  // Selection preference: previous value (if still valid) -> server value -> first option
+  if (prevVal && opts.some(o => o.value === prevVal)) {
+    scannedTypeEl.value = prevVal;
+  } else if (serverVal && opts.some(o => o.value === serverVal)) {
+    scannedTypeEl.value = serverVal;
+  } else if (opts.length > 0) {
+    scannedTypeEl.value = opts[0].value;
   }
 }
 
@@ -469,6 +558,8 @@ document.getElementById('editButton').addEventListener('click', function () {
     // Fetch all publishers from the database and populate the dropdown
     fetchPublishers();
     fetchShelfCategories();
+    // Start the scanning camera now that user entered edit mode
+    try { startScanningCamera(); } catch (e) { console.error('startScanningCamera error', e); }
 });
 
 
@@ -837,21 +928,48 @@ function startCamera() {
         });
 }
 
-
 // Logic to manage the camera preview, capture, crop, upload, scan and retry actions
 const cameraPreview = document.getElementById("cameraPreview");
 let cropper = null;
 let scannedContentArray = [];
 
-// Try to initialize camera feed if available (best-effort)
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(function (stream) {
-      try { cameraPreview.srcObject = stream; } catch (e) { cameraPreview.src = URL.createObjectURL(stream); }
-    })
-    .catch(function (error) {
-      console.log("Error accessing camera: ", error);
-    });
+// Scanning camera stream (only started on Edit)
+let _scanStream = null;
+
+// Start the scanning camera when entering edit mode. Safe-guard to avoid
+// re-requesting permission if already running.
+function startScanningCamera() {
+  if (!cameraPreview) return;
+  if (_scanStream) {
+    try { cameraPreview.srcObject = _scanStream; } catch (e) { cameraPreview.src = URL.createObjectURL(_scanStream); }
+    return; // already started
+  }
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function (stream) {
+        _scanStream = stream;
+        try { cameraPreview.srcObject = stream; } catch (e) { cameraPreview.src = URL.createObjectURL(stream); }
+        try { cameraPreview.play && cameraPreview.play(); } catch (e) { /* ignore */ }
+      })
+      .catch(function (error) {
+        console.log("Error accessing camera: ", error);
+      });
+  }
+}
+
+// Stop the scanning camera stream when leaving edit mode or after save
+function stopScanStream() {
+  if (_scanStream) {
+    try {
+      const tracks = _scanStream.getTracks();
+      tracks.forEach(t => t.stop());
+    } catch (e) { /* ignore */ }
+    _scanStream = null;
+  }
+  if (cameraPreview) {
+    try { cameraPreview.srcObject = null; } catch (e) { cameraPreview.src = ''; }
+  }
 }
 
 // Upload helper: trigger hidden file input
@@ -1510,6 +1628,7 @@ document.getElementById("confirmEdit").addEventListener("click", async function(
   } finally {
     // Re-enable and hide overlay regardless of outcome
     if (confirmBtn) confirmBtn.disabled = false;
+    try { stopScanStream(); } catch (e) { console.error('stopScanStream error', e); }
     if (overlay) overlay.style.display = 'none';
   }
 });
