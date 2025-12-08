@@ -42,7 +42,6 @@ from django.core.files.base import ContentFile
 from io import BytesIO
 import base64
 import json
-import spacy
 import cv2
 import difflib
 import numpy as np
@@ -85,7 +84,7 @@ matplotlib.use('Agg')
 from dateutil.relativedelta import relativedelta
 
 
-nlp = spacy.load('en_core_web_sm')
+
 
 ##### ENSURE THAT ROLES CANNOT ACCESS OTHER HTML #########
 def login_checker(view_func):
@@ -1090,6 +1089,21 @@ def admin_bookdetails(request):
     # Fetch all distinct publishers for the librarian
     publishers = Books.objects.values('publisher').distinct()
 
+    # Handle AJAX duplicate-title check (case-insensitive) used by Add/Edit pages
+    # Exclude the current book so that the same title is allowed when editing
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            data = {}
+
+        if 'checkTitle' in data:
+            title = (data.get('bookTitle') or '').strip()
+            if not title:
+                return JsonResponse({'exists': False})
+            exists = Books.objects.filter(title__iexact=title, is_archived=False).exclude(book_id=book.book_id).exists()
+            return JsonResponse({'exists': exists})
+
 
     # Handle archiving action (toggle the book's archived status)
     if 'archive' in request.GET:  
@@ -1186,12 +1200,23 @@ def admin_bookdetails(request):
                     except Exception as e:
                         messages.error(request, f"Error uploading book cover: {e}")
                         return JsonResponse({'success': False, 'message': f"Error uploading book cover: {str(e)}"}, status=500)
-                        
+            
+            # Add a Django flash message for non-AJAX page loads
             book.save()
-            return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
+            try:
+                messages.success(request, 'Book details have been saved successfully.')
+            except Exception:
+                # Ensure that failure to set a message does not block the response
+                pass
+            return JsonResponse({'success': True, 'message': 'Book updated successfully.'})
 
         except Exception as e:
-            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+            # Record an error flash message so the UI can also show it after redirects
+            try:
+                messages.error(request, f'Failed to update book: {str(e)}')
+            except Exception:
+                pass
+            return JsonResponse({'success': False, 'message': f'Failed to update book: {str(e)}'}, status=500)
 
     # Render the view details page with the book and categories data
     context = {
@@ -1202,6 +1227,7 @@ def admin_bookdetails(request):
         'department_categories': department_categories, 
     }
     return render(request, 'admin_bookdetails.html', context)
+
 
 
 @login_checker
@@ -3874,7 +3900,20 @@ def librarian_view_details(request, book_id):
     # Fetch all distinct publishers for the librarian
     publishers = Books.objects.values('publisher').distinct()
 
+    # Exclude the current book so that the same title is allowed when editing
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            data = {}
 
+        if 'checkTitle' in data:
+            title = (data.get('bookTitle') or '').strip()
+            if not title:
+                return JsonResponse({'exists': False})
+            exists = Books.objects.filter(title__iexact=title, is_archived=False).exclude(book_id=book.book_id).exists()
+            return JsonResponse({'exists': exists})
+        
     # Handle archiving action (toggle the book's archived status)
     if 'archive' in request.GET:  
         book.is_archived = not book.is_archived  # Toggle the archived status
@@ -3972,7 +4011,12 @@ def librarian_view_details(request, book_id):
                         return JsonResponse({'success': False, 'message': f"Error uploading book cover: {str(e)}"}, status=500)
                         
             book.save()
-            return JsonResponse({'success': True, 'message': 'Book details updated successfully!'})
+            try:
+                messages.success(request, 'Book details have been saved successfully.')
+            except Exception:
+                # Ensure that failure to set a message does not block the response
+                pass
+            return JsonResponse({'success': True, 'message': 'Book updated successfully.'})
 
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
@@ -3992,16 +4036,13 @@ def librarian_view_details(request, book_id):
 
 @csrf_exempt
 def check_spelling(request):
-    print("DEBUG:", request.method, request.body)
-
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request'}, status=400)
 
     try:
         data = json.loads(request.body.decode('utf-8'))
         text = data.get('text', '').strip()
-        print("DEBUG: Text length =", len(text))
-
+    
         if not text:
             return JsonResponse({'errors': {}}, status=200)
 
@@ -4015,8 +4056,6 @@ def check_spelling(request):
             language = 'tl'
         else:
             language = 'en-US'
-
-        print("DEBUG: Language selected =", language)
 
         # --- Step 3: Try spell-check with LanguageTool ---
         try:
@@ -4041,8 +4080,7 @@ def check_spelling(request):
             return JsonResponse({'error': 'LanguageTool API error'}, status=500)
 
         lt_result = response.json()
-        print("DEBUG: Matches found =", len(lt_result.get('matches', [])))
-
+        
         # --- Step 5: Extract suggestions ---
         errors = {}
         for match in lt_result.get('matches', []):
