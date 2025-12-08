@@ -4066,17 +4066,14 @@ def check_spelling(request):
             )
 
         except requests.RequestException as req_err:
-            print("DEBUG: RequestException ->", req_err)
             return JsonResponse({'error': 'LanguageTool server unreachable'}, status=502)
 
         if response.status_code != 200:
             # --- Step 4: Handle known LanguageTool errors gracefully ---
             if "too many errors" in response.text.lower():
-                print("DEBUG: Too many errors detected, skipping check.")
                 return JsonResponse({
                     'error': 'Spell-check skipped: text contains too many OCR errors. Please re-scan or clean the text.'
                 }, status=200)
-            print("DEBUG: LanguageTool API error", response.status_code, response.text)
             return JsonResponse({'error': 'LanguageTool API error'}, status=500)
 
         lt_result = response.json()
@@ -4094,9 +4091,6 @@ def check_spelling(request):
         return JsonResponse({'errors': errors}, status=200)
 
     except Exception as e:
-        print("DEBUG ERROR:", e)
-        import traceback
-        traceback.print_exc()
         return JsonResponse({'error': str(e)}, status=400)
 
 @login_checker
