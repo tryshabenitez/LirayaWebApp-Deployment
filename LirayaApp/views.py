@@ -1639,7 +1639,7 @@ def admin_profile(request):
                             raise ValidationError("State must be a valid string and cannot contain numbers.")
 
                         # Ensure all are strings and trimmed, with proper length
-                        account.house_no = str(house_no).strip()[:20]  # Truncate to max length 20
+                        account.house_no = str(house_no).strip()[:100]  # Truncate to max length 20
                         account.street_village = str(street_village).strip()[:100]  # Max length 100
                         account.city_municipality = str(city).strip()[:100]
                         account.barangay = str(barangay).strip()[:100]
@@ -4423,7 +4423,7 @@ def librarian_profile(request):
                             raise ValidationError("State must be a valid string and cannot contain numbers.")
 
                         # Ensure all are strings and trimmed, with proper length
-                        account.house_no = str(house_no).strip()[:20]  # Truncate to max length 20
+                        account.house_no = str(house_no).strip()[:100]  # Truncate to max length 20
                         account.street_village = str(street_village).strip()[:100]  # Max length 100
                         account.city_municipality = str(city).strip()[:100]
                         account.barangay = str(barangay).strip()[:100]
