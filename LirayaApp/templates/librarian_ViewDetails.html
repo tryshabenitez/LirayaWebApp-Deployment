@@ -216,8 +216,8 @@
             <!-- Scan Actions -->
             <div class="scan-actions-section">
               <div style="display: flex; gap: 5px;">
-                <button type="button" id="captureButton" class="scan-button">
-                  <img src="{% static 'images/capture.png' %}" alt="Capture" title="Capture" class="btn-img">
+                <button type="button" id="captureButton" class="scan-button" data-tooltip="Capture">
+                  <img src="{% static 'images/capture.png' %}" alt="Capture" class="btn-img">
                 </button>
 
                 <!-- Upload TEMPORARY Button (hidden file input + visible button) -->
@@ -226,12 +226,12 @@
                   <button type="button" id="uploadButton" class="scan-button">Upload</button>
                 </div>
 
-                <button type="button" id="cropButton" class="scan-button">
-                  <img src="{% static 'images/crop.png' %}" alt="Crop" title="Crop" class="btn-img">
+                <button type="button" id="cropButton" class="scan-button" data-tooltip="Crop">
+                  <img src="{% static 'images/crop.png' %}" alt="Crop" class="btn-img">
                 </button>
 
-                <button type="button" id="scanButton" class="scan-button" disabled>
-                  <img src="{% static 'images/scan.png' %}" alt="Scan" title="Scan" class="btn-img">
+                <button type="button" id="scanButton" class="scan-button" data-tooltip="Scan" disabled>
+                  <img src="{% static 'images/scan.png' %}" alt="Scan" class="btn-img">
                 </button>
 
                 <div class="scan-actions">
